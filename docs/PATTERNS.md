@@ -123,7 +123,13 @@ Extract only when a second consumer adopts; order by duplication count:
 4. **packaging templates** — dist/+packaging skeleton (spec, PKGBUILD,
    build-srpm.sh) copied per tool until it stabilizes, then a generator.
 
-Open decision: **hyprdm vs hyprstate profiles** — hyprstate's monitor-profile
-subsystem is in production; hyprdm v0 duplicates it. Either rescope hyprdm to
-the *editor* (emitting hyprstate profiles) or fold its editor goal into
-hyprstate + schema-tui and archive hyprdm.
+## Decision record
+
+**2026-06-12 — hyprdm archived; editor folded into hyprstate.** hyprdm's v0
+scaffold duplicated hyprstate's production monitor-profile subsystem. Its
+editor goal landed as `hyprstate profile save <name>` (capture the live
+layout into a profile, conventions lifted from the hand-written profiles:
+externals matched by desc, eDP excluded from matches when externals exist,
+implicit match-count priority). hyprdm is tombstoned locally with a pointer;
+its hyprtoolkit GUI scaffold remains the starting point if a graphical
+editor is ever wanted — emitting hyprstate profiles, never its own daemon.
