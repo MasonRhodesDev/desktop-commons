@@ -12,6 +12,7 @@ docs/
   PRINCIPLES.md     # cross-tool design principles (the "constitution")
   PATTERNS.md       # named, reusable implementation patterns with per-tool
                     # references (where each is done well / where it's missing)
+  STATUS.md         # living worklog — the cross-machine source of truth
   SURVEY-<date>.md  # point-in-time survey of the suite that grounded the above
 crates/             # shared Rust utilities, extracted as tools converge
                     # (planned: hyprland socket2/instance discovery, logind
