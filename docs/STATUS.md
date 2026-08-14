@@ -1,8 +1,9 @@
-# Suite status — living worklog
+# Suite status — historical migration worklog
 
-The cross-machine source of truth for in-flight work. Update this whenever
-suite work lands; per-machine assistant memory is a cache of this file, not
-the other way around.
+> Historical snapshot from 2026-06-12. It is retained as migration context,
+> not current ecosystem truth. Current repository status, relationships,
+> surfaces, ownership, external providers, and gaps live in `registry/` and
+> the generated `ECOSYSTEM.md`, `SURFACES.md`, and `DESKTOP-COVERAGE.md`.
 
 _Last updated: 2026-06-12 (from mason-work)._
 

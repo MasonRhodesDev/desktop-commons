@@ -1,0 +1,151 @@
+schema = 1
+
+[[barrier]]
+id = "BAR-001"
+name = "single-writer"
+severity = "error"
+rule = "Every mutable system concern has one authoritative writer; other components request or observe through a declared surface."
+
+[[barrier]]
+id = "BAR-002"
+name = "ui-is-a-client"
+severity = "error"
+rule = "Settings and status surfaces do not independently implement runtime policy or mutate hardware behind the owning daemon."
+
+[[barrier]]
+id = "BAR-003"
+name = "neutral-contract"
+severity = "error"
+rule = "Cross-environment source data remains compositor-neutral; Hyprland syntax is generated only at the adapter boundary."
+
+[[barrier]]
+id = "BAR-004"
+name = "prelogin-home-boundary"
+severity = "error"
+rule = "Pre-login components cannot require access to a private user home and consume only system or published snapshots."
+
+[[barrier]]
+id = "BAR-005"
+name = "declared-surface"
+severity = "error"
+rule = "A repository may consume another repository only through a registered file, protocol, library, executable, or service surface."
+
+[[barrier]]
+id = "BAR-006"
+name = "acyclic-runtime-dependencies"
+severity = "error"
+rule = "Runtime repository dependencies are directed and acyclic; callbacks use protocols rather than reverse package dependencies."
+
+[[barrier]]
+id = "BAR-007"
+name = "version-and-failure-contract"
+severity = "error"
+rule = "Every cross-repository surface states compatibility, failure behavior, and an owner responsible for evolution."
+
+[[barrier]]
+id = "BAR-008"
+name = "evidence-before-extraction"
+severity = "warning"
+rule = "Shared implementation is extracted only after at least two real consumers converge on behavior; until then share contracts and test vectors."
+
+[[barrier]]
+id = "BAR-009"
+name = "standard-lifecycle"
+severity = "error"
+rule = "Distributable components use package-owned payloads, shared release workflows, systemd lifecycle, and no checkout-symlinked executable."
+
+[[barrier]]
+id = "BAR-010"
+name = "unique-namespace-owner"
+severity = "error"
+rule = "D-Bus names, sockets, state files, configuration paths, systemd units, and privileged interfaces have one registered owner."
+
+[[barrier]]
+id = "BAR-011"
+name = "narrow-privilege"
+severity = "error"
+rule = "Policy remains unprivileged; privileged mechanisms expose a minimal allowlisted interface and never execute user-writable code."
+
+[[barrier]]
+id = "BAR-012"
+name = "external-provider-explicit"
+severity = "warning"
+rule = "Desktop capabilities supplied externally name the selected provider, integration seam, fallback, and replacement policy."
+
+[[barrier]]
+id = "BAR-013"
+name = "one-active-path"
+severity = "error"
+rule = "Legacy and replacement implementations may coexist during migration, but only one path is active and the retirement condition is recorded."
+
+[[barrier]]
+id = "BAR-014"
+name = "daemon-reconciliation"
+severity = "warning"
+rule = "Long-running state owners reconnect with rediscovery, reconcile against ground truth, and expose liveness and diagnostics."
+
+[[barrier]]
+id = "BAR-015"
+name = "generated-architecture"
+severity = "error"
+rule = "Human-facing relationship and coverage documents are generated from validated registries rather than maintained as independent truth."
+
+[[barrier]]
+id = "BAR-016"
+name = "secure-transition"
+severity = "error"
+rule = "Suspend, logout, and protected-session transitions require positive lock or teardown readiness; timeout cannot silently continue fail-open."
+
+[[barrier]]
+id = "BAR-017"
+name = "no-unprivileged-security-bypass"
+severity = "error"
+rule = "A protected mode cannot be disabled through a file, environment value, or control path writable by the protected principal."
+
+[[barrier]]
+id = "BAR-018"
+name = "activation-complete"
+severity = "error"
+rule = "Installation composes every required service and dependency, or explicitly gates the unavailable capability and reports it in doctor output."
+
+[[barrier]]
+id = "BAR-019"
+name = "operator-config-preservation"
+severity = "error"
+rule = "Package upgrades preserve documented operator-edited authentication, security, and policy files."
+
+[[barrier]]
+id = "BAR-020"
+name = "session-scoped-detection"
+severity = "error"
+rule = "Session and lock discovery uses session identity or protocol state, never machine-wide process-name matching."
+
+[[barrier]]
+id = "BAR-021"
+name = "privilege-minimization"
+severity = "error"
+rule = "Device groups, capabilities, sudo commands, and filesystem access require a current call-site and are narrower than the protected data they expose."
+
+[[barrier]]
+id = "BAR-022"
+name = "immutable-supply-chain"
+severity = "error"
+rule = "Privileged reusable workflows, actions, base images, source archives, and package inputs are pinned and packages carry verifiable integrity metadata."
+
+[[barrier]]
+id = "BAR-023"
+name = "release-gated"
+severity = "error"
+rule = "A release cannot publish unless required package, test, security, and contract checks for that platform succeed."
+
+[[barrier]]
+id = "BAR-024"
+name = "registry-completeness"
+severity = "error"
+rule = "Package repositories publish against an expected package/version manifest and fail rather than silently serving a partial or stale set."
+
+[[barrier]]
+id = "BAR-025"
+name = "authoritative-state"
+severity = "error"
+rule = "One protocol or owner is authoritative for runtime state; side-channel files cannot report success when the owning service did not receive a request."

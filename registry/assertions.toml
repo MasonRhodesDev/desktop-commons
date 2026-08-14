@@ -1,0 +1,245 @@
+schema = 1
+
+[[assertion]]
+id = "secure-suspend-requires-lock"
+kind = "file_not_contains"
+repository = "hyprstate"
+path = "src/daemon/dispatcher.rs"
+pattern = "suspending anyway"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Suspend must not continue after lock readiness times out."
+
+[assertion.waiver]
+reason = "Known P0: current suspending_tail explicitly continues after the two-second timeout."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "game-sandbox-has-no-user-bypass"
+kind = "file_not_contains"
+repository = "greetd-game-mode"
+path = "greetd/scripts/game-mode-wrapper.sh"
+pattern = "\\.game-mode-no-mask"
+barriers = ["BAR-017", "BAR-021"]
+concerns = ["game-session-sandbox"]
+severity = "error"
+message = "The protected games user must not be able to disable its own home mask."
+
+[assertion.waiver]
+reason = "Known P0: the current bypass flag lives in the games-user-writable library directory."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "game-mode-device-access-is-narrow"
+kind = "file_not_contains"
+repository = "greetd-game-mode"
+path = "dist/game-mode.service"
+pattern = "(?m)^SupplementaryGroups=.*\\b(input|video)\\b"
+barriers = ["BAR-021"]
+concerns = ["privilege-minimization"]
+severity = "error"
+message = "Game mode must use device-scoped access instead of broad input/video groups."
+
+[assertion.waiver]
+reason = "Known P0: the greeter daemon currently joins both input and video."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "game-mode-restart-failure-disarms"
+kind = "file_contains"
+repository = "greetd-game-mode"
+path = "src/game_mode_switch.rs"
+pattern = "(?s)systemctl.*?restart.*?greetd\\.service.*?status\\(\\)\\?;\\s*if !status\\.success\\(\\).*?disarm\\(\\)"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["alternate-game-session"]
+severity = "error"
+message = "A failed greetd restart must disarm the one-shot game-mode flag."
+
+[assertion.waiver]
+reason = "Known P1: restart status is logged but not checked."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "desktop-lock-command-is-packaged"
+kind = "conditional_contains"
+repository = "hypr-de"
+when_path = "dist/hypr/hypridle.conf"
+when_pattern = "\\bvigil-lock\\b"
+path = "deps.toml"
+pattern = "(?m)^(fedora|arch)\\s*=.*\"vigil\""
+barriers = ["BAR-013", "BAR-018"]
+concerns = ["screen-lock", "service-activation-completeness"]
+severity = "error"
+message = "If hypr-DE invokes vigil-lock, Vigil must be a generated runtime dependency."
+
+[assertion.waiver]
+reason = "Known P1: hypr-DE invokes vigil-lock while its manifest still installs hyprlock."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "desktop-bluetooth-ui-is-packaged"
+kind = "conditional_contains"
+repository = "hypr-de"
+when_path = "dist/waybar/config.jsonc"
+when_pattern = "\\bblueman-manager\\b"
+path = "deps.toml"
+pattern = "\"blueman\""
+barriers = ["BAR-012", "BAR-018"]
+concerns = ["bluetooth"]
+severity = "error"
+message = "A configured Blueman action requires Blueman in the desktop dependency manifest."
+
+[assertion.waiver]
+reason = "Known P2: Waybar invokes blueman-manager but deps.toml omits Blueman."
+expires = "2026-11-01"
+
+[[assertion]]
+id = "desktop-composes-persistent-tray-watcher"
+kind = "file_contains"
+repository = "hypr-de"
+path = "deps.toml"
+pattern = "\"sni-watcher\""
+barriers = ["BAR-010", "BAR-018"]
+concerns = ["tray-registry", "service-activation-completeness"]
+severity = "error"
+message = "The desktop must install the watcher required by its persistent tray architecture."
+
+[assertion.waiver]
+reason = "Known P1: sni-watcher exists but is not a hypr-DE dependency or preset."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "legacy-greetd-owner-is-retired"
+kind = "repository_archived"
+repository = "greetd-config"
+expected = true
+barriers = ["BAR-001", "BAR-013"]
+concerns = ["greetd-config-ownership"]
+severity = "error"
+message = "The predecessor that mutates /etc/greetd must be archived after ownership moved to greetd-game-mode."
+
+[assertion.waiver]
+reason = "Known P0: greetd-config remains active while the replacement owns the same tree."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "vigil-preserves-lock-pam-policy"
+kind = "file_contains"
+repository = "vigil"
+path = "packaging/PKGBUILD"
+pattern = "(?m)^backup=.*etc/pam\\.d/vigil-lock"
+barriers = ["BAR-019"]
+concerns = ["operator-policy-preservation"]
+severity = "error"
+message = "Arch packaging must preserve the documented operator-edited Vigil lock PAM policy."
+
+[assertion.waiver]
+reason = "Known P1: the current PKGBUILD installs the PAM file without backup metadata."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "telemetry-has-version-envelope"
+kind = "file_contains"
+repository = "hyprstate"
+path = "src/daemon/telemetry.rs"
+pattern = "(?m)^\\s*pub version:\\s*"
+barriers = ["BAR-007", "BAR-025"]
+concerns = ["runtime-path-resolution"]
+severity = "error"
+message = "Cross-process telemetry must carry an explicit envelope version."
+
+[assertion.waiver]
+reason = "Known P1: current NDJSON frames are unversioned."
+expires = "2026-11-01"
+
+[[assertion]]
+id = "packaging-workflow-references-are-immutable"
+kind = "workflow_references_pinned"
+repositories = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "packaging-workflows", "arch-repo"]
+barriers = ["BAR-022", "BAR-023"]
+concerns = ["dependency-pinning", "release-gating"]
+severity = "error"
+message = "Actions and reusable workflows must use immutable commit SHAs."
+
+[assertion.waiver]
+reason = "Known P0: current workflows use mutable action tags and packaging-workflows@main."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "arch-packages-pin-source-checksums"
+kind = "file_not_contains"
+repositories = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord"]
+path = "packaging/PKGBUILD"
+pattern = "sha256sums=\\(['\"]SKIP['\"]\\)"
+barriers = ["BAR-022", "BAR-023"]
+concerns = ["package-integrity"]
+severity = "error"
+message = "Released source archives must have pinned checksums."
+
+[assertion.waiver]
+reason = "Known P0: package recipes retain SKIP despite comments promising release-time pinning."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "pacman-repository-does-not-disable-verification"
+kind = "file_not_contains"
+repository = "arch-repo"
+path = "README.md"
+pattern = "SigLevel\\s*=\\s*Optional\\s+TrustAll"
+barriers = ["BAR-022"]
+concerns = ["package-integrity"]
+severity = "error"
+message = "The package repository must not instruct clients to trust unsigned packages."
+
+[assertion.waiver]
+reason = "Known P0: the current repository and component READMEs require Optional TrustAll."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "pacman-repository-has-expected-manifest"
+kind = "path_exists"
+repository = "arch-repo"
+path = "packages.toml"
+barriers = ["BAR-024"]
+concerns = ["package-registry-completeness"]
+severity = "error"
+message = "Repository publication needs an expected package/version manifest."
+
+[assertion.waiver]
+reason = "Known P1: arch-repo currently downloads wildcard assets from repos.txt."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "dotfiles-do-not-shadow-packaged-game-focus"
+kind = "path_absent"
+repository = "dotfiles"
+path = "dot_config/systemd/user/bp-game-focus.service.tmpl"
+barriers = ["BAR-001", "BAR-009", "BAR-013"]
+concerns = ["package-user-overlay-shadowing"]
+severity = "error"
+message = "Personal units must not shadow the package-owned hypr-DE gaming service."
+
+[assertion.waiver]
+reason = "Known P1 migration residue in dotfiles."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "dotfiles-do-not-shadow-packaged-steam-cleanup"
+kind = "path_absent"
+repository = "dotfiles"
+path = "dot_config/systemd/user/steam-clean-shutdown.service.tmpl"
+barriers = ["BAR-001", "BAR-009", "BAR-013"]
+concerns = ["package-user-overlay-shadowing"]
+severity = "error"
+message = "Personal units must not shadow package-owned Steam cleanup."
+
+[[assertion]]
+id = "dotfiles-secret-import-helper-exists"
+kind = "path_exists"
+repository = "dotfiles"
+path = "dot_local/bin/executable_list-session-env"
+barriers = ["BAR-018", "BAR-025"]
+concerns = ["secrets-keyring"]
+severity = "error"
+message = "The enabled API-key importer must not depend on a missing session-environment helper."

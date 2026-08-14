@@ -1,0 +1,456 @@
+schema = 1
+
+[[surface]]
+id = "monitor-profile-v0"
+owner = "monitor-profiles"
+producers = ["monitor-profiles", "hyprstate", "hyprstate-gui"]
+consumers = ["hyprstate", "hyprstate-gui", "vigil"]
+transport = "TOML files"
+location = "/etc/monitor-profiles/*.toml and ~/.config/hypr/profiles/*.toml"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "Unknown fields are rejected; malformed profiles are skipped; user profiles override same-named system profiles. Add an explicit version and golden cross-consumer fixtures before extending the schema."
+failure = "Consumer emits diagnostics and retains or derives a safe display layout."
+barriers = ["BAR-003", "BAR-004", "BAR-007"]
+
+[[surface]]
+id = "appearance-profile-v1"
+owner = "appearance-profiles"
+producers = ["appearance-profiles", "linux-multi-theme-toggle"]
+consumers = ["linux-multi-theme-toggle"]
+transport = "TOML plus copied assets"
+location = "/usr/share, /etc, XDG config, and /var/lib/appearance-profiles"
+version = "1"
+maturity = "provisional"
+compatibility = "Fields resolve independently through packaged, system, user, and runtime layers."
+failure = "Unreadable layers are skipped with diagnostics; application fallback remains available."
+barriers = ["BAR-003", "BAR-004", "BAR-007"]
+
+[[surface]]
+id = "hyprstate-help-telemetry-v0"
+owner = "hyprstate"
+producers = ["hyprstate"]
+consumers = ["hyprstate-gui"]
+transport = "newline-delimited JSON over Unix stream socket"
+location = "$XDG_RUNTIME_DIR/hyprstate-telemetry.sock"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "No envelope version exists. Producer and consumer need one XDG path resolver, additive-field fixtures, socket ownership, and initial-snapshot semantics."
+failure = "Producer silently drops frames without a listener; GUI skips malformed frames. Current fallback paths disagree and a second GUI can unlink the first listener."
+barriers = ["BAR-002", "BAR-007", "BAR-010", "BAR-025"]
+
+[[surface]]
+id = "hyprstate-power1"
+owner = "hyprstate"
+producers = ["hyprstate"]
+consumers = ["hyprstate", "hyprstate-gui"]
+transport = "system D-Bus"
+location = "org.hyprstate.Power1"
+version = "1"
+maturity = "stable"
+compatibility = "Interface version is encoded in the D-Bus name."
+failure = "Requests fail closed; policy remains visible while privileged changes are unapplied."
+barriers = ["BAR-001", "BAR-002", "BAR-007", "BAR-011"]
+
+[[surface]]
+id = "lmtt-slint-token-v0"
+owner = "linux-multi-theme-toggle"
+producers = ["linux-multi-theme-toggle"]
+consumers = ["slint-kit", "hyprstate-gui"]
+transport = "JSON file plus filesystem watch"
+location = "~/.config/matugen/lmtt-slint.json"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "The current mode/colors object is unversioned. Required tokens need validation and a golden palette fixture."
+failure = "The producer write is not atomic; parse failure falls through to CSS and embedded tokens instead of retaining last-known-good state."
+barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
+
+[[surface]]
+id = "lmtt-color-css-v0"
+owner = "linux-multi-theme-toggle"
+producers = ["linux-multi-theme-toggle"]
+consumers = ["waybar-workspace-buttons", "hyprnotice", "hypr-de"]
+transport = "CSS color definitions"
+location = "~/.config/matugen/lmtt-colors.css"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "Consumers independently parse Mode comments and define-color tokens. A versioned JSON palette should become canonical while CSS remains generated compatibility output."
+failure = "Consumers use inconsistent shell, CSS, or embedded fallbacks; hyprnotice's documented reload hook is absent from current LMTT."
+barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
+
+[[surface]]
+id = "hypr-de-theme-v1"
+owner = "hypr-de"
+producers = ["hypr-de"]
+consumers = ["linux-multi-theme-toggle"]
+transport = "theme.toml, palette assets, and LMTT module fragments"
+location = "/usr/share/hypr-de/themes and ~/.local/share/hypr-de/themes"
+version = "1"
+maturity = "stable"
+compatibility = "Theme application merges tagged values and preserves user-owned configuration."
+failure = "Previous LMTT configuration is backed up and reset remains available."
+barriers = ["BAR-005", "BAR-007", "BAR-009"]
+
+[[surface]]
+id = "logind-inhibitor-identity-v1"
+owner = "hyprstate"
+producers = ["hyprstate", "logind-idle-control", "hyprland-voice-dictation"]
+consumers = ["hyprstate"]
+transport = "systemd-logind inhibitor rows"
+location = "org.freedesktop.login1.Manager.ListInhibitors"
+version = "1"
+maturity = "provisional"
+compatibility = "The inhibitor who field is the canonical executable/service identity."
+failure = "Unknown idle or sleep blockers are treated as real inhibitors; only registered baseline identities are ignored."
+barriers = ["BAR-001", "BAR-005", "BAR-007", "BAR-012"]
+
+[[surface]]
+id = "idle-control-dbus-v1"
+owner = "logind-idle-control"
+producers = ["logind-idle-control"]
+consumers = ["logind-idle-control", "hypr-de"]
+transport = "session D-Bus plus runtime state file"
+location = "com.logind.IdleControl at /com/logind/IdleControl/session_N"
+version = "1"
+maturity = "legacy"
+compatibility = "Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface."
+failure = "The CLI can report success when no daemon received its broadcast; initial state relies on a side-channel runtime file."
+barriers = ["BAR-001", "BAR-007", "BAR-010", "BAR-014", "BAR-025"]
+
+[[surface]]
+id = "status-notifier-v1"
+owner = "sni-watcher"
+producers = ["sni-watcher"]
+consumers = ["logind-idle-control", "hyprland-voice-dictation", "agent-pet", "hypr-de"]
+transport = "StatusNotifier D-Bus protocol"
+location = "org.kde.StatusNotifierWatcher"
+version = "freedesktop/KDE SNI"
+maturity = "stable"
+compatibility = "Applications register items; Waybar registers only as host when the watcher already exists."
+failure = "Tray items wait for a watcher and remain functional through their non-tray interfaces."
+barriers = ["BAR-005", "BAR-010", "BAR-014"]
+
+[[surface]]
+id = "hyprland-ipc-v1"
+owner = "external:hyprland"
+producers = ["external:hyprland"]
+consumers = ["hyprstate", "hyprstate-gui", "waybar-workspace-buttons", "hyprland-voice-dictation", "agent-pet", "hypr-de"]
+transport = "Hyprland event socket and hyprctl JSON/dispatch"
+location = "$XDG_RUNTIME_DIR/hypr/<instance>/.socket2.sock"
+version = "Hyprland release API"
+maturity = "external"
+compatibility = "Consumers must rediscover compositor instances and isolate command-dialect changes."
+failure = "Reconnect with rediscovery; retain safe state and expose degraded health."
+barriers = ["BAR-005", "BAR-012", "BAR-014"]
+
+[[surface]]
+id = "voice-dictation-dbus-v1"
+owner = "hyprland-voice-dictation"
+producers = ["hyprland-voice-dictation"]
+consumers = ["hypr-de"]
+transport = "session D-Bus, CLI, and live Unix stream"
+location = "com.voicedictation.Control and packaged voice-dictation executable"
+version = "1"
+maturity = "legacy"
+compatibility = "The CLI wraps an unversioned com.voicedictation.Control interface. D-Bus Status should become authoritative before removing legacy side channels."
+failure = "A global /tmp state file can become stale or collide across sessions; two unused socket protocols remain alongside D-Bus."
+barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-014", "BAR-020", "BAR-025"]
+
+[[surface]]
+id = "schema-tui-schema-v1"
+owner = "schema-tui"
+producers = ["linux-multi-theme-toggle", "hyprland-voice-dictation"]
+consumers = ["schema-tui"]
+transport = "JSON Schema and TOML"
+location = "repository-owned config-schema.json"
+version = "consumer schema says 1.0; library does not enforce it"
+maturity = "provisional"
+compatibility = "Schema version is parsed but not enforced; consumers use an unpinned Git dependency."
+failure = "Validation is not invoked by the builder and saves can drop unknown TOML sections, keys, and comments."
+barriers = ["BAR-002", "BAR-005", "BAR-007", "BAR-025"]
+
+[[surface]]
+id = "greetd-greeter-v1"
+owner = "external:greetd"
+producers = ["external:greetd"]
+consumers = ["vigil", "greetd-game-mode", "greetd-config"]
+transport = "greetd IPC and PAM"
+location = "/run/greetd.sock and /etc/greetd"
+version = "greetd protocol"
+maturity = "external"
+compatibility = "Greeters implement the greetd request/response protocol; session entries follow XDG conventions."
+failure = "Authentication and alternate-session entry fail closed at the greeter."
+barriers = ["BAR-004", "BAR-007", "BAR-011", "BAR-012"]
+
+[[surface]]
+id = "game-mode-armed-v1"
+owner = "greetd-game-mode"
+producers = ["greetd-game-mode"]
+consumers = ["greetd-game-mode"]
+transport = "one-shot runtime flag consumed by greetd dispatch"
+location = "/run/game-mode/armed"
+version = "1"
+maturity = "provisional"
+compatibility = "The armed flag is consumed once and expires after 60 seconds."
+failure = "Restart failure currently leaves the flag fresh, allowing a later greetd restart to enter game mode unexpectedly."
+barriers = ["BAR-004", "BAR-007", "BAR-011", "BAR-013", "BAR-016", "BAR-025"]
+
+[[surface]]
+id = "notification-replace-tag-v1"
+owner = "hyprstate"
+producers = ["hyprstate"]
+consumers = ["external:notification-daemon", "hyprnotice"]
+transport = "freedesktop notification hint"
+location = "x-canonical-private-synchronous"
+version = "1"
+maturity = "stable"
+compatibility = "Stable tags hyprstate-power and hyprstate-gpu replace earlier notifications in the same class."
+failure = "Unsupported daemons display independent notifications."
+barriers = ["BAR-005", "BAR-007", "BAR-012"]
+
+[[surface]]
+id = "release-package-v1"
+owner = "packaging-workflows"
+producers = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord"]
+consumers = ["arch-repo"]
+transport = "Git tag, GitHub Release, Arch package, and source RPM"
+location = "v* tags and *.pkg.tar.zst release assets"
+version = "repository package version"
+maturity = "provisional"
+compatibility = "Version consistency is checked, but workflows/actions are mutable and package/source integrity is not signed or pinned."
+failure = "Release publication is not gated on all package and security checks; one platform can publish while another is red."
+barriers = ["BAR-007", "BAR-009", "BAR-015", "BAR-022", "BAR-023"]
+
+[[surface]]
+id = "mason-pacman-repository-v1"
+owner = "arch-repo"
+producers = ["arch-repo"]
+consumers = ["hypr-de", "dotfiles"]
+transport = "pacman repository database over GitHub Pages"
+location = "https://masonrhodesdev.github.io/arch-repo/x86_64"
+version = "pacman repository metadata"
+maturity = "provisional"
+compatibility = "Latest wildcard package assets are indexed without an expected package/version manifest or signature policy."
+failure = "Missing packages produce warnings while a partial repository is still published; debug packages are included indiscriminately."
+barriers = ["BAR-005", "BAR-007", "BAR-009", "BAR-012", "BAR-022", "BAR-024"]
+
+[[surface]]
+id = "sni-waybar-ordering-v1"
+owner = "sni-watcher"
+producers = ["sni-watcher"]
+consumers = ["hypr-de"]
+transport = "systemd user-unit ordering and D-Bus ownership"
+location = "sni-watcher.service Before=waybar.service"
+version = "1"
+maturity = "stable"
+compatibility = "sni-watcher owns the watcher name before Waybar starts as a host."
+failure = "Waybar may create a temporary watcher; diagnostics must expose the wrong owner."
+barriers = ["BAR-001", "BAR-007", "BAR-010", "BAR-014"]
+
+[[surface]]
+id = "hyprstate-control-v0"
+owner = "hyprstate"
+producers = ["hyprstate-gui"]
+consumers = ["hyprstate"]
+transport = "TOML/directive files, one-word state files, and subprocess CLI calls"
+location = "~/.config/hypr/power.conf, power-override, monitor profiles, and /var/lib/hyprstate/profile"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status."
+failure = "Path, CLI, and package skew presents as unavailable state or command failure while side-channel files may remain stale."
+barriers = ["BAR-001", "BAR-002", "BAR-007", "BAR-010", "BAR-025"]
+
+[[surface]]
+id = "slint-kit-api-0.2"
+owner = "slint-kit"
+producers = ["slint-kit"]
+consumers = ["hyprstate-gui"]
+transport = "Rust API, Slint imports, semantic properties, and controls"
+location = "slint-kit crate and ui/*.slint"
+version = "0.2 commit-pinned API"
+maturity = "provisional"
+compatibility = "Compile-time failures catch source drift, but there are no tagged releases or API snapshot tests."
+failure = "Runtime fallback palettes duplicate LMTT values and can drift independently."
+barriers = ["BAR-005", "BAR-007", "BAR-008"]
+
+[[surface]]
+id = "agent-pet-event-v1"
+owner = "agent-pet"
+producers = ["agent-pet", "external:agent-harnesses"]
+consumers = ["agent-pet"]
+transport = "D-Bus Emit carrying JSON event envelopes"
+location = "io.github.masonrhodesdev.AgentPet1"
+version = "1"
+maturity = "stable"
+compatibility = "Future major event versions are rejected; unknown additive fields are tolerated."
+failure = "Hook sends are capped at 500 ms and intentionally never fail the calling harness."
+barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-014"]
+
+[[surface]]
+id = "agent-pet-skin-v1"
+owner = "agent-pet"
+producers = ["external:community-skins"]
+consumers = ["agent-pet"]
+transport = "pet.json plus PNG or WebP spritesheet"
+location = "$XDG_CONFIG_HOME/agent-pet/pets/<id>"
+version = "spriteVersionNumber 1 or 2"
+maturity = "provisional"
+compatibility = "Version changes row layout; required animation tracks and fallbacks need a published schema."
+failure = "Invalid skins are rejected and the renderer falls back to the packaged pet."
+barriers = ["BAR-005", "BAR-007", "BAR-012"]
+
+[[surface]]
+id = "waybar-cffi-v2"
+owner = "waybar-workspace-buttons"
+producers = ["waybar-workspace-buttons"]
+consumers = ["external:waybar", "external:hyprland"]
+transport = "Waybar CFFI module and Hyprland plugin ABI"
+location = "workspace_buttons.so and workspace-zones hyprpm plugin"
+version = "wbcffi 2 plus exact Hyprland build hash"
+maturity = "provisional"
+compatibility = "Waybar ABI and Hyprland commit compatibility must be encoded in package metadata and load-tested."
+failure = "Waybar refuses an incompatible module; the plugin reports version mismatch and does not load."
+barriers = ["BAR-005", "BAR-007", "BAR-009", "BAR-012", "BAR-023"]
+
+[[surface]]
+id = "greetd-static-config-v1"
+owner = "greetd-game-mode"
+producers = ["greetd-game-mode", "greetd-config"]
+consumers = ["external:greetd"]
+transport = "package/setup-managed greetd configuration"
+location = "/etc/greetd/config.toml and related /etc/greetd payload"
+version = "1 current path plus legacy alternative"
+maturity = "legacy"
+compatibility = "greetd-game-mode is the current owner; greetd-config remains a conflicting functional predecessor."
+failure = "Running both setup paths rewrites or symlinks the same tree and can leave the login path incoherent."
+barriers = ["BAR-001", "BAR-004", "BAR-013", "BAR-018", "BAR-019"]
+
+[[surface]]
+id = "vigil-lock-protocol-v1"
+owner = "vigil"
+producers = ["vigil"]
+consumers = ["external:hyprland", "hyprstate"]
+transport = "ext-session-lock-v1, PAM, and logind LockedHint"
+location = "vigil-lock and /etc/pam.d/vigil-lock"
+version = "Wayland ext-session-lock-v1"
+maturity = "provisional"
+compatibility = "Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths."
+failure = "A lock-client crash intentionally leaves the compositor locked; no packaged restart owner currently guarantees recovery."
+barriers = ["BAR-001", "BAR-007", "BAR-016", "BAR-018", "BAR-019", "BAR-020"]
+
+[[surface]]
+id = "logind-locked-hint-v1"
+owner = "vigil"
+producers = ["vigil"]
+consumers = ["hyprstate", "logind-idle-control"]
+transport = "systemd-logind session LockedHint and lock/unlock signals"
+location = "org.freedesktop.login1.Session"
+version = "logind API"
+maturity = "provisional"
+compatibility = "LockedHint is the authoritative cross-component lock state; process-name detection is not compatible."
+failure = "A missing or delayed hint must block secure suspend rather than time out into suspension."
+barriers = ["BAR-005", "BAR-007", "BAR-016", "BAR-020", "BAR-025"]
+
+[[surface]]
+id = "secure-suspend-v0"
+owner = "hyprstate"
+producers = ["vigil", "hyprstate"]
+consumers = ["external:systemd-logind"]
+transport = "lock request, LockedHint readiness, then logind suspend"
+location = "hyprstate lid FSM and org.freedesktop.login1"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "Locker readiness and suspend policy need one written positive-acknowledgement contract."
+failure = "Current timeout continues to suspend without positive LockedHint, producing an unsecured-resume risk."
+barriers = ["BAR-001", "BAR-007", "BAR-016", "BAR-025"]
+
+[[surface]]
+id = "graphical-session-lifecycle-v0"
+owner = "hypr-de"
+producers = ["external:uwsm", "hypr-de"]
+consumers = ["hyprstate", "sni-watcher", "logind-idle-control", "hyprland-voice-dictation", "agent-pet"]
+transport = "systemd user targets, wants, parts, and ordering"
+location = "graphical-session.target and packaged user units"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "Services must bind startup and teardown to the graphical session and explicitly pull required audio, tray, and compositor dependencies."
+failure = "Incomplete PartOf/Requisite/Wants relationships leave services running outside their usable session or absent when expected."
+barriers = ["BAR-007", "BAR-009", "BAR-014", "BAR-018"]
+
+[[surface]]
+id = "precompositor-gpu-selection-v1"
+owner = "hyprstate"
+producers = ["hyprstate"]
+consumers = ["hypr-de"]
+transport = "pre-session CLI output and runtime intent file"
+location = "hyprstate gpu select and $XDG_RUNTIME_DIR/hypr-gpu-primary.json"
+version = "1"
+maturity = "stable"
+compatibility = "The state file records intent while the launched environment remains runtime truth."
+failure = "Session launch falls back safely and diagnostics report disagreement between intent and environment."
+barriers = ["BAR-001", "BAR-005", "BAR-007", "BAR-025"]
+
+[[surface]]
+id = "game-mode-approval-v1"
+owner = "greetd-game-mode"
+producers = ["greetd-game-mode"]
+consumers = ["greetd-game-mode"]
+transport = "permission-locked Unix socket, WebAuthn, Web Push, and Tailscale HTTPS"
+location = "/run/access-gate/ctrl.sock and access-gate-verifier"
+version = "1"
+maturity = "provisional"
+compatibility = "Approval requests and status replies are newline-delimited JSON; passkey verification is the authority."
+failure = "Every unavailable, malformed, denied, or timed-out path remains at the greeter."
+barriers = ["BAR-007", "BAR-011", "BAR-016", "BAR-021", "BAR-025"]
+
+[[surface]]
+id = "game-mode-home-mask-v0"
+owner = "greetd-game-mode"
+producers = ["greetd-game-mode"]
+consumers = ["external:bubblewrap"]
+transport = "bubblewrap bind policy and override flag"
+location = "game-mode-wrapper and current $GAMES_DIR/.game-mode-no-mask override"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "The bind policy is the security boundary for game-session home access."
+failure = "The protected games user can currently create the permanent bypass file; the override must move to a root-owned path."
+barriers = ["BAR-011", "BAR-017", "BAR-021"]
+
+[[surface]]
+id = "vigil-banner-v1"
+owner = "vigil"
+producers = ["greetd-game-mode"]
+consumers = ["vigil"]
+transport = "greeter banner/countdown state"
+location = "Vigil game-mode banner seam"
+version = "1"
+maturity = "provisional"
+compatibility = "Banner and cancellation state must remain presentation-only; game-mode owns approval and dispatch."
+failure = "Missing presentation cannot authorize entry and must leave the user at the greeter."
+barriers = ["BAR-002", "BAR-007", "BAR-016"]
+
+[[surface]]
+id = "desktop-dpms-arbitration-v0"
+owner = "hyprstate"
+producers = ["hyprstate", "external:hypridle"]
+consumers = ["external:hyprland"]
+transport = "Hyprland DPMS dispatch from independent idle domains"
+location = "hyprstate locked/inhibited timer and hypridle listeners"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight."
+failure = "Competing writes can wake, blank, or reblank displays contrary to the latest user/session state."
+barriers = ["BAR-001", "BAR-007", "BAR-012", "BAR-014", "BAR-025"]
+
+[[surface]]
+id = "lock-pam-policy-v1"
+owner = "vigil"
+producers = ["external:operator", "vigil"]
+consumers = ["vigil"]
+transport = "PAM service policy"
+location = "/etc/pam.d/vigil-lock"
+version = "PAM stack"
+maturity = "provisional"
+compatibility = "The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution."
+failure = "Packaging replacement can remove required authentication policy or local hardening."
+barriers = ["BAR-004", "BAR-009", "BAR-019", "BAR-021"]

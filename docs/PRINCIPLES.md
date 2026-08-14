@@ -103,16 +103,14 @@ binaries or anything root executes.
   (has a spec — converge layout), voice-dictation (has a PKGBUILD — add RPM),
   lmtt, waybar-workspace-buttons, couchcord (when it ships).
 
-## 11. Cross-tool contracts are written down, here
+## 11. Cross-tool contracts are registered and versioned
 
-The suite is a web of small implicit contracts; each one gets a line in
-PATTERNS.md §Contracts the moment it's created. Known today: logind inhibitor
-`who` = tool's canonical name (hyprstate's baseline allowlist depends on it);
-lmtt→hyprnotice SIGHUP on theme switch; lmtt's colors css consumed by
-waybar-workspace-buttons; notification replace-tags (`hyprstate-power`,
-`hyprstate-gpu`). New D-Bus names use `org.<tool>.<Iface>` for tools with an
-org-style identity (org.hyprstate.Power1) — stop minting `com.*` names for
-domains we don't own.
+The suite is a web of small contracts. Each one is registered in
+`registry/surfaces.toml` with an owner, producers, consumers, transport,
+location, version, compatibility policy, and failure behavior. Provider
+repositories own canonical schemas; hypr-commons owns the relationship and
+barrier registry. New D-Bus names use a domain actually controlled by the
+project and encode incompatible interface versions in the interface name.
 
 ## 12. Doctor over documentation
 

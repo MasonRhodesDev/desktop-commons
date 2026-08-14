@@ -1,0 +1,978 @@
+schema = 1
+statuses = ["owned", "external", "hybrid", "gap", "planned", "legacy", "non-goal"]
+risks = ["low", "medium", "high"]
+
+[[concern]]
+id = "runtime-path-resolution"
+area = "architecture"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["hyprstate", "hyprstate-gui", "linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprland-voice-dictation"]
+external = ["XDG Base Directory specification"]
+risk = "high"
+notes = "Consumers mix XDG variables, dirs helpers, HOME/.config, hardcoded tildes, /tmp, and /run/user/1000, causing cross-session and fallback skew."
+barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
+
+[[concern]]
+id = "hyprland-ipc-convergence"
+area = "architecture"
+status = "planned"
+priority = "P1"
+owner = "hypr-commons"
+internal = ["hyprstate", "hyprstate-gui", "waybar-workspace-buttons", "hyprland-voice-dictation", "agent-pet"]
+external = ["Hyprland"]
+risk = "high"
+notes = "Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling."
+barriers = ["BAR-007", "BAR-008", "BAR-012", "BAR-014"]
+
+[[concern]]
+id = "logind-helper-convergence"
+area = "architecture"
+status = "planned"
+priority = "P1"
+owner = "hypr-commons"
+internal = ["hyprstate", "logind-idle-control", "hyprland-voice-dictation"]
+external = ["systemd-logind"]
+risk = "high"
+notes = "Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics."
+barriers = ["BAR-007", "BAR-008", "BAR-020", "BAR-025"]
+
+[[concern]]
+id = "theme-contract-convergence"
+area = "architecture"
+status = "planned"
+priority = "P1"
+owner = "linux-multi-theme-toggle"
+internal = ["linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprnotice", "hypr-de"]
+external = []
+risk = "high"
+notes = "CSS and Slint palettes are unversioned and parsed independently; canonical versioned JSON, atomic writes, fixtures, and last-known-good behavior are needed."
+barriers = ["BAR-001", "BAR-007", "BAR-008", "BAR-025"]
+
+[[concern]]
+id = "internal-version-skew"
+area = "architecture"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["hyprstate", "hyprstate-gui", "monitor-profiles", "slint-kit", "schema-tui"]
+external = ["Git dependency resolution"]
+risk = "high"
+notes = "hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence."
+barriers = ["BAR-005", "BAR-007", "BAR-022", "BAR-023"]
+
+[[concern]]
+id = "desktop-distribution"
+area = "composition"
+status = "owned"
+owner = "hypr-de"
+internal = ["hypr-de", "dotfiles"]
+external = []
+risk = "low"
+notes = "hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution."
+barriers = ["BAR-001", "BAR-013"]
+
+[[concern]]
+id = "compositor"
+area = "session"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["Hyprland"]
+risk = "high"
+notes = "The ecosystem intentionally builds on Hyprland and currently requires its newer Lua configuration API."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "session-launch"
+area = "session"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["UWSM", "systemd user manager"]
+risk = "medium"
+notes = "UWSM and XDG session entries establish the graphical session and environment."
+barriers = ["BAR-005", "BAR-012"]
+
+[[concern]]
+id = "service-supervision"
+area = "session"
+status = "external"
+owner = ""
+internal = ["hypr-de", "hyprstate", "sni-watcher", "logind-idle-control", "hyprland-voice-dictation", "agent-pet"]
+external = ["systemd"]
+risk = "low"
+notes = "User and system units own startup, ordering, restart, watchdog, and journald integration."
+barriers = ["BAR-009", "BAR-012", "BAR-014"]
+
+[[concern]]
+id = "service-activation-completeness"
+area = "session"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["hypr-de", "hyprstate", "sni-watcher", "hyprland-voice-dictation", "vigil", "greetd-game-mode"]
+external = ["systemd"]
+risk = "high"
+notes = "Required services are inconsistently depended upon, preset, or bound to graphical-session lifetime; setup paths can report success without post-validation."
+barriers = ["BAR-009", "BAR-014", "BAR-018", "BAR-025"]
+
+[[concern]]
+id = "privilege-minimization"
+area = "session"
+status = "gap"
+priority = "P0"
+owner = ""
+internal = ["greetd-game-mode", "hyprstate", "vigil"]
+external = ["systemd", "udev", "sudo"]
+risk = "high"
+notes = "Game mode retains broad input/video groups and obsolete sudo grants; privileges need device-scoped and call-site-backed review."
+barriers = ["BAR-011", "BAR-017", "BAR-021"]
+
+[[concern]]
+id = "operator-policy-preservation"
+area = "session"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["vigil", "greetd-game-mode"]
+external = ["PAM", "pacman", "RPM"]
+risk = "high"
+notes = "Arch Vigil packaging does not preserve the documented operator-edited vigil-lock PAM policy."
+barriers = ["BAR-009", "BAR-019"]
+
+[[concern]]
+id = "login-manager"
+area = "login"
+status = "external"
+owner = ""
+internal = ["vigil", "greetd-game-mode", "greetd-config"]
+external = ["greetd", "PAM"]
+risk = "high"
+notes = "greetd owns authentication/session dispatch while Mason components own presentation and alternate-session policy."
+barriers = ["BAR-004", "BAR-011", "BAR-012"]
+
+[[concern]]
+id = "greeter"
+area = "login"
+status = "owned"
+owner = "vigil"
+internal = ["vigil"]
+external = ["libseat", "DRM/KMS", "libinput", "greetd"]
+risk = "high"
+notes = "vigil renders directly on KMS and deliberately avoids a compositor in the login path."
+barriers = ["BAR-004", "BAR-011", "BAR-014"]
+
+[[concern]]
+id = "legacy-greeter"
+area = "login"
+status = "legacy"
+owner = "greetd-config"
+internal = ["greetd-config"]
+external = ["ReGreet", "Hyprland", "greetd"]
+risk = "medium"
+notes = "The ReGreet-under-Hyprland path remains documented but vigil is the replacement architecture."
+barriers = ["BAR-013"]
+
+[[concern]]
+id = "screen-lock"
+area = "login"
+status = "hybrid"
+owner = "vigil"
+internal = ["vigil", "hyprstate"]
+external = ["ext-session-lock-v1", "PAM", "systemd-logind"]
+risk = "high"
+notes = "Vigil actively owns login and lock, but hypr-DE invokes vigil-lock while packaging hyprlock and omitting Vigil; crash recovery also lacks a service owner."
+barriers = ["BAR-001", "BAR-007", "BAR-013", "BAR-016", "BAR-018", "BAR-020"]
+
+[[concern]]
+id = "secure-lock-before-suspend"
+area = "login"
+status = "gap"
+priority = "P0"
+owner = ""
+internal = ["hyprstate", "vigil"]
+external = ["systemd-logind"]
+risk = "high"
+notes = "hyprstate currently suspends after its LockedHint timeout instead of requiring positive lock readiness."
+barriers = ["BAR-016", "BAR-025"]
+
+[[concern]]
+id = "greetd-config-ownership"
+area = "login"
+status = "gap"
+priority = "P0"
+owner = ""
+internal = ["greetd-game-mode", "greetd-config", "dotfiles"]
+external = ["greetd"]
+risk = "high"
+notes = "greetd-game-mode is the intended owner, but greetd-config and dotfiles still describe or mutate the same /etc/greetd tree."
+barriers = ["BAR-001", "BAR-013", "BAR-018"]
+
+[[concern]]
+id = "game-session-sandbox"
+area = "login"
+status = "gap"
+priority = "P0"
+owner = ""
+internal = ["greetd-game-mode"]
+external = ["bubblewrap"]
+risk = "high"
+notes = "The games user can create the current permanent home-mask bypass; override authority must move to a root-owned path."
+barriers = ["BAR-011", "BAR-017", "BAR-021"]
+
+[[concern]]
+id = "authentication"
+area = "login"
+status = "external"
+owner = ""
+internal = ["vigil", "greetd-game-mode", "greetd-config"]
+external = ["PAM", "FIDO2/WebAuthn", "systemd-logind"]
+risk = "high"
+notes = "Authentication mechanisms stay outside UI components; game mode adds a narrow fail-closed passkey gate."
+barriers = ["BAR-011", "BAR-012"]
+
+[[concern]]
+id = "alternate-game-session"
+area = "login"
+status = "owned"
+owner = "greetd-game-mode"
+internal = ["greetd-game-mode", "vigil"]
+external = ["greetd", "gamescope", "Steam", "bubblewrap", "Tailscale"]
+risk = "high"
+notes = "A one-shot approved flag selects the gamescope session and returns to vigil afterward."
+barriers = ["BAR-004", "BAR-011", "BAR-013"]
+
+[[concern]]
+id = "couch-session-communications"
+area = "login"
+status = "owned"
+owner = "couchcord"
+internal = ["couchcord", "greetd-game-mode"]
+external = ["Discord RPC", "gamescope", "evdev"]
+risk = "medium"
+notes = "Couchcord owns controller-oriented voice control and activity presentation inside the alternate game session."
+barriers = ["BAR-001", "BAR-005", "BAR-014"]
+
+[[concern]]
+id = "monitor-schema"
+area = "display"
+status = "owned"
+owner = "monitor-profiles"
+internal = ["monitor-profiles", "hyprstate", "hyprstate-gui", "vigil"]
+external = []
+risk = "low"
+notes = "One neutral layout definition spans pre-login and the user session."
+barriers = ["BAR-003", "BAR-004", "BAR-007"]
+
+[[concern]]
+id = "display-policy"
+area = "display"
+status = "owned"
+owner = "hyprstate"
+internal = ["hyprstate", "monitor-profiles"]
+external = ["Hyprland IPC"]
+risk = "high"
+notes = "hyprstate is the only session writer for profile selection and internal-panel state."
+barriers = ["BAR-001", "BAR-003", "BAR-014"]
+
+[[concern]]
+id = "display-settings"
+area = "display"
+status = "owned"
+owner = "hyprstate-gui"
+internal = ["hyprstate-gui", "hyprstate", "monitor-profiles"]
+external = []
+risk = "medium"
+notes = "The GUI edits neutral profile intent while hyprstate applies and reconciles it."
+barriers = ["BAR-002", "BAR-003"]
+
+[[concern]]
+id = "power-policy"
+area = "power"
+status = "owned"
+owner = "hyprstate"
+internal = ["hyprstate", "hyprstate-gui"]
+external = ["UPower", "systemd-logind", "Linux sysfs"]
+risk = "high"
+notes = "hyprstate powerd is the exclusive platform-profile and hardware-knob writer."
+barriers = ["BAR-001", "BAR-002", "BAR-011", "BAR-014"]
+
+[[concern]]
+id = "gpu-policy"
+area = "power"
+status = "owned"
+owner = "hyprstate"
+internal = ["hyprstate"]
+external = ["UWSM", "Linux DRM/sysfs"]
+risk = "high"
+notes = "hyprstate selects render intent and reconciles runtime GPU state."
+barriers = ["BAR-001", "BAR-011", "BAR-014"]
+
+[[concern]]
+id = "suspend-policy"
+area = "power"
+status = "hybrid"
+owner = "hyprstate"
+internal = ["hyprstate"]
+external = ["systemd-logind", "systemd suspend targets"]
+risk = "high"
+notes = "hyprstate owns lid grace, lock-before-suspend, and cancellation; logind performs suspension."
+barriers = ["BAR-001", "BAR-011", "BAR-012"]
+
+[[concern]]
+id = "usb-wake"
+area = "power"
+status = "owned"
+owner = "hyprstate"
+internal = ["hyprstate"]
+external = ["udev", "systemd-sleep", "Linux sysfs"]
+risk = "medium"
+notes = "Packaged hooks and rules preserve selected input-device wake capability."
+barriers = ["BAR-001", "BAR-009", "BAR-011"]
+
+[[concern]]
+id = "idle-timeouts"
+area = "power"
+status = "external"
+owner = ""
+internal = ["hyprstate", "logind-idle-control"]
+external = ["hypridle"]
+risk = "high"
+notes = "hypridle owns ordinary idle timers; hyprstate observes inhibitor state and owns lid-specific grace."
+barriers = ["BAR-001", "BAR-012"]
+
+[[concern]]
+id = "manual-idle-inhibition"
+area = "power"
+status = "owned"
+owner = "logind-idle-control"
+internal = ["logind-idle-control", "hyprstate", "sni-watcher"]
+external = ["systemd-logind"]
+risk = "medium"
+notes = "Per-session user intent is represented by a native logind inhibitor."
+barriers = ["BAR-001", "BAR-007", "BAR-014"]
+
+[[concern]]
+id = "brightness-control"
+area = "power"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de"]
+external = ["brightnessctl", "Linux backlight sysfs"]
+risk = "medium"
+notes = "hypr-DE owns keybind and OSD workflow while brightnessctl performs the hardware write."
+barriers = ["BAR-001", "BAR-005", "BAR-012"]
+
+[[concern]]
+id = "battery-status"
+area = "power"
+status = "external"
+owner = ""
+internal = ["hypr-de", "hyprstate"]
+external = ["UPower", "Waybar"]
+risk = "low"
+notes = "hyprstate consumes battery state for policy while Waybar presents status."
+barriers = ["BAR-001", "BAR-012"]
+
+[[concern]]
+id = "desktop-bar"
+area = "shell"
+status = "external"
+owner = ""
+internal = ["hypr-de", "waybar-workspace-buttons", "sni-watcher"]
+external = ["Waybar"]
+risk = "medium"
+notes = "Waybar is the shell host; owned components extend workspace and tray behavior."
+barriers = ["BAR-005", "BAR-012"]
+
+[[concern]]
+id = "workspace-navigation"
+area = "shell"
+status = "owned"
+owner = "waybar-workspace-buttons"
+internal = ["waybar-workspace-buttons", "hypr-de"]
+external = ["Hyprland", "Waybar"]
+risk = "medium"
+notes = "The CFFI module and workspace-zones plugin own workspace presentation and scratch-zone behavior."
+barriers = ["BAR-005", "BAR-012", "BAR-014"]
+
+[[concern]]
+id = "application-launcher"
+area = "shell"
+status = "external"
+owner = ""
+internal = ["hypr-de", "dotfiles"]
+external = ["Fuzzel"]
+risk = "low"
+notes = "Fuzzel supplies application launch and the generated keybind cheatsheet picker."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "notifications"
+area = "shell"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de", "hyprstate", "linux-multi-theme-toggle"]
+external = ["Sway Notification Center", "org.freedesktop.Notifications"]
+risk = "medium"
+notes = "SwayNC is the active daemon while hypr-DE owns recovery proxy, configuration, and styling; hyprnotice is archived and must not claim the bus."
+barriers = ["BAR-010", "BAR-012", "BAR-013"]
+
+[[concern]]
+id = "notification-history"
+area = "shell"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["Sway Notification Center"]
+risk = "low"
+notes = "Action history and control-center UI are delegated to SwayNC."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "tray-registry"
+area = "shell"
+status = "owned"
+owner = "sni-watcher"
+internal = ["sni-watcher", "hypr-de"]
+external = ["StatusNotifierItem protocol"]
+risk = "medium"
+notes = "sni-watcher owns the registry so item lifetime is independent from Waybar."
+barriers = ["BAR-001", "BAR-010", "BAR-014"]
+
+[[concern]]
+id = "tray-host"
+area = "shell"
+status = "external"
+owner = ""
+internal = ["hypr-de", "sni-watcher"]
+external = ["Waybar tray module"]
+risk = "low"
+notes = "Waybar displays items but must not own the watcher name."
+barriers = ["BAR-001", "BAR-012"]
+
+[[concern]]
+id = "on-screen-display"
+area = "shell"
+status = "owned"
+owner = "hypr-de"
+internal = ["hypr-de"]
+external = ["brightnessctl", "WirePlumber wpctl", "playerctl", "libnotify"]
+risk = "medium"
+notes = "Package-owned scripts implement volume, brightness, and media OSD workflows using narrow external mechanisms."
+barriers = ["BAR-001", "BAR-005", "BAR-012"]
+
+[[concern]]
+id = "wallpaper"
+area = "appearance"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de", "linux-multi-theme-toggle", "appearance-profiles"]
+external = ["matugen", "swaybg"]
+risk = "medium"
+notes = "hypr-DE owns user-facing selection while LMTT derives palettes and an external backend renders the image."
+barriers = ["BAR-001", "BAR-003", "BAR-012"]
+
+[[concern]]
+id = "theme-application"
+area = "appearance"
+status = "owned"
+owner = "linux-multi-theme-toggle"
+internal = ["linux-multi-theme-toggle", "hypr-de"]
+external = ["matugen", "GTK settings", "XDG portal"]
+risk = "medium"
+notes = "LMTT is the only palette generator and application-theme fan-out."
+barriers = ["BAR-001", "BAR-005", "BAR-014"]
+
+[[concern]]
+id = "appearance-schema"
+area = "appearance"
+status = "owned"
+owner = "appearance-profiles"
+internal = ["appearance-profiles", "linux-multi-theme-toggle", "vigil"]
+external = []
+risk = "medium"
+notes = "The contract exists; adoption beyond LMTT is still incomplete."
+barriers = ["BAR-003", "BAR-004", "BAR-007"]
+
+[[concern]]
+id = "application-ui-tokens"
+area = "appearance"
+status = "owned"
+owner = "slint-kit"
+internal = ["slint-kit", "linux-multi-theme-toggle", "hyprstate-gui"]
+external = ["Slint"]
+risk = "low"
+notes = "slint-kit converts LMTT semantic colors into consistent application controls and tokens."
+barriers = ["BAR-005", "BAR-007"]
+
+[[concern]]
+id = "icons-cursors-fonts"
+area = "appearance"
+status = "hybrid"
+owner = "linux-multi-theme-toggle"
+internal = ["linux-multi-theme-toggle", "hypr-de"]
+external = ["GTK settings", "fontconfig", "icon themes", "cursor themes"]
+risk = "low"
+notes = "LMTT selects externally implemented themes and fonts."
+barriers = ["BAR-001", "BAR-012"]
+
+[[concern]]
+id = "night-light"
+area = "appearance"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["Hyprsunset or compositor color-temperature provider"]
+risk = "medium"
+notes = "Provider selection and ownership are not yet explicit in the ecosystem contract."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "color-management"
+area = "appearance"
+status = "gap"
+owner = ""
+internal = []
+external = []
+risk = "medium"
+notes = "No ICC, HDR policy, calibration, or compositor color-management owner is registered."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "keybindings"
+area = "input"
+status = "owned"
+owner = "hypr-de"
+internal = ["hypr-de", "dotfiles"]
+external = ["Hyprland"]
+risk = "medium"
+notes = "hypr-DE owns defaults and generated discoverability; local.lua is the user extension seam."
+barriers = ["BAR-001", "BAR-005"]
+
+[[concern]]
+id = "voice-input"
+area = "input"
+status = "owned"
+owner = "hyprland-voice-dictation"
+internal = ["hyprland-voice-dictation", "hypr-de"]
+external = ["PipeWire or ALSA", "ONNX Runtime", "wtype"]
+risk = "medium"
+notes = "The daemon owns capture and recognition; Hyprland supplies only the trigger."
+barriers = ["BAR-001", "BAR-005", "BAR-014"]
+
+[[concern]]
+id = "input-method"
+area = "input"
+status = "gap"
+owner = ""
+internal = []
+external = []
+risk = "medium"
+notes = "No selected IME provider or Wayland text-input integration is registered."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "accessibility"
+area = "input"
+status = "gap"
+owner = ""
+internal = ["hyprland-voice-dictation", "hyprstate-gui"]
+external = ["AT-SPI is used opportunistically"]
+risk = "high"
+notes = "There is no ecosystem-level keyboard navigation, screen-reader, magnification, contrast, or accessibility acceptance contract."
+barriers = ["BAR-007", "BAR-012"]
+
+[[concern]]
+id = "clipboard"
+area = "desktop-integration"
+status = "external"
+owner = ""
+internal = ["hypr-de", "dotfiles"]
+external = ["wl-clipboard"]
+risk = "medium"
+notes = "Basic copy/paste and screenshot handoff use wl-clipboard; persistent history is a separate uncovered concern."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "clipboard-history"
+area = "desktop-integration"
+status = "gap"
+owner = ""
+internal = ["hypr-de", "dotfiles"]
+external = []
+risk = "medium"
+notes = "No persistent history provider, secret exclusion policy, retention policy, or picker integration is registered."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "screenshots"
+area = "desktop-integration"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de"]
+external = ["grim", "slurp", "swappy", "hyprpicker", "wl-clipboard"]
+risk = "low"
+notes = "hypr-DE owns workflow and keybinds while external tools perform capture."
+barriers = ["BAR-005", "BAR-012"]
+
+[[concern]]
+id = "screen-recording"
+area = "desktop-integration"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de"]
+external = ["gpu-screen-recorder", "PipeWire"]
+risk = "medium"
+notes = "hypr-DE owns recording workflow and Waybar integration; gpu-screen-recorder is the selected capture engine but remains a Fedora packaging gate."
+barriers = ["BAR-005", "BAR-012"]
+
+[[concern]]
+id = "desktop-portals"
+area = "desktop-integration"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de"]
+external = ["xdg-desktop-portal", "xdg-desktop-portal-hyprland"]
+risk = "high"
+notes = "hypr-DE packages XDPH configuration, while personal dotfiles also route Settings/default through GTK/WLR backends absent from the DE manifest."
+barriers = ["BAR-001", "BAR-010", "BAR-012", "BAR-014", "BAR-018"]
+
+[[concern]]
+id = "screen-sharing"
+area = "desktop-integration"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["PipeWire", "xdg-desktop-portal-hyprland"]
+risk = "high"
+notes = "External portals provide capture consent and stream negotiation; no suite-level doctor currently verifies the path."
+barriers = ["BAR-012", "BAR-014"]
+
+[[concern]]
+id = "policy-auth-agent"
+area = "desktop-integration"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["polkit", "Hyprland polkit authentication agent"]
+risk = "high"
+notes = "The selected agent must be package-owned and uniquely autostarted."
+barriers = ["BAR-010", "BAR-012"]
+
+[[concern]]
+id = "audio"
+area = "desktop-integration"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de", "hyprland-voice-dictation"]
+external = ["PipeWire", "WirePlumber", "pavucontrol", "hyprpwcenter"]
+risk = "high"
+notes = "hypr-DE owns controls, OSD, and selected UIs while PipeWire/WirePlumber own routing and device policy."
+barriers = ["BAR-001", "BAR-012", "BAR-014", "BAR-018"]
+
+[[concern]]
+id = "media-control"
+area = "desktop-integration"
+status = "external"
+owner = ""
+internal = ["hypr-de", "hyprstate", "hyprland-voice-dictation"]
+external = ["MPRIS", "playerctl"]
+risk = "low"
+notes = "Owned components invoke media pause/resume through the external MPRIS bridge."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "network-management"
+area = "desktop-integration"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de"]
+external = ["NetworkManager", "network-manager-applet", "networkmanager-dmenu"]
+risk = "medium"
+notes = "hypr-DE owns launcher and bar integration while NetworkManager remains the policy and mechanism owner."
+barriers = ["BAR-001", "BAR-012"]
+
+[[concern]]
+id = "bluetooth"
+area = "desktop-integration"
+status = "gap"
+owner = ""
+internal = ["hypr-de"]
+external = []
+risk = "medium"
+notes = "No Bluetooth daemon/UI dependency or desktop integration is selected; BlueZ plus Blueman is a candidate, not current coverage."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "removable-storage"
+area = "desktop-integration"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["udisks2", "udiskie"]
+risk = "medium"
+notes = "Automount policy and user-facing error handling are not registered."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "secrets-keyring"
+area = "desktop-integration"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["hypr-de", "dotfiles", "greetd-config"]
+external = ["GNOME Keyring", "Bitwarden/rbw"]
+risk = "high"
+notes = "The API-key importer and its list-session-env helper are both present in dotfiles; PAM/keyring ownership and lifecycle remain split across the overlay and legacy login configuration."
+barriers = ["BAR-004", "BAR-010", "BAR-012", "BAR-018", "BAR-025"]
+
+[[concern]]
+id = "file-manager"
+area = "applications"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["Thunar"]
+risk = "low"
+notes = "Thunar is the packaged file-manager surface; udiskie independently owns automount."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "terminal"
+area = "applications"
+status = "external"
+owner = ""
+internal = ["hypr-de", "dotfiles", "linux-multi-theme-toggle"]
+external = ["Kitty", "WezTerm in the personal dotfiles overlay"]
+risk = "low"
+notes = "hypr-DE selects Kitty while the personal dotfiles overlay also configures WezTerm; neither implementation is ecosystem-owned."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "default-applications"
+area = "applications"
+status = "external"
+owner = ""
+internal = ["hypr-de", "dotfiles"]
+external = ["XDG MIME applications", "xdg-utils"]
+risk = "medium"
+notes = "Browser, editor, media, and file defaults need an explicit package/config source of truth."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "unified-settings"
+area = "settings"
+status = "hybrid"
+owner = "hyprstate-gui"
+internal = ["hyprstate-gui", "linux-multi-theme-toggle", "schema-tui"]
+external = ["provider-specific settings tools"]
+risk = "medium"
+notes = "Displays and power have a GUI; themes have a TUI; audio, network, Bluetooth, input, accessibility, and defaults remain fragmented."
+barriers = ["BAR-002", "BAR-005", "BAR-012"]
+
+[[concern]]
+id = "configuration-deployment"
+area = "operations"
+status = "hybrid"
+owner = "hypr-de"
+internal = ["hypr-de", "dotfiles"]
+external = ["chezmoi"]
+risk = "medium"
+notes = "hypr-DE owns system defaults while chezmoi owns personal overrides and machine variance."
+barriers = ["BAR-001", "BAR-013"]
+
+[[concern]]
+id = "package-user-overlay-shadowing"
+area = "operations"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["hypr-de", "dotfiles", "greetd-config"]
+external = ["systemd user units", "chezmoi"]
+risk = "high"
+notes = "Legacy dotfile units and documentation can shadow package-owned gaming/session services or reference payloads no longer present."
+barriers = ["BAR-001", "BAR-009", "BAR-013", "BAR-018"]
+
+[[concern]]
+id = "package-build-release"
+area = "operations"
+status = "owned"
+owner = "packaging-workflows"
+internal = ["packaging-workflows", "arch-repo"]
+external = ["GitHub Actions", "COPR", "GitHub Releases", "GitHub Pages"]
+risk = "high"
+notes = "Reusable workflows build packages; arch-repo aggregates Arch release assets."
+barriers = ["BAR-007", "BAR-009", "BAR-012", "BAR-015", "BAR-022", "BAR-023", "BAR-024"]
+
+[[concern]]
+id = "package-integrity"
+area = "operations"
+status = "gap"
+priority = "P0"
+owner = ""
+internal = ["packaging-workflows", "arch-repo"]
+external = ["pacman", "GitHub Releases", "GitHub Actions"]
+risk = "high"
+notes = "Arch packages are unsigned, clients use Optional TrustAll, PKGBUILDs retain SKIP checksums, and no provenance or SBOM is published."
+barriers = ["BAR-022", "BAR-023"]
+
+[[concern]]
+id = "release-gating"
+area = "operations"
+status = "gap"
+priority = "P0"
+owner = ""
+internal = ["packaging-workflows", "hyprstate", "vigil", "linux-multi-theme-toggle"]
+external = ["GitHub Actions", "COPR"]
+risk = "high"
+notes = "Current tags can publish usable artifacts while required package, security, or platform jobs are red."
+barriers = ["BAR-022", "BAR-023"]
+
+[[concern]]
+id = "package-registry-completeness"
+area = "operations"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["arch-repo", "packaging-workflows"]
+external = ["GitHub Releases", "GitHub Pages"]
+risk = "high"
+notes = "arch-repo has no expected package/version manifest and publishes partial wildcard results, including debug packages, after warnings."
+barriers = ["BAR-022", "BAR-024"]
+
+[[concern]]
+id = "dependency-pinning"
+area = "operations"
+status = "gap"
+priority = "P0"
+owner = ""
+internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "vigil", "linux-multi-theme-toggle"]
+external = ["GitHub Actions", "container registries", "Git"]
+risk = "high"
+notes = "Reusable workflows import mutable main, actions and base images float, and some internal Git dependencies are untagged or revision-skewed."
+barriers = ["BAR-007", "BAR-022", "BAR-023"]
+
+[[concern]]
+id = "fedora-package-closure"
+area = "operations"
+status = "gap"
+priority = "P1"
+owner = ""
+internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "hypr-de", "vigil", "linux-multi-theme-toggle"]
+external = ["COPR", "Fedora", "third-party COPRs"]
+risk = "high"
+notes = "Internal Git dependencies are not reliably vendored, cargo-deny rejects new sources, COPR is split from Arch, and Lua Hyprland remains a desktop release gate."
+barriers = ["BAR-009", "BAR-018", "BAR-022", "BAR-023"]
+
+[[concern]]
+id = "system-updates"
+area = "operations"
+status = "external"
+owner = ""
+internal = ["hypr-de", "arch-repo"]
+external = ["pacman/paru", "dnf", "COPR"]
+risk = "medium"
+notes = "The desktop intentionally ships no bespoke updater."
+barriers = ["BAR-009", "BAR-012"]
+
+[[concern]]
+id = "rollback"
+area = "operations"
+status = "external"
+owner = ""
+internal = ["hypr-de"]
+external = ["snapper with package-manager hooks", "snap-pac", "Timeshift"]
+risk = "medium"
+notes = "Rollback is recommended but not selected or verified by the desktop package."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "diagnostics"
+area = "operations"
+status = "hybrid"
+owner = "hypr-commons"
+internal = ["hypr-commons", "hyprstate", "hyprland-voice-dictation", "greetd-game-mode"]
+external = ["systemctl", "journalctl"]
+risk = "medium"
+notes = "Several components have status/doctor commands, but there is no suite-level health command yet."
+barriers = ["BAR-012", "BAR-014"]
+
+[[concern]]
+id = "suite-doctor"
+area = "operations"
+status = "planned"
+owner = "hypr-commons"
+internal = ["hypr-commons", "hypr-de", "hyprstate", "vigil", "sni-watcher", "logind-idle-control", "hyprland-voice-dictation", "greetd-game-mode"]
+external = ["systemd", "journald", "package managers", "desktop portals"]
+risk = "high"
+notes = "A generated health contract should verify Lua support, packages, units, service ordering, portals, lock readiness, registries, and provider ownership."
+barriers = ["BAR-012", "BAR-014", "BAR-018", "BAR-024", "BAR-025"]
+
+[[concern]]
+id = "crash-reporting"
+area = "operations"
+status = "gap"
+owner = ""
+internal = []
+external = []
+risk = "medium"
+notes = "There is no common coredump triage, crash correlation, or opt-in reporting path."
+barriers = ["BAR-012", "BAR-014"]
+
+[[concern]]
+id = "user-data-backup"
+area = "operations"
+status = "gap"
+owner = ""
+internal = ["dotfiles"]
+external = []
+risk = "high"
+notes = "Configuration is reproducible, but user documents and application data have no registered backup provider or restore test."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "remote-desktop"
+area = "desktop-integration"
+status = "gap"
+owner = ""
+internal = []
+external = []
+risk = "medium"
+notes = "No remote-control provider, consent model, or support boundary is selected."
+barriers = ["BAR-011", "BAR-012"]
+
+[[concern]]
+id = "search-indexing"
+area = "shell"
+status = "gap"
+owner = ""
+internal = ["hypr-de"]
+external = []
+risk = "low"
+notes = "Application launch exists, but file/content search and indexing are not covered."
+barriers = ["BAR-012"]
+
+[[concern]]
+id = "desktop-icons"
+area = "shell"
+status = "non-goal"
+owner = ""
+internal = ["hypr-de"]
+external = []
+risk = "low"
+notes = "A desktop icon surface is intentionally outside the current shell design."
+barriers = []
+
+[[concern]]
+id = "agent-activity"
+area = "shell"
+status = "owned"
+owner = "agent-pet"
+internal = ["agent-pet"]
+external = ["Wayland layer shell", "D-Bus"]
+risk = "low"
+notes = "Agent-pet owns harness normalization, activity aggregation, mascot rendering, and its tray."
+barriers = ["BAR-001", "BAR-007", "BAR-014"]

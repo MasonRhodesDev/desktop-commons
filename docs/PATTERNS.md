@@ -100,14 +100,12 @@ Explicitly banned for binaries/root-executed code (PRINCIPLES §5, §10).
 
 ## Contracts (the implicit web, made explicit)
 
-| Contract | Parties | Detail |
-|---|---|---|
-| logind inhibitor `who` = canonical tool name | hyprstate ⇄ logind-idle-control, hypridle, all future inhibitor holders | hyprstate's baseline allowlist filters by these exact strings; renaming a tool silently changes lid/suspend behavior |
-| Theme reload poke | lmtt → hyprnotice | SIGHUP after theme switch (atomic config+theme reload) |
-| Shared colors css | lmtt → waybar-workspace-buttons | `~/.config/matugen/lmtt-colors.css` read for button theming |
-| Notification replace-tags | hyprstate → notification daemon | `x-canonical-private-synchronous`: `hyprstate-power`, `hyprstate-gpu` |
-| gpu state file schema v1 | hyprstate `gpu select` (uwsm) ⇄ daemon | `$XDG_RUNTIME_DIR/hypr-gpu-primary.json`; intent only, environ is truth |
-| `org.hyprstate.Power1` | hyprstate daemon/CLI ⇄ powerd | versioned-by-name interface; wheel-only send policy |
+Cross-repository contracts are machine-readable entries in
+`registry/surfaces.toml`; `docs/SURFACES.md` is generated from that source.
+Each entry records ownership, both sides of the relationship, transport,
+location, compatibility, failure behavior, and applicable barriers. Add the
+surface when the dependency is introduced, rather than documenting it after
+an integration breaks.
 
 ## Consolidation queue (crates/)
 

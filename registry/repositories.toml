@@ -1,0 +1,202 @@
+schema = 1
+generated_at = "2026-08-14"
+
+[[repository]]
+id = "hypr-commons"
+github = "MasonRhodesDev/hypr-commons"
+visibility = "private"
+lifecycle = "active"
+role = "architecture"
+responsibilities = ["ecosystem registry", "architecture barriers", "cross-repository decisions"]
+depends_on = []
+
+[[repository]]
+id = "hypr-de"
+github = "MasonRhodesDev/hypr-DE"
+visibility = "public"
+lifecycle = "active"
+role = "desktop-distribution"
+responsibilities = ["packaged Hyprland session", "desktop composition", "default configuration"]
+depends_on = ["hyprstate", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil"]
+
+[[repository]]
+id = "dotfiles"
+github = "MasonRhodesDev/dotfiles"
+visibility = "public"
+lifecycle = "active"
+role = "personal-overlay"
+responsibilities = ["machine-specific configuration", "personal package selection", "chezmoi deployment"]
+depends_on = ["hypr-de", "hyprstate", "linux-multi-theme-toggle"]
+
+[[repository]]
+id = "hyprstate"
+github = "MasonRhodesDev/hyprstate"
+visibility = "public"
+lifecycle = "active"
+role = "session-policy"
+responsibilities = ["lid and suspend policy", "display profile application", "power and GPU policy", "session telemetry"]
+depends_on = ["monitor-profiles"]
+
+[[repository]]
+id = "hyprstate-gui"
+github = "MasonRhodesDev/hyprstate-gui"
+visibility = "public"
+lifecycle = "active"
+role = "settings-surface"
+responsibilities = ["display profile editing", "power policy editing", "live policy explanation"]
+depends_on = ["hyprstate", "monitor-profiles", "slint-kit"]
+
+[[repository]]
+id = "monitor-profiles"
+github = "MasonRhodesDev/monitor-profiles"
+visibility = "public"
+lifecycle = "active"
+role = "contract"
+responsibilities = ["neutral monitor topology schema", "profile selection", "layout resolution"]
+depends_on = []
+
+[[repository]]
+id = "appearance-profiles"
+github = "MasonRhodesDev/appearance-profiles"
+visibility = "public"
+lifecycle = "active"
+role = "contract"
+responsibilities = ["neutral appearance schema", "layered appearance resolution"]
+depends_on = []
+
+[[repository]]
+id = "linux-multi-theme-toggle"
+github = "MasonRhodesDev/linux-multi-theme-toggle"
+visibility = "public"
+lifecycle = "active"
+role = "theme-engine"
+responsibilities = ["Material You palette generation", "application theme fan-out", "theme configuration"]
+depends_on = ["appearance-profiles", "schema-tui"]
+
+[[repository]]
+id = "slint-kit"
+github = "MasonRhodesDev/slint-kit"
+visibility = "public"
+lifecycle = "active"
+role = "ui-library"
+responsibilities = ["shared Slint controls", "design tokens", "live LMTT token bridge"]
+depends_on = ["linux-multi-theme-toggle"]
+
+[[repository]]
+id = "waybar-workspace-buttons"
+github = "MasonRhodesDev/waybar-workspace-buttons"
+visibility = "public"
+lifecycle = "active"
+role = "desktop-shell-extension"
+responsibilities = ["event-driven workspace buttons", "per-workspace scratch zones"]
+depends_on = ["linux-multi-theme-toggle"]
+
+[[repository]]
+id = "hyprland-voice-dictation"
+github = "MasonRhodesDev/hyprland-voice-dictation"
+visibility = "public"
+lifecycle = "active"
+role = "desktop-service"
+responsibilities = ["offline speech recognition", "focused-window text injection", "dictation HUD and tray"]
+depends_on = ["schema-tui"]
+
+[[repository]]
+id = "logind-idle-control"
+github = "MasonRhodesDev/logind-idle-control"
+visibility = "public"
+lifecycle = "active"
+role = "desktop-service"
+responsibilities = ["per-session idle inhibition", "idle-control D-Bus API", "idle tray item"]
+depends_on = ["sni-watcher"]
+
+[[repository]]
+id = "sni-watcher"
+github = "MasonRhodesDev/sni-watcher"
+visibility = "public"
+lifecycle = "active"
+role = "desktop-service"
+responsibilities = ["persistent StatusNotifier registry", "tray survival across bar reloads"]
+depends_on = []
+
+[[repository]]
+id = "vigil"
+github = "MasonRhodesDev/vigil"
+visibility = "public"
+lifecycle = "active"
+role = "login-and-lock"
+responsibilities = ["bare-KMS greetd greeter", "multi-monitor login layout", "ext-session-lock-v1 session lock"]
+depends_on = ["monitor-profiles"]
+
+[[repository]]
+id = "greetd-game-mode"
+github = "MasonRhodesDev/greetd_game_mode"
+visibility = "public"
+lifecycle = "active"
+role = "alternate-session"
+responsibilities = ["gamepad-triggered game session", "passkey approval gate", "greetd dispatch"]
+depends_on = ["vigil"]
+
+[[repository]]
+id = "couchcord"
+github = "MasonRhodesDev/couchcord"
+visibility = "public"
+lifecycle = "active"
+role = "alternate-session-service"
+responsibilities = ["controller-driven Discord voice control", "gamescope activity overlay", "couch-session diagnostics"]
+depends_on = []
+
+[[repository]]
+id = "greetd-config"
+github = "MasonRhodesDev/greetd-config"
+visibility = "public"
+lifecycle = "legacy"
+role = "login-configuration"
+responsibilities = ["ReGreet under Hyprland", "PAM composition", "legacy game-mode configuration"]
+depends_on = []
+replacement = "greetd-game-mode plus vigil"
+retirement = "Archive after dotfiles and every host stop invoking its installer or treating it as /etc/greetd owner."
+
+[[repository]]
+id = "agent-pet"
+github = "MasonRhodesDev/agent-pet"
+visibility = "public"
+lifecycle = "active"
+role = "desktop-service"
+responsibilities = ["agent activity aggregation", "Wayland layer-shell mascot", "agent activity tray"]
+depends_on = []
+
+[[repository]]
+id = "hyprnotice"
+github = "MasonRhodesDev/hyprnotice"
+visibility = "public"
+lifecycle = "archived"
+role = "notification-daemon"
+responsibilities = ["notification popups", "action-retaining inbox", "Hyprland-native notification UI"]
+depends_on = ["linux-multi-theme-toggle"]
+
+[[repository]]
+id = "schema-tui"
+github = "MasonRhodesDev/schema-tui"
+visibility = "public"
+lifecycle = "active"
+role = "ui-library"
+responsibilities = ["schema-driven TOML configuration editing"]
+depends_on = []
+
+[[repository]]
+id = "packaging-workflows"
+github = "MasonRhodesDev/packaging-workflows"
+visibility = "public"
+lifecycle = "active"
+role = "delivery"
+responsibilities = ["reusable Arch packaging", "reusable COPR packaging", "GitHub release publication"]
+depends_on = []
+
+[[repository]]
+id = "arch-repo"
+github = "MasonRhodesDev/arch-repo"
+visibility = "public"
+lifecycle = "active"
+role = "delivery"
+responsibilities = ["pacman repository aggregation", "GitHub Pages package publication"]
+depends_on = ["packaging-workflows"]
