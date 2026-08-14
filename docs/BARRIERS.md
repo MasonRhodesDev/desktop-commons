@@ -57,8 +57,8 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-019 | 1 |
 | BAR-020 | 0 |
 | BAR-021 | 2 |
-| BAR-022 | 4 |
-| BAR-023 | 3 |
+| BAR-022 | 6 |
+| BAR-023 | 4 |
 | BAR-024 | 1 |
 | BAR-025 | 4 |
 
@@ -79,7 +79,9 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | — |
 | game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | 2026-10-01 |
 | game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
+| hyprstate-rpm-rewrites-git-sources | file_contains | hyprstate | BAR-022, BAR-023 | fedora-package-closure | — |
 | legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
+| packaging-containers-are-digest-pinned | file_contains | packaging-workflows | BAR-022 | dependency-pinning | — |
 | packaging-workflow-references-are-immutable | workflow_references_pinned | hypr-commons, dotfiles, hyprstate, hyprstate-gui, hypr-de, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant, packaging-workflows, arch-repo | BAR-022, BAR-023 | dependency-pinning, release-gating | — |
 | pacman-repository-does-not-disable-verification | file_not_contains | arch-repo | BAR-022 | package-integrity | — |
 | pacman-repository-has-expected-manifest | path_exists | arch-repo | BAR-024 | package-registry-completeness | — |

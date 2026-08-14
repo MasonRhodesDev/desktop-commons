@@ -158,6 +158,28 @@ severity = "error"
 message = "Actions and reusable workflows must use immutable commit SHAs."
 
 [[assertion]]
+id = "hyprstate-rpm-rewrites-git-sources"
+kind = "file_contains"
+repository = "hyprstate"
+path = "packaging/hyprstate.spec"
+pattern = '(?s)git\+https://github\.com/MasonRhodesDev/monitor-profiles\?rev=aef5f0e.*?replace-with = "vendored-sources"'
+barriers = ["BAR-022", "BAR-023"]
+concerns = ["fedora-package-closure"]
+severity = "error"
+message = "Offline RPM builds must rewrite the monitor-profiles git source onto vendored crates."
+
+[[assertion]]
+id = "packaging-containers-are-digest-pinned"
+kind = "file_contains"
+repository = "packaging-workflows"
+path = ".github/workflows/rpm-check.yml"
+pattern = "fedora:latest@sha256:[0-9a-f]{64}"
+barriers = ["BAR-022"]
+concerns = ["dependency-pinning"]
+severity = "error"
+message = "Reusable workflow containers must be pinned to registry digests."
+
+[[assertion]]
 id = "arch-packages-pin-source-checksums"
 kind = "file_not_contains"
 repositories = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]

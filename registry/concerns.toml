@@ -845,7 +845,7 @@ owner = ""
 internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "vigil", "linux-multi-theme-toggle"]
 external = ["GitHub Actions", "container registries", "Git"]
 risk = "high"
-notes = "Actions and reusable workflows are pinned to immutable SHAs; container images still float and some internal Git dependencies remain untagged or revision-skewed."
+notes = "Actions, reusable workflows, and CI container images are pinned to immutable SHAs or registry digests; some internal Git crate revisions remain untagged."
 barriers = ["BAR-007", "BAR-022", "BAR-023"]
 
 [[concern]]
@@ -857,7 +857,7 @@ owner = ""
 internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "hypr-de", "vigil", "linux-multi-theme-toggle"]
 external = ["COPR", "Fedora", "third-party COPRs"]
 risk = "high"
-notes = "Internal Git dependencies are not reliably vendored, cargo-deny rejects new sources, COPR is split from Arch, and Lua Hyprland remains a desktop release gate."
+notes = "hyprstate and related Fedora specs now rewrite vendored Git crate sources offline. Remaining gates are COPR/Arch split publication and Lua Hyprland packaging."
 barriers = ["BAR-009", "BAR-018", "BAR-022", "BAR-023"]
 
 [[concern]]
