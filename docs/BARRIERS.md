@@ -36,7 +36,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 
 | Barrier | Assertions |
 |---|---:|
-| BAR-001 | 3 |
+| BAR-001 | 4 |
 | BAR-002 | 0 |
 | BAR-003 | 0 |
 | BAR-004 | 0 |
@@ -48,7 +48,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-010 | 1 |
 | BAR-011 | 0 |
 | BAR-012 | 1 |
-| BAR-013 | 4 |
+| BAR-013 | 5 |
 | BAR-014 | 0 |
 | BAR-015 | 0 |
 | BAR-016 | 2 |
@@ -72,16 +72,17 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | desktop-bluetooth-ui-is-packaged | conditional_contains | hypr-de | BAR-012, BAR-018 | bluetooth | 2026-11-01 |
 | desktop-composes-persistent-tray-watcher | file_contains | hypr-de | BAR-010, BAR-018 | tray-registry, service-activation-completeness | 2026-10-01 |
 | desktop-lock-command-is-packaged | conditional_contains | hypr-de | BAR-013, BAR-018 | screen-lock, service-activation-completeness | 2026-10-01 |
+| dotfiles-do-not-activate-legacy-greetd-owner | file_not_contains | dotfiles | BAR-001, BAR-013 | greetd-config-ownership | — |
 | dotfiles-do-not-shadow-packaged-game-focus | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
 | dotfiles-do-not-shadow-packaged-steam-cleanup | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | — |
 | dotfiles-secret-import-helper-exists | path_exists | dotfiles | BAR-018, BAR-025 | secrets-keyring | — |
-| game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | 2026-10-01 |
+| game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | — |
 | game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | 2026-10-01 |
-| game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | 2026-10-01 |
-| legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | 2026-10-01 |
+| game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
+| legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
 | packaging-workflow-references-are-immutable | workflow_references_pinned | hyprstate, hyprstate-gui, hypr-de, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, packaging-workflows, arch-repo | BAR-022, BAR-023 | dependency-pinning, release-gating | 2026-10-01 |
 | pacman-repository-does-not-disable-verification | file_not_contains | arch-repo | BAR-022 | package-integrity | 2026-10-01 |
 | pacman-repository-has-expected-manifest | path_exists | arch-repo | BAR-024 | package-registry-completeness | 2026-10-01 |
-| secure-suspend-requires-lock | file_not_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | 2026-10-01 |
+| secure-suspend-requires-lock | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | telemetry-has-version-envelope | file_contains | hyprstate | BAR-007, BAR-025 | runtime-path-resolution | 2026-11-01 |
 | vigil-preserves-lock-pam-policy | file_contains | vigil | BAR-019 | operator-policy-preservation | 2026-10-01 |

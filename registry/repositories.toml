@@ -149,12 +149,12 @@ depends_on = []
 id = "greetd-config"
 github = "MasonRhodesDev/greetd-config"
 visibility = "public"
-lifecycle = "legacy"
+lifecycle = "archived"
 role = "login-configuration"
 responsibilities = ["ReGreet under Hyprland", "PAM composition", "legacy game-mode configuration"]
 depends_on = []
 replacement = "greetd-game-mode plus vigil"
-retirement = "Archive after dotfiles and every host stop invoking its installer or treating it as /etc/greetd owner."
+retirement = "Archived 2026-08-14 after the live host moved to packaged greetd-game-mode and Vigil ownership."
 
 [[repository]]
 id = "agent-pet"

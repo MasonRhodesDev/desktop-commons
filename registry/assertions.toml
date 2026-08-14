@@ -2,18 +2,14 @@ schema = 1
 
 [[assertion]]
 id = "secure-suspend-requires-lock"
-kind = "file_not_contains"
+kind = "file_contains"
 repository = "hyprstate"
 path = "src/daemon/dispatcher.rs"
-pattern = "suspending anyway"
+pattern = "(?s)lock did not engage.*?return false;.*?fx\\.do_suspend"
 barriers = ["BAR-016", "BAR-025"]
 concerns = ["secure-lock-before-suspend"]
 severity = "error"
 message = "Suspend must not continue after lock readiness times out."
-
-[assertion.waiver]
-reason = "Known P0: current suspending_tail explicitly continues after the two-second timeout."
-expires = "2026-10-01"
 
 [[assertion]]
 id = "game-sandbox-has-no-user-bypass"
@@ -26,10 +22,6 @@ concerns = ["game-session-sandbox"]
 severity = "error"
 message = "The protected games user must not be able to disable its own home mask."
 
-[assertion.waiver]
-reason = "Known P0: the current bypass flag lives in the games-user-writable library directory."
-expires = "2026-10-01"
-
 [[assertion]]
 id = "game-mode-device-access-is-narrow"
 kind = "file_not_contains"
@@ -40,10 +32,6 @@ barriers = ["BAR-021"]
 concerns = ["privilege-minimization"]
 severity = "error"
 message = "Game mode must use device-scoped access instead of broad input/video groups."
-
-[assertion.waiver]
-reason = "Known P0: the greeter daemon currently joins both input and video."
-expires = "2026-10-01"
 
 [[assertion]]
 id = "game-mode-restart-failure-disarms"
@@ -119,9 +107,16 @@ concerns = ["greetd-config-ownership"]
 severity = "error"
 message = "The predecessor that mutates /etc/greetd must be archived after ownership moved to greetd-game-mode."
 
-[assertion.waiver]
-reason = "Known P0: greetd-config remains active while the replacement owns the same tree."
-expires = "2026-10-01"
+[[assertion]]
+id = "dotfiles-do-not-activate-legacy-greetd-owner"
+kind = "file_not_contains"
+repository = "dotfiles"
+path = "dot_gitconfig.tmpl"
+pattern = "/opt/greetd-config"
+barriers = ["BAR-001", "BAR-013"]
+concerns = ["greetd-config-ownership"]
+severity = "error"
+message = "Dotfiles must not configure the archived greetd-config checkout as an active system path."
 
 [[assertion]]
 id = "vigil-preserves-lock-pam-policy"

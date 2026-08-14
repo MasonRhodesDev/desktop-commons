@@ -7,24 +7,20 @@
 | Status | Count |
 |---|---:|
 | external | 22 |
-| gap | 24 |
+| gap | 20 |
 | hybrid | 14 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 21 |
+| owned | 25 |
 | planned | 4 |
 
 ## Gaps and high-risk boundaries
 
 | Priority | Concern | Area | Status | Owner | External provider | Risk |
 |---|---|---|---|---|---|---|
-| P0 | game-session-sandbox | login | gap | — | bubblewrap | high |
-| P0 | greetd-config-ownership | login | gap | — | greetd | high |
-| P0 | secure-lock-before-suspend | login | gap | — | systemd-logind | high |
 | P0 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high |
 | P0 | package-integrity | operations | gap | — | pacman, GitHub Releases, GitHub Actions | high |
 | P0 | release-gating | operations | gap | — | GitHub Actions, COPR | high |
-| P0 | privilege-minimization | session | gap | — | systemd, udev, sudo | high |
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high |
@@ -39,9 +35,12 @@
 | P1 | accessibility | input | gap | — | AT-SPI is used opportunistically | high |
 | P1 | alternate-game-session | login | owned | greetd-game-mode | greetd, gamescope, Steam, bubblewrap, Tailscale | high |
 | P1 | authentication | login | external | — | PAM, FIDO2/WebAuthn, systemd-logind | high |
+| P1 | game-session-sandbox | login | owned | greetd-game-mode | bubblewrap | high |
+| P1 | greetd-config-ownership | login | owned | greetd-game-mode | greetd | high |
 | P1 | greeter | login | owned | vigil | libseat, DRM/KMS, libinput, greetd | high |
 | P1 | login-manager | login | external | — | greetd, PAM | high |
 | P1 | screen-lock | login | hybrid | vigil | ext-session-lock-v1, PAM, systemd-logind | high |
+| P1 | secure-lock-before-suspend | login | owned | hyprstate | systemd-logind | high |
 | P1 | fedora-package-closure | operations | gap | — | COPR, Fedora, third-party COPRs | high |
 | P1 | package-build-release | operations | owned | packaging-workflows | GitHub Actions, COPR, GitHub Releases, GitHub Pages | high |
 | P1 | package-registry-completeness | operations | gap | — | GitHub Releases, GitHub Pages | high |
@@ -54,6 +53,7 @@
 | P1 | suspend-policy | power | hybrid | hyprstate | systemd-logind, systemd suspend targets | high |
 | P1 | compositor | session | external | — | Hyprland | high |
 | P1 | operator-policy-preservation | session | gap | — | PAM, pacman, RPM | high |
+| P1 | privilege-minimization | session | owned | greetd-game-mode | systemd, udev, sudo | high |
 | P1 | service-activation-completeness | session | gap | — | systemd | high |
 | P2 | color-management | appearance | gap | — | — | medium |
 | P2 | bluetooth | desktop-integration | gap | — | — | medium |
@@ -107,13 +107,13 @@
 | P1 | alternate-game-session | login | owned | greetd-game-mode | greetd, gamescope, Steam, bubblewrap, Tailscale | high | A one-shot approved flag selects the gamescope session and returns to vigil afterward. |
 | P1 | authentication | login | external | — | PAM, FIDO2/WebAuthn, systemd-logind | high | Authentication mechanisms stay outside UI components; game mode adds a narrow fail-closed passkey gate. |
 | P2 | couch-session-communications | login | owned | couchcord | Discord RPC, gamescope, evdev | medium | Couchcord owns controller-oriented voice control and activity presentation inside the alternate game session. |
-| P0 | game-session-sandbox | login | gap | — | bubblewrap | high | The games user can create the current permanent home-mask bypass; override authority must move to a root-owned path. |
-| P0 | greetd-config-ownership | login | gap | — | greetd | high | greetd-game-mode is the intended owner, but greetd-config and dotfiles still describe or mutate the same /etc/greetd tree. |
+| P1 | game-session-sandbox | login | owned | greetd-game-mode | bubblewrap | high | The game session always enters its bubblewrap home mask and fails closed when bubblewrap is unavailable; no games-user-writable bypass exists. |
+| P1 | greetd-config-ownership | login | owned | greetd-game-mode | greetd | high | greetd-game-mode owns rendered /etc/greetd configuration, Vigil owns the greeter, and dotfiles carries only machine-specific overlays. The predecessor repository is archived. |
 | P1 | greeter | login | owned | vigil | libseat, DRM/KMS, libinput, greetd | high | vigil renders directly on KMS and deliberately avoids a compositor in the login path. |
 | P2 | legacy-greeter | login | legacy | greetd-config | ReGreet, Hyprland, greetd | medium | The ReGreet-under-Hyprland path remains documented but vigil is the replacement architecture. |
 | P1 | login-manager | login | external | — | greetd, PAM | high | greetd owns authentication/session dispatch while Mason components own presentation and alternate-session policy. |
 | P1 | screen-lock | login | hybrid | vigil | ext-session-lock-v1, PAM, systemd-logind | high | Vigil actively owns login and lock, but hypr-DE invokes vigil-lock while packaging hyprlock and omitting Vigil; crash recovery also lacks a service owner. |
-| P0 | secure-lock-before-suspend | login | gap | — | systemd-logind | high | hyprstate currently suspends after its LockedHint timeout instead of requiring positive lock readiness. |
+| P1 | secure-lock-before-suspend | login | owned | hyprstate | systemd-logind | high | hyprstate requires positive lock confirmation before suspend; a timeout rejects the transition and re-arms lid grace. |
 | P2 | configuration-deployment | operations | hybrid | hypr-de | chezmoi | medium | hypr-DE owns system defaults while chezmoi owns personal overrides and machine variance. |
 | P2 | crash-reporting | operations | gap | — | — | medium | There is no common coredump triage, crash correlation, or opt-in reporting path. |
 | P0 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high | Reusable workflows import mutable main, actions and base images float, and some internal Git dependencies are untagged or revision-skewed. |
@@ -138,7 +138,7 @@
 | P2 | usb-wake | power | owned | hyprstate | udev, systemd-sleep, Linux sysfs | medium | Packaged hooks and rules preserve selected input-device wake capability. |
 | P1 | compositor | session | external | — | Hyprland | high | The ecosystem intentionally builds on Hyprland and currently requires its newer Lua configuration API. |
 | P1 | operator-policy-preservation | session | gap | — | PAM, pacman, RPM | high | Arch Vigil packaging does not preserve the documented operator-edited vigil-lock PAM policy. |
-| P0 | privilege-minimization | session | gap | — | systemd, udev, sudo | high | Game mode retains broad input/video groups and obsolete sudo grants; privileges need device-scoped and call-site-backed review. |
+| P1 | privilege-minimization | session | owned | greetd-game-mode | systemd, udev, sudo | high | Game mode receives only udev-classified joystick nodes through a dedicated group. Its obsolete fgconsole grant was removed; the remaining exact systemctl and runfile-removal grants have active call sites. |
 | P1 | service-activation-completeness | session | gap | — | systemd | high | Required services are inconsistently depended upon, preset, or bound to graphical-session lifetime; setup paths can report success without post-validation. |
 | P3 | service-supervision | session | external | — | systemd | low | User and system units own startup, ordering, restart, watchdog, and journald integration. |
 | P2 | session-launch | session | external | — | UWSM, systemd user manager | medium | UWSM and XDG session entries establish the graphical session and environment. |

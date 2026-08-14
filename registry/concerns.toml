@@ -121,13 +121,12 @@ barriers = ["BAR-009", "BAR-014", "BAR-018", "BAR-025"]
 [[concern]]
 id = "privilege-minimization"
 area = "session"
-status = "gap"
-priority = "P0"
-owner = ""
-internal = ["greetd-game-mode", "hyprstate", "vigil"]
+status = "owned"
+owner = "greetd-game-mode"
+internal = ["greetd-game-mode"]
 external = ["systemd", "udev", "sudo"]
 risk = "high"
-notes = "Game mode retains broad input/video groups and obsolete sudo grants; privileges need device-scoped and call-site-backed review."
+notes = "Game mode receives only udev-classified joystick nodes through a dedicated group. Its obsolete fgconsole grant was removed; the remaining exact systemctl and runfile-removal grants have active call sites."
 barriers = ["BAR-011", "BAR-017", "BAR-021"]
 
 [[concern]]
@@ -189,37 +188,34 @@ barriers = ["BAR-001", "BAR-007", "BAR-013", "BAR-016", "BAR-018", "BAR-020"]
 [[concern]]
 id = "secure-lock-before-suspend"
 area = "login"
-status = "gap"
-priority = "P0"
-owner = ""
+status = "owned"
+owner = "hyprstate"
 internal = ["hyprstate", "vigil"]
 external = ["systemd-logind"]
 risk = "high"
-notes = "hyprstate currently suspends after its LockedHint timeout instead of requiring positive lock readiness."
+notes = "hyprstate requires positive lock confirmation before suspend; a timeout rejects the transition and re-arms lid grace."
 barriers = ["BAR-016", "BAR-025"]
 
 [[concern]]
 id = "greetd-config-ownership"
 area = "login"
-status = "gap"
-priority = "P0"
-owner = ""
-internal = ["greetd-game-mode", "greetd-config", "dotfiles"]
+status = "owned"
+owner = "greetd-game-mode"
+internal = ["greetd-game-mode", "vigil", "dotfiles"]
 external = ["greetd"]
 risk = "high"
-notes = "greetd-game-mode is the intended owner, but greetd-config and dotfiles still describe or mutate the same /etc/greetd tree."
+notes = "greetd-game-mode owns rendered /etc/greetd configuration, Vigil owns the greeter, and dotfiles carries only machine-specific overlays. The predecessor repository is archived."
 barriers = ["BAR-001", "BAR-013", "BAR-018"]
 
 [[concern]]
 id = "game-session-sandbox"
 area = "login"
-status = "gap"
-priority = "P0"
-owner = ""
+status = "owned"
+owner = "greetd-game-mode"
 internal = ["greetd-game-mode"]
 external = ["bubblewrap"]
 risk = "high"
-notes = "The games user can create the current permanent home-mask bypass; override authority must move to a root-owned path."
+notes = "The game session always enters its bubblewrap home mask and fails closed when bubblewrap is unavailable; no games-user-writable bypass exists."
 barriers = ["BAR-011", "BAR-017", "BAR-021"]
 
 [[concern]]

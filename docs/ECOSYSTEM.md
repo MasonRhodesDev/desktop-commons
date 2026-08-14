@@ -39,7 +39,7 @@ flowchart LR
         repo_vigil["vigil"]
     end
     subgraph role_login_configuration["login-configuration"]
-        repo_greetd_config["greetd-config (legacy)"]
+        repo_greetd_config["greetd-config (archived)"]
     end
     subgraph role_notification_daemon["notification-daemon"]
         repo_hyprnotice["hyprnotice (archived)"]
@@ -95,7 +95,7 @@ flowchart LR
 | [arch-repo](https://github.com/MasonRhodesDev/arch-repo) | delivery | active | pacman repository aggregation; GitHub Pages package publication |
 | [couchcord](https://github.com/MasonRhodesDev/couchcord) | alternate-session-service | active | controller-driven Discord voice control; gamescope activity overlay; couch-session diagnostics |
 | [dotfiles](https://github.com/MasonRhodesDev/dotfiles) | personal-overlay | active | machine-specific configuration; personal package selection; chezmoi deployment |
-| [greetd-config](https://github.com/MasonRhodesDev/greetd-config) | login-configuration | legacy | ReGreet under Hyprland; PAM composition; legacy game-mode configuration |
+| [greetd-config](https://github.com/MasonRhodesDev/greetd-config) | login-configuration | archived | ReGreet under Hyprland; PAM composition; legacy game-mode configuration |
 | [greetd-game-mode](https://github.com/MasonRhodesDev/greetd_game_mode) | alternate-session | active | gamepad-triggered game session; passkey approval gate; greetd dispatch |
 | [hypr-commons](https://github.com/MasonRhodesDev/hypr-commons) | architecture | active | ecosystem registry; architecture barriers; cross-repository decisions |
 | [hypr-de](https://github.com/MasonRhodesDev/hypr-DE) | desktop-distribution | active | packaged Hyprland session; desktop composition; default configuration |
