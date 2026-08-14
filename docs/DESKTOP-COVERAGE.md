@@ -7,20 +7,17 @@
 | Status | Count |
 |---|---:|
 | external | 22 |
-| gap | 20 |
+| gap | 17 |
 | hybrid | 14 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 25 |
+| owned | 28 |
 | planned | 4 |
 
 ## Gaps and high-risk boundaries
 
 | Priority | Concern | Area | Status | Owner | External provider | Risk |
 |---|---|---|---|---|---|---|
-| P0 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high |
-| P0 | package-integrity | operations | gap | — | pacman, GitHub Releases, GitHub Actions | high |
-| P0 | release-gating | operations | gap | — | GitHub Actions, COPR | high |
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high |
@@ -41,9 +38,8 @@
 | P1 | login-manager | login | external | — | greetd, PAM | high |
 | P1 | screen-lock | login | hybrid | vigil | ext-session-lock-v1, PAM, systemd-logind | high |
 | P1 | secure-lock-before-suspend | login | owned | hyprstate | systemd-logind | high |
+| P1 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high |
 | P1 | fedora-package-closure | operations | gap | — | COPR, Fedora, third-party COPRs | high |
-| P1 | package-build-release | operations | owned | packaging-workflows | GitHub Actions, COPR, GitHub Releases, GitHub Pages | high |
-| P1 | package-registry-completeness | operations | gap | — | GitHub Releases, GitHub Pages | high |
 | P1 | package-user-overlay-shadowing | operations | gap | — | systemd user units, chezmoi | high |
 | P1 | suite-doctor | operations | planned | hypr-commons | systemd, journald, package managers, desktop portals | high |
 | P1 | user-data-backup | operations | gap | — | — | high |
@@ -116,14 +112,14 @@
 | P1 | secure-lock-before-suspend | login | owned | hyprstate | systemd-logind | high | hyprstate requires positive lock confirmation before suspend; a timeout rejects the transition and re-arms lid grace. |
 | P2 | configuration-deployment | operations | hybrid | hypr-de | chezmoi | medium | hypr-DE owns system defaults while chezmoi owns personal overrides and machine variance. |
 | P2 | crash-reporting | operations | gap | — | — | medium | There is no common coredump triage, crash correlation, or opt-in reporting path. |
-| P0 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high | Reusable workflows import mutable main, actions and base images float, and some internal Git dependencies are untagged or revision-skewed. |
+| P1 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high | Actions and reusable workflows are pinned to immutable SHAs; container images still float and some internal Git dependencies remain untagged or revision-skewed. |
 | P2 | diagnostics | operations | hybrid | hypr-commons | systemctl, journalctl | medium | Several components have status/doctor commands, but there is no suite-level health command yet. |
 | P1 | fedora-package-closure | operations | gap | — | COPR, Fedora, third-party COPRs | high | Internal Git dependencies are not reliably vendored, cargo-deny rejects new sources, COPR is split from Arch, and Lua Hyprland remains a desktop release gate. |
-| P1 | package-build-release | operations | owned | packaging-workflows | GitHub Actions, COPR, GitHub Releases, GitHub Pages | high | Reusable workflows build packages; arch-repo aggregates Arch release assets. |
-| P0 | package-integrity | operations | gap | — | pacman, GitHub Releases, GitHub Actions | high | Arch packages are unsigned, clients use Optional TrustAll, PKGBUILDs retain SKIP checksums, and no provenance or SBOM is published. |
-| P1 | package-registry-completeness | operations | gap | — | GitHub Releases, GitHub Pages | high | arch-repo has no expected package/version manifest and publishes partial wildcard results, including debug packages, after warnings. |
+| P2 | package-build-release | operations | owned | packaging-workflows | GitHub Actions, COPR, GitHub Releases, GitHub Pages | medium | Reusable workflows gate package and security checks before release publication; arch-repo validates and atomically publishes the declared package set. |
+| P2 | package-integrity | operations | owned | arch-repo | pacman, GitHub Releases, GitHub Actions | medium | Release source archives have pinned checksums; arch-repo signs every package, its validated manifest, and the repository database with a dedicated fingerprint-pinned key. Provenance and SBOM publication remain optional enhancements. |
+| P2 | package-registry-completeness | operations | owned | arch-repo | GitHub Releases, GitHub Pages | medium | packages.toml declares every expected release asset; publication resolves each latest version, validates embedded package metadata, rejects missing or unexpected packages, and emits a hashed manifest. |
 | P1 | package-user-overlay-shadowing | operations | gap | — | systemd user units, chezmoi | high | Legacy dotfile units and documentation can shadow package-owned gaming/session services or reference payloads no longer present. |
-| P0 | release-gating | operations | gap | — | GitHub Actions, COPR | high | Current tags can publish usable artifacts while required package, security, or platform jobs are red. |
+| P2 | release-gating | operations | owned | packaging-workflows | GitHub Actions, COPR | medium | Reusable tag workflows build Arch and RPM packages, run configured security policy, and publish release assets only after all required gates succeed. |
 | P2 | rollback | operations | external | — | snapper with package-manager hooks, snap-pac, Timeshift | medium | Rollback is recommended but not selected or verified by the desktop package. |
 | P1 | suite-doctor | operations | planned | hypr-commons | systemd, journald, package managers, desktop portals | high | A generated health contract should verify Lua support, packages, units, service ordering, portals, lock readiness, registries, and provider ownership. |
 | P2 | system-updates | operations | external | — | pacman/paru, dnf, COPR | medium | The desktop intentionally ships no bespoke updater. |

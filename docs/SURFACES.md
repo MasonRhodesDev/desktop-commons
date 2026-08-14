@@ -24,9 +24,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | lock-pam-policy-v1 | provisional | The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution. |
 | logind-inhibitor-identity-v1 | provisional | The inhibitor who field is the canonical executable/service identity. |
 | logind-locked-hint-v1 | provisional | LockedHint is the authoritative cross-component lock state; process-name detection is not compatible. |
-| mason-pacman-repository-v1 | provisional | Latest wildcard package assets are indexed without an expected package/version manifest or signature policy. |
 | monitor-profile-v0 | provisional | Unknown fields are rejected; malformed profiles are skipped; user profiles override same-named system profiles. Add an explicit version and golden cross-consumer fixtures before extending the schema. |
-| release-package-v1 | provisional | Version consistency is checked, but workflows/actions are mutable and package/source integrity is not signed or pinned. |
 | schema-tui-schema-v1 | provisional | Schema version is parsed but not enforced; consumers use an unpinned Git dependency. |
 | secure-suspend-v0 | provisional | Locker readiness and suspend policy need one written positive-acknowledgement contract. |
 | slint-kit-api-0.2 | provisional | Compile-time failures catch source drift, but there are no tagged releases or API snapshot tests. |
@@ -60,11 +58,11 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | lock-pam-policy-v1 | vigil | external:operator, vigil | vigil | PAM service policy | PAM stack | provisional |
 | logind-inhibitor-identity-v1 | hyprstate | hyprstate, logind-idle-control, hyprland-voice-dictation | hyprstate | systemd-logind inhibitor rows | 1 | provisional |
 | logind-locked-hint-v1 | vigil | vigil | hyprstate, logind-idle-control | systemd-logind session LockedHint and lock/unlock signals | logind API | provisional |
-| mason-pacman-repository-v1 | arch-repo | arch-repo | hypr-de, dotfiles | pacman repository database over GitHub Pages | pacman repository metadata | provisional |
+| mason-pacman-repository-v1 | arch-repo | arch-repo | hypr-de, dotfiles, greetd-game-mode, deck-tenant | pacman repository database over GitHub Pages | packages.toml schema 1 plus pacman repository metadata | stable |
 | monitor-profile-v0 | monitor-profiles | monitor-profiles, hyprstate, hyprstate-gui | hyprstate, hyprstate-gui, vigil | TOML files | unversioned | provisional |
 | notification-replace-tag-v1 | hyprstate | hyprstate | external:notification-daemon, hyprnotice | freedesktop notification hint | 1 | stable |
 | precompositor-gpu-selection-v1 | hyprstate | hyprstate | hypr-de | pre-session CLI output and runtime intent file | 1 | stable |
-| release-package-v1 | packaging-workflows | hyprstate, hyprstate-gui, hypr-de, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | provisional |
+| release-package-v1 | packaging-workflows | hyprstate, hyprstate-gui, hypr-de, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
 | schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, hyprland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
 | secure-suspend-v0 | hyprstate | vigil, hyprstate | external:systemd-logind | lock request, LockedHint readiness, then logind suspend | unversioned | provisional |
 | slint-kit-api-0.2 | slint-kit | slint-kit | hyprstate-gui | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
@@ -225,8 +223,8 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## mason-pacman-repository-v1
 
 - Location: `https://masonrhodesdev.github.io/arch-repo/x86_64`
-- Compatibility: Latest wildcard package assets are indexed without an expected package/version manifest or signature policy.
-- Failure behavior: Missing packages produce warnings while a partial repository is still published; debug packages are included indiscriminately.
+- Compatibility: Every declared latest release asset must match its embedded package name and tag version; packages, manifest, and database are signed by the committed repository fingerprint.
+- Failure behavior: Missing, stale, unexpected, unsigned, or version-skewed assets fail the build before the previous atomic GitHub Pages deployment is replaced.
 - Barriers: BAR-005, BAR-007, BAR-009, BAR-012, BAR-022, BAR-024
 
 ## monitor-profile-v0
@@ -253,8 +251,8 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## release-package-v1
 
 - Location: `v* tags and *.pkg.tar.zst release assets`
-- Compatibility: Version consistency is checked, but workflows/actions are mutable and package/source integrity is not signed or pinned.
-- Failure behavior: Release publication is not gated on all package and security checks; one platform can publish while another is red.
+- Compatibility: Version consistency and source checksums are enforced; workflow dependencies are immutable and configured package/security gates complete before release assets publish.
+- Failure behavior: A failed Arch, RPM, or configured security gate prevents release asset publication and downstream repository dispatch.
 - Barriers: BAR-007, BAR-009, BAR-015, BAR-022, BAR-023
 
 ## schema-tui-schema-v1

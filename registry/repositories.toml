@@ -67,6 +67,7 @@ depends_on = []
 [[repository]]
 id = "linux-multi-theme-toggle"
 github = "MasonRhodesDev/linux-multi-theme-toggle"
+local = "lmtt"
 visibility = "public"
 lifecycle = "active"
 role = "theme-engine"
@@ -94,6 +95,7 @@ depends_on = ["linux-multi-theme-toggle"]
 [[repository]]
 id = "hyprland-voice-dictation"
 github = "MasonRhodesDev/hyprland-voice-dictation"
+local = "wayland-voice-dictation"
 visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
@@ -130,6 +132,7 @@ depends_on = ["monitor-profiles"]
 [[repository]]
 id = "greetd-game-mode"
 github = "MasonRhodesDev/greetd_game_mode"
+local = "game_mode"
 visibility = "public"
 lifecycle = "active"
 role = "alternate-session"
@@ -143,6 +146,15 @@ visibility = "public"
 lifecycle = "active"
 role = "alternate-session-service"
 responsibilities = ["controller-driven Discord voice control", "gamescope activity overlay", "couch-session diagnostics"]
+depends_on = []
+
+[[repository]]
+id = "deck-tenant"
+github = "MasonRhodesDev/deck-tenant"
+visibility = "public"
+lifecycle = "active"
+role = "steam-deck-service"
+responsibilities = ["rootless package tenant", "SteamOS package persistence", "per-user service wiring"]
 depends_on = []
 
 [[repository]]

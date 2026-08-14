@@ -211,27 +211,27 @@ barriers = ["BAR-005", "BAR-007", "BAR-012"]
 [[surface]]
 id = "release-package-v1"
 owner = "packaging-workflows"
-producers = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord"]
+producers = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
 consumers = ["arch-repo"]
 transport = "Git tag, GitHub Release, Arch package, and source RPM"
 location = "v* tags and *.pkg.tar.zst release assets"
 version = "repository package version"
-maturity = "provisional"
-compatibility = "Version consistency is checked, but workflows/actions are mutable and package/source integrity is not signed or pinned."
-failure = "Release publication is not gated on all package and security checks; one platform can publish while another is red."
+maturity = "stable"
+compatibility = "Version consistency and source checksums are enforced; workflow dependencies are immutable and configured package/security gates complete before release assets publish."
+failure = "A failed Arch, RPM, or configured security gate prevents release asset publication and downstream repository dispatch."
 barriers = ["BAR-007", "BAR-009", "BAR-015", "BAR-022", "BAR-023"]
 
 [[surface]]
 id = "mason-pacman-repository-v1"
 owner = "arch-repo"
 producers = ["arch-repo"]
-consumers = ["hypr-de", "dotfiles"]
+consumers = ["hypr-de", "dotfiles", "greetd-game-mode", "deck-tenant"]
 transport = "pacman repository database over GitHub Pages"
 location = "https://masonrhodesdev.github.io/arch-repo/x86_64"
-version = "pacman repository metadata"
-maturity = "provisional"
-compatibility = "Latest wildcard package assets are indexed without an expected package/version manifest or signature policy."
-failure = "Missing packages produce warnings while a partial repository is still published; debug packages are included indiscriminately."
+version = "packages.toml schema 1 plus pacman repository metadata"
+maturity = "stable"
+compatibility = "Every declared latest release asset must match its embedded package name and tag version; packages, manifest, and database are signed by the committed repository fingerprint."
+failure = "Missing, stale, unexpected, unsigned, or version-skewed assets fail the build before the previous atomic GitHub Pages deployment is replaced."
 barriers = ["BAR-005", "BAR-007", "BAR-009", "BAR-012", "BAR-022", "BAR-024"]
 
 [[surface]]

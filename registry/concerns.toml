@@ -799,56 +799,53 @@ status = "owned"
 owner = "packaging-workflows"
 internal = ["packaging-workflows", "arch-repo"]
 external = ["GitHub Actions", "COPR", "GitHub Releases", "GitHub Pages"]
-risk = "high"
-notes = "Reusable workflows build packages; arch-repo aggregates Arch release assets."
+risk = "medium"
+notes = "Reusable workflows gate package and security checks before release publication; arch-repo validates and atomically publishes the declared package set."
 barriers = ["BAR-007", "BAR-009", "BAR-012", "BAR-015", "BAR-022", "BAR-023", "BAR-024"]
 
 [[concern]]
 id = "package-integrity"
 area = "operations"
-status = "gap"
-priority = "P0"
-owner = ""
+status = "owned"
+owner = "arch-repo"
 internal = ["packaging-workflows", "arch-repo"]
 external = ["pacman", "GitHub Releases", "GitHub Actions"]
-risk = "high"
-notes = "Arch packages are unsigned, clients use Optional TrustAll, PKGBUILDs retain SKIP checksums, and no provenance or SBOM is published."
+risk = "medium"
+notes = "Release source archives have pinned checksums; arch-repo signs every package, its validated manifest, and the repository database with a dedicated fingerprint-pinned key. Provenance and SBOM publication remain optional enhancements."
 barriers = ["BAR-022", "BAR-023"]
 
 [[concern]]
 id = "release-gating"
 area = "operations"
-status = "gap"
-priority = "P0"
-owner = ""
+status = "owned"
+owner = "packaging-workflows"
 internal = ["packaging-workflows", "hyprstate", "vigil", "linux-multi-theme-toggle"]
 external = ["GitHub Actions", "COPR"]
-risk = "high"
-notes = "Current tags can publish usable artifacts while required package, security, or platform jobs are red."
+risk = "medium"
+notes = "Reusable tag workflows build Arch and RPM packages, run configured security policy, and publish release assets only after all required gates succeed."
 barriers = ["BAR-022", "BAR-023"]
 
 [[concern]]
 id = "package-registry-completeness"
 area = "operations"
-status = "gap"
-priority = "P1"
-owner = ""
+status = "owned"
+owner = "arch-repo"
 internal = ["arch-repo", "packaging-workflows"]
 external = ["GitHub Releases", "GitHub Pages"]
-risk = "high"
-notes = "arch-repo has no expected package/version manifest and publishes partial wildcard results, including debug packages, after warnings."
+risk = "medium"
+notes = "packages.toml declares every expected release asset; publication resolves each latest version, validates embedded package metadata, rejects missing or unexpected packages, and emits a hashed manifest."
 barriers = ["BAR-022", "BAR-024"]
 
 [[concern]]
 id = "dependency-pinning"
 area = "operations"
 status = "gap"
-priority = "P0"
+priority = "P1"
 owner = ""
 internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "vigil", "linux-multi-theme-toggle"]
 external = ["GitHub Actions", "container registries", "Git"]
 risk = "high"
-notes = "Reusable workflows import mutable main, actions and base images float, and some internal Git dependencies are untagged or revision-skewed."
+notes = "Actions and reusable workflows are pinned to immutable SHAs; container images still float and some internal Git dependencies remain untagged or revision-skewed."
 barriers = ["BAR-007", "BAR-022", "BAR-023"]
 
 [[concern]]
