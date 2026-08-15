@@ -11,7 +11,7 @@ owner = "hypr-paths"
 internal = ["hypr-paths", "hyprstate", "logind-idle-control", "hyprstate-gui", "linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprland-voice-dictation"]
 external = ["XDG Base Directory specification"]
 risk = "high"
-notes = "Owner crate is hypr-paths (config/data/runtime; no /run/user/1000, /tmp, or literal ~). hyprstate and logind-idle-control adopted first. Remaining consumers still mix XDG variables, dirs helpers, and HOME/.config."
+notes = "Owner crate is hypr-paths (config/data/runtime; no /run/user/1000, /tmp, or literal ~). Adopted by hyprstate, hyprstate-gui, logind-idle-control, and vigil. Remaining consumers still mix XDG variables, dirs helpers, and HOME/.config."
 barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
 
 [[concern]]

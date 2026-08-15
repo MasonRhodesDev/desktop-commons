@@ -80,6 +80,7 @@ flowchart LR
     repo_linux_multi_theme_toggle --> repo_hyprnotice
     repo_hypr_paths --> repo_hyprstate
     repo_monitor_profiles --> repo_hyprstate
+    repo_hypr_paths --> repo_hyprstate_gui
     repo_hyprstate --> repo_hyprstate_gui
     repo_monitor_profiles --> repo_hyprstate_gui
     repo_slint_kit --> repo_hyprstate_gui
@@ -88,6 +89,7 @@ flowchart LR
     repo_hypr_paths --> repo_logind_idle_control
     repo_sni_watcher --> repo_logind_idle_control
     repo_linux_multi_theme_toggle --> repo_slint_kit
+    repo_hypr_paths --> repo_vigil
     repo_monitor_profiles --> repo_vigil
     repo_linux_multi_theme_toggle --> repo_waybar_workspace_buttons
 ```

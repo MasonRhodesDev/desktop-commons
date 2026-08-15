@@ -44,7 +44,7 @@ visibility = "public"
 lifecycle = "active"
 role = "settings-surface"
 responsibilities = ["display profile editing", "power policy editing", "live policy explanation"]
-depends_on = ["hyprstate", "monitor-profiles", "slint-kit"]
+depends_on = ["hyprstate", "monitor-profiles", "slint-kit", "hypr-paths"]
 
 [[repository]]
 id = "monitor-profiles"
@@ -127,7 +127,7 @@ visibility = "public"
 lifecycle = "active"
 role = "login-and-lock"
 responsibilities = ["bare-KMS greetd greeter", "multi-monitor login layout", "ext-session-lock-v1 session lock"]
-depends_on = ["monitor-profiles"]
+depends_on = ["monitor-profiles", "hypr-paths"]
 
 [[repository]]
 id = "greetd-game-mode"
