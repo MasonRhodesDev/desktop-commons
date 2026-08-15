@@ -92,6 +92,19 @@ failure = "Missing user tokens fall through to /etc/lmtt, /usr/share/lmtt, then 
 barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
 
 [[surface]]
+id = "lmtt-portal-appearance-v1"
+owner = "linux-multi-theme-toggle"
+producers = ["linux-multi-theme-toggle"]
+consumers = ["external:xdg-desktop-portal", "external:gtk", "external:electron"]
+transport = "XDG desktop portal Settings (gsettings write, portal ReadOne / SettingChanged)"
+location = "org.freedesktop.appearance color-scheme and optional accent-color"
+version = "1"
+maturity = "provisional"
+compatibility = "LMTT writes host gsettings; the real portal emits SettingChanged. Do not emit a fake portal signal. Suite palette tokens are not carried here."
+failure = "If the portal does not confirm color-scheme, foreign GTK/Electron apps may keep the previous scheme. Suite apps still load tokens.json."
+barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
+
+[[surface]]
 id = "lmtt-slint-token-v0"
 owner = "linux-multi-theme-toggle"
 producers = ["linux-multi-theme-toggle"]

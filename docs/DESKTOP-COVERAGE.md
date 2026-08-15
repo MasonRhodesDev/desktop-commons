@@ -22,7 +22,7 @@
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high |
-| P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | — | high |
+| P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | xdg-desktop-portal, GTK, Electron | high |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high |
 | P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland | high |
 | P1 | policy-auth-agent | desktop-integration | external | — | polkit, Hyprland polkit authentication agent | high |
@@ -77,7 +77,7 @@
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high | Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies for lid/suspend/LockedHint. |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. LMTT-owned paths use hypr-paths plus /etc/lmtt and /usr/share/lmtt. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees. |
-| P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | — | high | LMTT is the sole writer. Suite apps read tokens through lmtt-core or `lmtt tokens`, not theme files. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only. |
+| P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | xdg-desktop-portal, GTK, Electron | high | LMTT is the sole writer. Suite apps read the Material You palette through lmtt-core or `lmtt tokens`, not theme files. Foreign apps use the XDG appearance portal (color-scheme, optional accent-color) or LMTT's per-app file modules. They must not use lmtt-core, `lmtt tokens`, or a custom LMTT bus. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only. |
 | P3 | desktop-distribution | composition | owned | hypr-de | — | low | hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution. |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high | hypr-DE owns controls, OSD, and selected UIs while PipeWire/WirePlumber own routing and device policy. |
 | P2 | bluetooth | desktop-integration | gap | — | — | medium | No Bluetooth daemon/UI dependency or desktop integration is selected; BlueZ plus Blueman is a candidate, not current coverage. |

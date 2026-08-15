@@ -45,9 +45,9 @@ status = "owned"
 priority = "P1"
 owner = "linux-multi-theme-toggle"
 internal = ["linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprstate-gui", "vigil"]
-external = []
+external = ["xdg-desktop-portal", "GTK", "Electron"]
 risk = "high"
-notes = "LMTT is the sole writer. Suite apps read tokens through lmtt-core or `lmtt tokens`, not theme files. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only."
+notes = "LMTT is the sole writer. Suite apps read the Material You palette through lmtt-core or `lmtt tokens`, not theme files. Foreign apps use the XDG appearance portal (color-scheme, optional accent-color) or LMTT's per-app file modules. They must not use lmtt-core, `lmtt tokens`, or a custom LMTT bus. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only."
 barriers = ["BAR-001", "BAR-007", "BAR-008", "BAR-025"]
 
 [[concern]]

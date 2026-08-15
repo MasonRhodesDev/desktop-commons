@@ -22,6 +22,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hyprstate-help-telemetry-v0 | provisional | No envelope version exists. Producer and consumer need one XDG path resolver, additive-field fixtures, socket ownership, and initial-snapshot semantics. |
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
 | lmtt-color-css-v0 | legacy | Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only. |
+| lmtt-portal-appearance-v1 | provisional | LMTT writes host gsettings; the real portal emits SettingChanged. Do not emit a fake portal signal. Suite palette tokens are not carried here. |
 | lmtt-slint-token-v0 | legacy | Superseded by lmtt-tokens-v1. Do not add consumers. |
 | lmtt-tokens-v1 | provisional | Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract. |
 | lock-pam-policy-v1 | provisional | The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution. |
@@ -59,6 +60,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hyprstate-power1 | hyprstate | hyprstate | hyprstate, hyprstate-gui | system D-Bus | 1 | stable |
 | idle-control-dbus-v1 | logind-idle-control | logind-idle-control | logind-idle-control, hypr-de | session D-Bus plus runtime state file | 1 | legacy |
 | lmtt-color-css-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | CSS color definitions | unversioned | legacy |
+| lmtt-portal-appearance-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | external:xdg-desktop-portal, external:gtk, external:electron | XDG desktop portal Settings (gsettings write, portal ReadOne / SettingChanged) | 1 | provisional |
 | lmtt-slint-token-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | JSON file plus filesystem watch | unversioned | legacy |
 | lmtt-tokens-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, hyprstate-gui, vigil, waybar-workspace-buttons | lmtt-core library API and `lmtt tokens` CLI | 1 | provisional |
 | lock-pam-policy-v1 | vigil | external:operator, vigil | vigil | PAM service policy | PAM stack | provisional |
@@ -210,6 +212,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Location: `~/.config/matugen/lmtt-colors.css`
 - Compatibility: Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only.
 - Failure behavior: Foreign apps that still @import this file see stale colors if LMTT does not write it.
+- Barriers: BAR-005, BAR-007, BAR-010, BAR-025
+
+## lmtt-portal-appearance-v1
+
+- Location: `org.freedesktop.appearance color-scheme and optional accent-color`
+- Compatibility: LMTT writes host gsettings; the real portal emits SettingChanged. Do not emit a fake portal signal. Suite palette tokens are not carried here.
+- Failure behavior: If the portal does not confirm color-scheme, foreign GTK/Electron apps may keep the previous scheme. Suite apps still load tokens.json.
 - Barriers: BAR-005, BAR-007, BAR-010, BAR-025
 
 ## lmtt-slint-token-v0
