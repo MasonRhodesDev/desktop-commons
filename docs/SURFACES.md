@@ -39,7 +39,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 |---|---|---|---|---|---|---|
 | agent-pet-event-v1 | agent-pet | agent-pet, external:agent-harnesses | agent-pet | D-Bus Emit carrying JSON event envelopes | 1 | stable |
 | agent-pet-skin-v1 | agent-pet | external:community-skins | agent-pet | pet.json plus PNG or WebP spritesheet | spriteVersionNumber 1 or 2 | provisional |
-| appearance-profile-v1 | appearance-profiles | appearance-profiles, linux-multi-theme-toggle | linux-multi-theme-toggle | TOML plus copied assets | 1 | provisional |
+| appearance-profile-v1 | appearance-profiles | appearance-profiles, linux-multi-theme-toggle | linux-multi-theme-toggle, vigil | TOML plus copied assets | 1 | provisional |
 | desktop-dpms-arbitration-v0 | hyprstate | hyprstate, external:hypridle | external:hyprland | Hyprland DPMS dispatch from independent idle domains | unversioned | provisional |
 | game-mode-approval-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | permission-locked Unix socket, WebAuthn, Web Push, and Tailscale HTTPS | 1 | provisional |
 | game-mode-armed-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | one-shot runtime flag consumed by greetd dispatch | 1 | provisional |
@@ -65,7 +65,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | release-package-v1 | packaging-workflows | hyprstate, hyprstate-gui, hypr-de, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
 | schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, hyprland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
 | secure-suspend-v0 | hyprstate | vigil, hyprstate | external:systemd-logind | lock request, LockedHint readiness, then logind suspend | unversioned | provisional |
-| slint-kit-api-0.2 | slint-kit | slint-kit | hyprstate-gui | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
+| slint-kit-api-0.2 | slint-kit | slint-kit | hyprstate-gui, vigil | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
 | sni-waybar-ordering-v1 | sni-watcher | sni-watcher | hypr-de | systemd user-unit ordering and D-Bus ownership | 1 | stable |
 | status-notifier-v1 | sni-watcher | sni-watcher | logind-idle-control, hyprland-voice-dictation, agent-pet, hypr-de | StatusNotifier D-Bus protocol | freedesktop/KDE SNI | stable |
 | vigil-banner-v1 | vigil | greetd-game-mode | vigil | greeter banner/countdown state | 1 | provisional |
@@ -266,7 +266,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 
 - Location: `hyprstate lid FSM and org.freedesktop.login1`
 - Compatibility: Locker readiness and suspend policy need one written positive-acknowledgement contract.
-- Failure behavior: Current timeout continues to suspend without positive LockedHint, producing an unsecured-resume risk.
+- Failure behavior: Lock readiness timeout aborts the suspend transition and re-arms lid grace; suspend proceeds only after positive lock confirmation.
 - Barriers: BAR-001, BAR-007, BAR-016, BAR-025
 
 ## slint-kit-api-0.2

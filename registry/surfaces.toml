@@ -17,7 +17,7 @@ barriers = ["BAR-003", "BAR-004", "BAR-007"]
 id = "appearance-profile-v1"
 owner = "appearance-profiles"
 producers = ["appearance-profiles", "linux-multi-theme-toggle"]
-consumers = ["linux-multi-theme-toggle"]
+consumers = ["linux-multi-theme-toggle", "vigil"]
 transport = "TOML plus copied assets"
 location = "/usr/share, /etc, XDG config, and /var/lib/appearance-profiles"
 version = "1"
@@ -264,7 +264,7 @@ barriers = ["BAR-001", "BAR-002", "BAR-007", "BAR-010", "BAR-025"]
 id = "slint-kit-api-0.2"
 owner = "slint-kit"
 producers = ["slint-kit"]
-consumers = ["hyprstate-gui"]
+consumers = ["hyprstate-gui", "vigil"]
 transport = "Rust API, Slint imports, semantic properties, and controls"
 location = "slint-kit crate and ui/*.slint"
 version = "0.2 commit-pinned API"
@@ -361,7 +361,7 @@ location = "hyprstate lid FSM and org.freedesktop.login1"
 version = "unversioned"
 maturity = "provisional"
 compatibility = "Locker readiness and suspend policy need one written positive-acknowledgement contract."
-failure = "Current timeout continues to suspend without positive LockedHint, producing an unsecured-resume risk."
+failure = "Lock readiness timeout aborts the suspend transition and re-arms lid grace; suspend proceeds only after positive lock confirmation."
 barriers = ["BAR-001", "BAR-007", "BAR-016", "BAR-025"]
 
 [[surface]]

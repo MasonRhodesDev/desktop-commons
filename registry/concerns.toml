@@ -5,13 +5,13 @@ risks = ["low", "medium", "high"]
 [[concern]]
 id = "runtime-path-resolution"
 area = "architecture"
-status = "gap"
+status = "planned"
 priority = "P1"
-owner = ""
+owner = "hypr-commons"
 internal = ["hyprstate", "hyprstate-gui", "linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprland-voice-dictation"]
 external = ["XDG Base Directory specification"]
 risk = "high"
-notes = "Consumers mix XDG variables, dirs helpers, HOME/.config, hardcoded tildes, /tmp, and /run/user/1000, causing cross-session and fallback skew."
+notes = "Planned owner is a hypr-commons path-resolver crate (config/data/runtime plus documented fallback; no /run/user/1000 or literal ~). First extract; unblocks telemetry, tokens, idle-control, and voice-dictation. Consumers currently mix XDG variables, dirs helpers, HOME/.config, hardcoded tildes, /tmp, and /run/user/1000."
 barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
 
 [[concern]]
@@ -23,7 +23,7 @@ owner = "hypr-commons"
 internal = ["hyprstate", "hyprstate-gui", "waybar-workspace-buttons", "hyprland-voice-dictation", "agent-pet"]
 external = ["Hyprland"]
 risk = "high"
-notes = "Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling."
+notes = "Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling."
 barriers = ["BAR-007", "BAR-008", "BAR-012", "BAR-014"]
 
 [[concern]]
@@ -35,7 +35,7 @@ owner = "hypr-commons"
 internal = ["hyprstate", "logind-idle-control", "hyprland-voice-dictation"]
 external = ["systemd-logind"]
 risk = "high"
-notes = "Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics."
+notes = "Planned owner is a hypr-commons logind helper (Inhibit RAII, GetSessionByPID / XDG_SESSION_ID, never a fake manager path). Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics."
 barriers = ["BAR-007", "BAR-008", "BAR-020", "BAR-025"]
 
 [[concern]]
@@ -47,7 +47,7 @@ owner = "linux-multi-theme-toggle"
 internal = ["linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprnotice", "hypr-de"]
 external = []
 risk = "high"
-notes = "CSS and Slint palettes are unversioned and parsed independently; canonical versioned JSON, atomic writes, fixtures, and last-known-good behavior are needed."
+notes = "Planned owner is linux-multi-theme-toggle publishing versioned tokens onto appearance-profiles (atomic write, one fallback table, greeter-readable snapshot). CSS and Slint palettes are unversioned and parsed independently; LMTT remains the sole writer."
 barriers = ["BAR-001", "BAR-007", "BAR-008", "BAR-025"]
 
 [[concern]]
@@ -490,7 +490,7 @@ owner = "appearance-profiles"
 internal = ["appearance-profiles", "linux-multi-theme-toggle", "vigil"]
 external = []
 risk = "medium"
-notes = "The contract exists; adoption beyond LMTT is still incomplete."
+notes = "The contract exists; vigil consumes published snapshots for login and lock, but adoption beyond LMTT is still incomplete."
 barriers = ["BAR-003", "BAR-004", "BAR-007"]
 
 [[concern]]
@@ -498,10 +498,10 @@ id = "application-ui-tokens"
 area = "appearance"
 status = "owned"
 owner = "slint-kit"
-internal = ["slint-kit", "linux-multi-theme-toggle", "hyprstate-gui"]
+internal = ["slint-kit", "linux-multi-theme-toggle", "hyprstate-gui", "vigil"]
 external = ["Slint"]
 risk = "low"
-notes = "slint-kit converts LMTT semantic colors into consistent application controls and tokens."
+notes = "slint-kit converts LMTT semantic colors into consistent application controls and tokens; vigil consumes the kit for greeter and lock chrome."
 barriers = ["BAR-005", "BAR-007"]
 
 [[concern]]
@@ -901,7 +901,7 @@ owner = "hypr-commons"
 internal = ["hypr-commons", "hypr-de", "hyprstate", "vigil", "sni-watcher", "logind-idle-control", "hyprland-voice-dictation", "greetd-game-mode"]
 external = ["systemd", "journald", "package managers", "desktop portals"]
 risk = "high"
-notes = "A generated health contract should verify Lua support, packages, units, service ordering, portals, lock readiness, registries, and provider ownership."
+notes = "Planned owner is hypr-commons. A generated health contract should verify Lua support, packages, units, service ordering, portals, lock readiness, registries, and provider ownership."
 barriers = ["BAR-012", "BAR-014", "BAR-018", "BAR-024", "BAR-025"]
 
 [[concern]]

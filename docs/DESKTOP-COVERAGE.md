@@ -7,12 +7,12 @@
 | Status | Count |
 |---|---:|
 | external | 22 |
-| gap | 17 |
+| gap | 16 |
 | hybrid | 14 |
 | legacy | 1 |
 | non-goal | 1 |
 | owned | 28 |
-| planned | 4 |
+| planned | 5 |
 
 ## Gaps and high-risk boundaries
 
@@ -21,7 +21,7 @@
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high |
-| P1 | runtime-path-resolution | architecture | gap | — | XDG Base Directory specification | high |
+| P1 | runtime-path-resolution | architecture | planned | hypr-commons | XDG Base Directory specification | high |
 | P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high |
 | P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland | high |
@@ -63,8 +63,8 @@
 
 | Priority | Concern | Area | Status | Owner | External provider | Risk | Notes |
 |---|---|---|---|---|---|---|---|
-| P2 | appearance-schema | appearance | owned | appearance-profiles | — | medium | The contract exists; adoption beyond LMTT is still incomplete. |
-| P3 | application-ui-tokens | appearance | owned | slint-kit | Slint | low | slint-kit converts LMTT semantic colors into consistent application controls and tokens. |
+| P2 | appearance-schema | appearance | owned | appearance-profiles | — | medium | The contract exists; vigil consumes published snapshots for login and lock, but adoption beyond LMTT is still incomplete. |
+| P3 | application-ui-tokens | appearance | owned | slint-kit | Slint | low | slint-kit converts LMTT semantic colors into consistent application controls and tokens; vigil consumes the kit for greeter and lock chrome. |
 | P2 | color-management | appearance | gap | — | — | medium | No ICC, HDR policy, calibration, or compositor color-management owner is registered. |
 | P3 | icons-cursors-fonts | appearance | hybrid | linux-multi-theme-toggle | GTK settings, fontconfig, icon themes, cursor themes | low | LMTT selects externally implemented themes and fonts. |
 | P2 | night-light | appearance | external | — | Hyprsunset or compositor color-temperature provider | medium | Provider selection and ownership are not yet explicit in the ecosystem contract. |
@@ -73,11 +73,11 @@
 | P2 | default-applications | applications | external | — | XDG MIME applications, xdg-utils | medium | Browser, editor, media, and file defaults need an explicit package/config source of truth. |
 | P3 | file-manager | applications | external | — | Thunar | low | Thunar is the packaged file-manager surface; udiskie independently owns automount. |
 | P3 | terminal | applications | external | — | Kitty, WezTerm in the personal dotfiles overlay | low | hypr-DE selects Kitty while the personal dotfiles overlay also configures WezTerm; neither implementation is ecosystem-owned. |
-| P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high | Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling. |
+| P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high | Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling. |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
-| P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high | Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics. |
-| P1 | runtime-path-resolution | architecture | gap | — | XDG Base Directory specification | high | Consumers mix XDG variables, dirs helpers, HOME/.config, hardcoded tildes, /tmp, and /run/user/1000, causing cross-session and fallback skew. |
-| P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high | CSS and Slint palettes are unversioned and parsed independently; canonical versioned JSON, atomic writes, fixtures, and last-known-good behavior are needed. |
+| P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high | Planned owner is a hypr-commons logind helper (Inhibit RAII, GetSessionByPID / XDG_SESSION_ID, never a fake manager path). Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics. |
+| P1 | runtime-path-resolution | architecture | planned | hypr-commons | XDG Base Directory specification | high | Planned owner is a hypr-commons path-resolver crate (config/data/runtime plus documented fallback; no /run/user/1000 or literal ~). First extract; unblocks telemetry, tokens, idle-control, and voice-dictation. Consumers currently mix XDG variables, dirs helpers, HOME/.config, hardcoded tildes, /tmp, and /run/user/1000. |
+| P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high | Planned owner is linux-multi-theme-toggle publishing versioned tokens onto appearance-profiles (atomic write, one fallback table, greeter-readable snapshot). CSS and Slint palettes are unversioned and parsed independently; LMTT remains the sole writer. |
 | P3 | desktop-distribution | composition | owned | hypr-de | — | low | hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution. |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high | hypr-DE owns controls, OSD, and selected UIs while PipeWire/WirePlumber own routing and device policy. |
 | P2 | bluetooth | desktop-integration | gap | — | — | medium | No Bluetooth daemon/UI dependency or desktop integration is selected; BlueZ plus Blueman is a candidate, not current coverage. |
@@ -121,7 +121,7 @@
 | P1 | package-user-overlay-shadowing | operations | gap | — | systemd user units, chezmoi | high | Legacy dotfile units and documentation can shadow package-owned gaming/session services or reference payloads no longer present. |
 | P2 | release-gating | operations | owned | packaging-workflows | GitHub Actions, COPR | medium | Reusable tag workflows build Arch and RPM packages, run configured security policy, and publish release assets only after all required gates succeed. |
 | P2 | rollback | operations | external | — | snapper with package-manager hooks, snap-pac, Timeshift | medium | Rollback is recommended but not selected or verified by the desktop package. |
-| P1 | suite-doctor | operations | planned | hypr-commons | systemd, journald, package managers, desktop portals | high | A generated health contract should verify Lua support, packages, units, service ordering, portals, lock readiness, registries, and provider ownership. |
+| P1 | suite-doctor | operations | planned | hypr-commons | systemd, journald, package managers, desktop portals | high | Planned owner is hypr-commons. A generated health contract should verify Lua support, packages, units, service ordering, portals, lock readiness, registries, and provider ownership. |
 | P2 | system-updates | operations | external | — | pacman/paru, dnf, COPR | medium | The desktop intentionally ships no bespoke updater. |
 | P1 | user-data-backup | operations | gap | — | — | high | Configuration is reproducible, but user documents and application data have no registered backup provider or restore test. |
 | P3 | battery-status | power | external | — | UPower, Waybar | low | hyprstate consumes battery state for policy while Waybar presents status. |

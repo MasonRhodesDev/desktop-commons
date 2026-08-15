@@ -251,11 +251,15 @@ expires = "2026-10-01"
 id = "dotfiles-do-not-shadow-packaged-steam-cleanup"
 kind = "path_absent"
 repository = "dotfiles"
-path = "dot_config/systemd/user/steam-clean-shutdown.service.tmpl"
+path = "dot_config/systemd/user/steam-clean-shutdown.service"
 barriers = ["BAR-001", "BAR-009", "BAR-013"]
 concerns = ["package-user-overlay-shadowing"]
 severity = "error"
 message = "Personal units must not shadow package-owned Steam cleanup."
+
+[assertion.waiver]
+reason = "Known P1 migration residue in dotfiles."
+expires = "2026-10-01"
 
 [[assertion]]
 id = "dotfiles-secret-import-helper-exists"
@@ -266,3 +270,48 @@ barriers = ["BAR-018", "BAR-025"]
 concerns = ["secrets-keyring"]
 severity = "error"
 message = "The enabled API-key importer must not depend on a missing session-environment helper."
+
+[[assertion]]
+id = "desktop-lock-does-not-use-pidof"
+kind = "file_not_contains"
+repository = "hypr-de"
+path = "dist/hypr/hypridle.conf"
+pattern = "pidof vigil-lock"
+barriers = ["BAR-020"]
+concerns = ["screen-lock"]
+severity = "error"
+message = "Lock discovery must not use machine-wide process-name matching."
+
+[assertion.waiver]
+reason = "Known P1: hypr-DE hypridle.conf still uses pidof vigil-lock."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "gui-does-not-own-telemetry-socket"
+kind = "file_not_contains"
+repository = "hyprstate-gui"
+path = "src/telemetry.rs"
+pattern = "UnixListener"
+barriers = ["BAR-002", "BAR-010"]
+concerns = ["display-settings"]
+severity = "error"
+message = "The GUI must connect to hyprstate telemetry as a client and must not bind the socket."
+
+[assertion.waiver]
+reason = "Known P1: hyprstate-gui still binds and unlinks hyprstate-telemetry.sock."
+expires = "2026-10-01"
+
+[[assertion]]
+id = "idle-control-cli-requires-daemon-ack"
+kind = "file_not_contains"
+repository = "logind-idle-control"
+path = "src/main.rs"
+pattern = "(?s)emit_signal\\(\"(?:Enable|Disable|Toggle)\"\\)\\.await\\?;\\s*println!"
+barriers = ["BAR-025"]
+concerns = ["manual-idle-inhibition"]
+severity = "error"
+message = "The CLI must not report success from a destination-less emit_signal with no daemon acknowledgement."
+
+[assertion.waiver]
+reason = "Known P1: Enable/Disable/Toggle print success immediately after emit_signal."
+expires = "2026-10-01"

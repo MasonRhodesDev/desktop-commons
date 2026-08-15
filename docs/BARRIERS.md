@@ -37,7 +37,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | Barrier | Assertions |
 |---|---:|
 | BAR-001 | 4 |
-| BAR-002 | 0 |
+| BAR-002 | 1 |
 | BAR-003 | 0 |
 | BAR-004 | 0 |
 | BAR-005 | 0 |
@@ -45,7 +45,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-007 | 1 |
 | BAR-008 | 0 |
 | BAR-009 | 2 |
-| BAR-010 | 1 |
+| BAR-010 | 2 |
 | BAR-011 | 0 |
 | BAR-012 | 1 |
 | BAR-013 | 5 |
@@ -55,12 +55,12 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-017 | 1 |
 | BAR-018 | 4 |
 | BAR-019 | 1 |
-| BAR-020 | 0 |
+| BAR-020 | 1 |
 | BAR-021 | 2 |
 | BAR-022 | 6 |
 | BAR-023 | 4 |
 | BAR-024 | 1 |
-| BAR-025 | 4 |
+| BAR-025 | 5 |
 
 Assertions with zero counts remain review-only barriers until an executable check is added.
 
@@ -72,14 +72,17 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | desktop-bluetooth-ui-is-packaged | conditional_contains | hypr-de | BAR-012, BAR-018 | bluetooth | 2026-11-01 |
 | desktop-composes-persistent-tray-watcher | file_contains | hypr-de | BAR-010, BAR-018 | tray-registry, service-activation-completeness | 2026-10-01 |
 | desktop-lock-command-is-packaged | conditional_contains | hypr-de | BAR-013, BAR-018 | screen-lock, service-activation-completeness | 2026-10-01 |
+| desktop-lock-does-not-use-pidof | file_not_contains | hypr-de | BAR-020 | screen-lock | 2026-10-01 |
 | dotfiles-do-not-activate-legacy-greetd-owner | file_not_contains | dotfiles | BAR-001, BAR-013 | greetd-config-ownership | — |
 | dotfiles-do-not-shadow-packaged-game-focus | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
-| dotfiles-do-not-shadow-packaged-steam-cleanup | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | — |
+| dotfiles-do-not-shadow-packaged-steam-cleanup | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
 | dotfiles-secret-import-helper-exists | path_exists | dotfiles | BAR-018, BAR-025 | secrets-keyring | — |
 | game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | — |
 | game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | 2026-10-01 |
 | game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
+| gui-does-not-own-telemetry-socket | file_not_contains | hyprstate-gui | BAR-002, BAR-010 | display-settings | 2026-10-01 |
 | hyprstate-rpm-rewrites-git-sources | file_contains | hyprstate | BAR-022, BAR-023 | fedora-package-closure | — |
+| idle-control-cli-requires-daemon-ack | file_not_contains | logind-idle-control | BAR-025 | manual-idle-inhibition | 2026-10-01 |
 | legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
 | packaging-containers-are-digest-pinned | file_contains | packaging-workflows | BAR-022 | dependency-pinning | — |
 | packaging-workflow-references-are-immutable | workflow_references_pinned | hypr-commons, dotfiles, hyprstate, hyprstate-gui, hypr-de, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant, packaging-workflows, arch-repo | BAR-022, BAR-023 | dependency-pinning, release-gating | — |
