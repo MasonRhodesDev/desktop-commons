@@ -11,7 +11,7 @@ owner = "hypr-paths"
 internal = ["hypr-paths", "hyprstate", "logind-idle-control", "hyprstate-gui", "linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprland-voice-dictation"]
 external = ["XDG Base Directory specification"]
 risk = "high"
-notes = "Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees."
+notes = "Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. LMTT-owned paths use hypr-paths plus /etc/lmtt and /usr/share/lmtt. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees."
 barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
 
 [[concern]]
@@ -41,13 +41,13 @@ barriers = ["BAR-007", "BAR-008", "BAR-020", "BAR-025"]
 [[concern]]
 id = "theme-contract-convergence"
 area = "architecture"
-status = "planned"
+status = "owned"
 priority = "P1"
 owner = "linux-multi-theme-toggle"
-internal = ["linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprnotice", "hypr-de"]
+internal = ["linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprstate-gui", "vigil"]
 external = []
 risk = "high"
-notes = "Planned owner is linux-multi-theme-toggle publishing versioned tokens onto appearance-profiles (atomic write, one fallback table, greeter-readable snapshot). CSS and Slint palettes are unversioned and parsed independently; LMTT remains the sole writer."
+notes = "LMTT is the sole writer. Suite apps read tokens through lmtt-core or `lmtt tokens`, not theme files. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only."
 barriers = ["BAR-001", "BAR-007", "BAR-008", "BAR-025"]
 
 [[concern]]

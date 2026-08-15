@@ -79,29 +79,42 @@ failure = "Requests fail closed; policy remains visible while privileged changes
 barriers = ["BAR-001", "BAR-002", "BAR-007", "BAR-011"]
 
 [[surface]]
+id = "lmtt-tokens-v1"
+owner = "linux-multi-theme-toggle"
+producers = ["linux-multi-theme-toggle"]
+consumers = ["slint-kit", "hyprstate-gui", "vigil", "waybar-workspace-buttons"]
+transport = "lmtt-core library API and `lmtt tokens` CLI"
+location = "lmtt_core::tokens and `lmtt tokens`"
+version = "1"
+maturity = "provisional"
+compatibility = "Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract."
+failure = "Missing user tokens fall through to /etc/lmtt, /usr/share/lmtt, then the embedded palette."
+barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
+
+[[surface]]
 id = "lmtt-slint-token-v0"
 owner = "linux-multi-theme-toggle"
 producers = ["linux-multi-theme-toggle"]
-consumers = ["slint-kit", "hyprstate-gui"]
+consumers = []
 transport = "JSON file plus filesystem watch"
 location = "~/.config/matugen/lmtt-slint.json"
 version = "unversioned"
-maturity = "provisional"
-compatibility = "The current mode/colors object is unversioned. Required tokens need validation and a golden palette fixture."
-failure = "The producer write is not atomic; parse failure falls through to CSS and embedded tokens instead of retaining last-known-good state."
+maturity = "legacy"
+compatibility = "Superseded by lmtt-tokens-v1. Do not add consumers."
+failure = "Ignored by suite apps; LMTT may migrate the file once into the user data token store."
 barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
 
 [[surface]]
 id = "lmtt-color-css-v0"
 owner = "linux-multi-theme-toggle"
 producers = ["linux-multi-theme-toggle"]
-consumers = ["waybar-workspace-buttons", "hyprnotice", "hypr-de"]
+consumers = []
 transport = "CSS color definitions"
 location = "~/.config/matugen/lmtt-colors.css"
 version = "unversioned"
-maturity = "provisional"
-compatibility = "Consumers independently parse Mode comments and define-color tokens. A versioned JSON palette should become canonical while CSS remains generated compatibility output."
-failure = "Consumers use inconsistent shell, CSS, or embedded fallbacks; hyprnotice's documented reload hook is absent from current LMTT."
+maturity = "legacy"
+compatibility = "Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only."
+failure = "Foreign apps that still @import this file see stale colors if LMTT does not write it."
 barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
 
 [[surface]]

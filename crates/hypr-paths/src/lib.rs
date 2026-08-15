@@ -1,7 +1,8 @@
-//! Fail-closed XDG config, data, and runtime paths.
+//! Fail-closed XDG config, data, cache, and runtime paths.
 //!
 //! - config: `$XDG_CONFIG_HOME` if set and absolute, else `$HOME/.config`
 //! - data: `$XDG_DATA_HOME` if set and absolute, else `$HOME/.local/share`
+//! - cache: `$XDG_CACHE_HOME` if set and absolute, else `$HOME/.cache`
 //! - runtime: `$XDG_RUNTIME_DIR` must be set and absolute
 //!
 //! There is no `/run/user/<uid>` fallback, no `/tmp` fallback, and no `~`
@@ -111,6 +112,25 @@ impl ConfigDirs {
     pub fn data_dir(&self, app: &str) -> PathBuf {
         self.data_home.join(app)
     }
+}
+
+/// `$XDG_CACHE_HOME` if set and absolute, else `$HOME/.cache`.
+pub fn cache_home_from_os_vars(
+    home: Option<OsString>,
+    cache_home: Option<OsString>,
+) -> Result<PathBuf, Error> {
+    let home = parse_home(home)?;
+    xdg_or_fallback("XDG_CACHE_HOME", cache_home, home.as_deref(), ".cache")
+}
+
+/// Cache home from the process environment.
+pub fn cache_home_from_env() -> Result<PathBuf, Error> {
+    cache_home_from_os_vars(env::var_os("HOME"), env::var_os("XDG_CACHE_HOME"))
+}
+
+/// `$cache_home/app`.
+pub fn cache_dir(app: &str) -> Result<PathBuf, Error> {
+    Ok(cache_home_from_env()?.join(app))
 }
 
 impl BaseDirs {
@@ -344,6 +364,36 @@ mod tests {
             got.config_dir("logind-idle-control"),
             Path::new("/home/mason/.config/logind-idle-control")
         );
+    }
+
+    #[test]
+    fn cache_uses_xdg_when_absolute() {
+        let got = cache_home_from_os_vars(
+            Some(OsString::from("/home/mason")),
+            Some(OsString::from("/custom/cache")),
+        )
+        .unwrap();
+        assert_eq!(got, PathBuf::from("/custom/cache"));
+    }
+
+    #[test]
+    fn cache_falls_back_to_home() {
+        let got = cache_home_from_os_vars(Some(OsString::from("/home/mason")), None).unwrap();
+        assert_eq!(got, PathBuf::from("/home/mason/.cache"));
+    }
+
+    #[test]
+    fn rejects_relative_cache() {
+        assert!(matches!(
+            cache_home_from_os_vars(
+                Some(OsString::from("/home/mason")),
+                Some(OsString::from("relative")),
+            ),
+            Err(Error::Relative {
+                var: "XDG_CACHE_HOME",
+                ..
+            })
+        ));
     }
 
     #[test]

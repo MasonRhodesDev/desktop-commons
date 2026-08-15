@@ -11,8 +11,8 @@
 | hybrid | 14 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 30 |
-| planned | 3 |
+| owned | 31 |
+| planned | 2 |
 
 ## Gaps and high-risk boundaries
 
@@ -22,7 +22,7 @@
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high |
-| P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high |
+| P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | — | high |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high |
 | P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland | high |
 | P1 | policy-auth-agent | desktop-integration | external | — | polkit, Hyprland polkit authentication agent | high |
@@ -76,8 +76,8 @@
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high | Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling. |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high | Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies for lid/suspend/LockedHint. |
-| P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees. |
-| P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high | Planned owner is linux-multi-theme-toggle publishing versioned tokens onto appearance-profiles (atomic write, one fallback table, greeter-readable snapshot). CSS and Slint palettes are unversioned and parsed independently; LMTT remains the sole writer. |
+| P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. LMTT-owned paths use hypr-paths plus /etc/lmtt and /usr/share/lmtt. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees. |
+| P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | — | high | LMTT is the sole writer. Suite apps read tokens through lmtt-core or `lmtt tokens`, not theme files. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only. |
 | P3 | desktop-distribution | composition | owned | hypr-de | — | low | hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution. |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high | hypr-DE owns controls, OSD, and selected UIs while PipeWire/WirePlumber own routing and device policy. |
 | P2 | bluetooth | desktop-integration | gap | — | — | medium | No Bluetooth daemon/UI dependency or desktop integration is selected; BlueZ plus Blueman is a candidate, not current coverage. |

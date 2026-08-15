@@ -21,8 +21,9 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
 | hyprstate-help-telemetry-v0 | provisional | No envelope version exists. Producer and consumer need one XDG path resolver, additive-field fixtures, socket ownership, and initial-snapshot semantics. |
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
-| lmtt-color-css-v0 | provisional | Consumers independently parse Mode comments and define-color tokens. A versioned JSON palette should become canonical while CSS remains generated compatibility output. |
-| lmtt-slint-token-v0 | provisional | The current mode/colors object is unversioned. Required tokens need validation and a golden palette fixture. |
+| lmtt-color-css-v0 | legacy | Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only. |
+| lmtt-slint-token-v0 | legacy | Superseded by lmtt-tokens-v1. Do not add consumers. |
+| lmtt-tokens-v1 | provisional | Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract. |
 | lock-pam-policy-v1 | provisional | The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution. |
 | logind-inhibitor-identity-v1 | provisional | The inhibitor who field is the canonical executable/service identity. |
 | logind-locked-hint-v1 | provisional | LockedHint is the authoritative cross-component lock state; process-name detection is not compatible. |
@@ -57,8 +58,9 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hyprstate-help-telemetry-v0 | hyprstate | hyprstate | hyprstate-gui | newline-delimited JSON over Unix stream socket | unversioned | provisional |
 | hyprstate-power1 | hyprstate | hyprstate | hyprstate, hyprstate-gui | system D-Bus | 1 | stable |
 | idle-control-dbus-v1 | logind-idle-control | logind-idle-control | logind-idle-control, hypr-de | session D-Bus plus runtime state file | 1 | legacy |
-| lmtt-color-css-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle | waybar-workspace-buttons, hyprnotice, hypr-de | CSS color definitions | unversioned | provisional |
-| lmtt-slint-token-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, hyprstate-gui | JSON file plus filesystem watch | unversioned | provisional |
+| lmtt-color-css-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | CSS color definitions | unversioned | legacy |
+| lmtt-slint-token-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | JSON file plus filesystem watch | unversioned | legacy |
+| lmtt-tokens-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, hyprstate-gui, vigil, waybar-workspace-buttons | lmtt-core library API and `lmtt tokens` CLI | 1 | provisional |
 | lock-pam-policy-v1 | vigil | external:operator, vigil | vigil | PAM service policy | PAM stack | provisional |
 | logind-inhibitor-identity-v1 | hyprstate | hyprstate, logind-idle-control, hyprland-voice-dictation | hyprstate | systemd-logind inhibitor rows | 1 | provisional |
 | logind-locked-hint-v1 | vigil | vigil | hyprstate, logind-idle-control | systemd-logind session LockedHint and lock/unlock signals | logind API | provisional |
@@ -206,15 +208,22 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## lmtt-color-css-v0
 
 - Location: `~/.config/matugen/lmtt-colors.css`
-- Compatibility: Consumers independently parse Mode comments and define-color tokens. A versioned JSON palette should become canonical while CSS remains generated compatibility output.
-- Failure behavior: Consumers use inconsistent shell, CSS, or embedded fallbacks; hyprnotice's documented reload hook is absent from current LMTT.
+- Compatibility: Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only.
+- Failure behavior: Foreign apps that still @import this file see stale colors if LMTT does not write it.
 - Barriers: BAR-005, BAR-007, BAR-010, BAR-025
 
 ## lmtt-slint-token-v0
 
 - Location: `~/.config/matugen/lmtt-slint.json`
-- Compatibility: The current mode/colors object is unversioned. Required tokens need validation and a golden palette fixture.
-- Failure behavior: The producer write is not atomic; parse failure falls through to CSS and embedded tokens instead of retaining last-known-good state.
+- Compatibility: Superseded by lmtt-tokens-v1. Do not add consumers.
+- Failure behavior: Ignored by suite apps; LMTT may migrate the file once into the user data token store.
+- Barriers: BAR-005, BAR-007, BAR-010, BAR-025
+
+## lmtt-tokens-v1
+
+- Location: `lmtt_core::tokens and `lmtt tokens``
+- Compatibility: Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract.
+- Failure behavior: Missing user tokens fall through to /etc/lmtt, /usr/share/lmtt, then the embedded palette.
 - Barriers: BAR-005, BAR-007, BAR-010, BAR-025
 
 ## lock-pam-policy-v1
