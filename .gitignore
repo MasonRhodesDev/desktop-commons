@@ -1,2 +1,6 @@
 /target
 __pycache__/
+
+# Plan skill files
+CURRENT_PLAN.md
+.plans/
