@@ -76,6 +76,7 @@ flowchart LR
     repo_sni_watcher --> repo_hypr_de
     repo_vigil --> repo_hypr_de
     repo_waybar_workspace_buttons --> repo_hypr_de
+    repo_hypr_paths --> repo_hyprland_voice_dictation
     repo_schema_tui --> repo_hyprland_voice_dictation
     repo_linux_multi_theme_toggle --> repo_hyprnotice
     repo_hypr_paths --> repo_hyprstate
@@ -85,6 +86,7 @@ flowchart LR
     repo_monitor_profiles --> repo_hyprstate_gui
     repo_slint_kit --> repo_hyprstate_gui
     repo_appearance_profiles --> repo_linux_multi_theme_toggle
+    repo_hypr_paths --> repo_linux_multi_theme_toggle
     repo_schema_tui --> repo_linux_multi_theme_toggle
     repo_hypr_paths --> repo_logind_idle_control
     repo_sni_watcher --> repo_logind_idle_control

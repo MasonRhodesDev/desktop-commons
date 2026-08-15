@@ -49,7 +49,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | greetd-greeter-v1 | external:greetd | external:greetd | vigil, greetd-game-mode, greetd-config | greetd IPC and PAM | greetd protocol | external |
 | greetd-static-config-v1 | greetd-game-mode | greetd-game-mode, greetd-config | external:greetd | package/setup-managed greetd configuration | 1 current path plus legacy alternative | legacy |
 | hypr-de-theme-v1 | hypr-de | hypr-de | linux-multi-theme-toggle | theme.toml, palette assets, and LMTT module fragments | 1 | stable |
-| hypr-paths-xdg-v0 | hypr-paths | hypr-paths | hyprstate, logind-idle-control | Rust library API | 0.1 | provisional |
+| hypr-paths-xdg-v0 | hypr-paths | hypr-paths | hyprstate, hyprstate-gui, logind-idle-control, vigil, linux-multi-theme-toggle, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
 | hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, hyprstate-gui, waybar-workspace-buttons, hyprland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
 | hyprstate-control-v0 | hyprstate | hyprstate-gui | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
 | hyprstate-help-telemetry-v0 | hyprstate | hyprstate | hyprstate-gui | newline-delimited JSON over Unix stream socket | unversioned | provisional |

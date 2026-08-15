@@ -72,7 +72,7 @@ visibility = "public"
 lifecycle = "active"
 role = "theme-engine"
 responsibilities = ["Material You palette generation", "application theme fan-out", "theme configuration"]
-depends_on = ["appearance-profiles", "schema-tui"]
+depends_on = ["appearance-profiles", "schema-tui", "hypr-paths"]
 
 [[repository]]
 id = "slint-kit"
@@ -100,7 +100,7 @@ visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
 responsibilities = ["offline speech recognition", "focused-window text injection", "dictation HUD and tray"]
-depends_on = ["schema-tui"]
+depends_on = ["schema-tui", "hypr-paths"]
 
 [[repository]]
 id = "logind-idle-control"
