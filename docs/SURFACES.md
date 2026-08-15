@@ -16,6 +16,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | game-mode-home-mask-v0 | provisional | The bind policy is the security boundary for game-session home access. |
 | graphical-session-lifecycle-v0 | provisional | Services must bind startup and teardown to the graphical session and explicitly pull required audio, tray, and compositor dependencies. |
 | greetd-static-config-v1 | legacy | greetd-game-mode is the current owner; greetd-config remains a conflicting functional predecessor. |
+| hypr-paths-xdg-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
 | hyprstate-help-telemetry-v0 | provisional | No envelope version exists. Producer and consumer need one XDG path resolver, additive-field fixtures, socket ownership, and initial-snapshot semantics. |
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
@@ -48,6 +49,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | greetd-greeter-v1 | external:greetd | external:greetd | vigil, greetd-game-mode, greetd-config | greetd IPC and PAM | greetd protocol | external |
 | greetd-static-config-v1 | greetd-game-mode | greetd-game-mode, greetd-config | external:greetd | package/setup-managed greetd configuration | 1 current path plus legacy alternative | legacy |
 | hypr-de-theme-v1 | hypr-de | hypr-de | linux-multi-theme-toggle | theme.toml, palette assets, and LMTT module fragments | 1 | stable |
+| hypr-paths-xdg-v0 | hypr-paths | hypr-paths | hyprstate, logind-idle-control | Rust library API | 0.1 | provisional |
 | hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, hyprstate-gui, waybar-workspace-buttons, hyprland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
 | hyprstate-control-v0 | hyprstate | hyprstate-gui | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
 | hyprstate-help-telemetry-v0 | hyprstate | hyprstate | hyprstate-gui | newline-delimited JSON over Unix stream socket | unversioned | provisional |
@@ -149,6 +151,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: Theme application merges tagged values and preserves user-owned configuration.
 - Failure behavior: Previous LMTT configuration is backed up and reset remains available.
 - Barriers: BAR-005, BAR-007, BAR-009
+
+## hypr-paths-xdg-v0
+
+- Location: `hypr_paths::ConfigDirs and hypr_paths::BaseDirs`
+- Compatibility: Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion.
+- Failure behavior: Callers receive Error and must not invent fallback paths.
+- Barriers: BAR-005, BAR-010, BAR-020, BAR-025
 
 ## hyprland-ipc-v1
 

@@ -12,7 +12,14 @@ use std::ffi::OsString;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-/// Resolved XDG base directories for one process environment.
+/// XDG config and data directories. Runtime is not required.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ConfigDirs {
+    config_home: PathBuf,
+    data_home: PathBuf,
+}
+
+/// Resolved XDG base directories including a required runtime dir.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BaseDirs {
     config_home: PathBuf,
@@ -48,8 +55,66 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+impl ConfigDirs {
+    /// Resolve config and data from the current process environment.
+    pub fn from_env() -> Result<Self, Error> {
+        Self::from_os_vars(
+            env::var_os("HOME"),
+            env::var_os("XDG_CONFIG_HOME"),
+            env::var_os("XDG_DATA_HOME"),
+        )
+    }
+
+    /// Resolve config and data from explicit variables.
+    pub fn from_os_vars(
+        home: Option<OsString>,
+        config_home: Option<OsString>,
+        data_home: Option<OsString>,
+    ) -> Result<Self, Error> {
+        let home = parse_home(home)?;
+        Ok(Self {
+            config_home: xdg_or_fallback(
+                "XDG_CONFIG_HOME",
+                config_home,
+                home.as_deref(),
+                ".config",
+            )?,
+            data_home: xdg_or_fallback(
+                "XDG_DATA_HOME",
+                data_home,
+                home.as_deref(),
+                ".local/share",
+            )?,
+        })
+    }
+
+    pub fn with_runtime(self, runtime_dir: Option<OsString>) -> Result<BaseDirs, Error> {
+        Ok(BaseDirs {
+            config_home: self.config_home,
+            data_home: self.data_home,
+            runtime_dir: required_absolute("XDG_RUNTIME_DIR", runtime_dir)?,
+        })
+    }
+
+    pub fn config_home(&self) -> &Path {
+        &self.config_home
+    }
+
+    pub fn data_home(&self) -> &Path {
+        &self.data_home
+    }
+
+    pub fn config_dir(&self, app: &str) -> PathBuf {
+        self.config_home.join(app)
+    }
+
+    pub fn data_dir(&self, app: &str) -> PathBuf {
+        self.data_home.join(app)
+    }
+}
+
 impl BaseDirs {
-    /// Resolve from the current process environment.
+    /// Resolve config, data, and runtime from the current process environment.
     pub fn from_env() -> Result<Self, Error> {
         Self::from_os_vars(
             env::var_os("HOME"),
@@ -67,22 +132,7 @@ impl BaseDirs {
         data_home: Option<OsString>,
         runtime_dir: Option<OsString>,
     ) -> Result<Self, Error> {
-        let home = parse_home(home)?;
-        Ok(Self {
-            config_home: xdg_or_fallback(
-                "XDG_CONFIG_HOME",
-                config_home,
-                home.as_deref(),
-                ".config",
-            )?,
-            data_home: xdg_or_fallback(
-                "XDG_DATA_HOME",
-                data_home,
-                home.as_deref(),
-                ".local/share",
-            )?,
-            runtime_dir: required_absolute("XDG_RUNTIME_DIR", runtime_dir)?,
-        })
+        ConfigDirs::from_os_vars(home, config_home, data_home)?.with_runtime(runtime_dir)
     }
 
     pub fn config_home(&self) -> &Path {
@@ -279,6 +329,21 @@ mod tests {
         .unwrap();
         assert_eq!(got.config_home(), Path::new("/etc/xdg-override"));
         assert_eq!(got.data_home(), Path::new("/var/lib/data"));
+    }
+
+    #[test]
+    fn config_dirs_do_not_require_runtime() {
+        let got = ConfigDirs::from_os_vars(
+            Some(OsString::from("/home/mason")),
+            None,
+            None,
+        )
+        .unwrap();
+        assert_eq!(got.config_home(), Path::new("/home/mason/.config"));
+        assert_eq!(
+            got.config_dir("logind-idle-control"),
+            Path::new("/home/mason/.config/logind-idle-control")
+        );
     }
 
     #[test]

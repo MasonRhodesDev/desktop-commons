@@ -5,13 +5,13 @@ risks = ["low", "medium", "high"]
 [[concern]]
 id = "runtime-path-resolution"
 area = "architecture"
-status = "planned"
+status = "owned"
 priority = "P1"
-owner = "hypr-commons"
-internal = ["hyprstate", "hyprstate-gui", "linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprland-voice-dictation"]
+owner = "hypr-paths"
+internal = ["hypr-paths", "hyprstate", "logind-idle-control", "hyprstate-gui", "linux-multi-theme-toggle", "slint-kit", "waybar-workspace-buttons", "hyprland-voice-dictation"]
 external = ["XDG Base Directory specification"]
 risk = "high"
-notes = "Planned owner is a hypr-commons path-resolver crate (config/data/runtime plus documented fallback; no /run/user/1000 or literal ~). First extract; unblocks telemetry, tokens, idle-control, and voice-dictation. Consumers currently mix XDG variables, dirs helpers, HOME/.config, hardcoded tildes, /tmp, and /run/user/1000."
+notes = "Owner crate is hypr-paths (config/data/runtime; no /run/user/1000, /tmp, or literal ~). hyprstate and logind-idle-control adopted first. Remaining consumers still mix XDG variables, dirs helpers, and HOME/.config."
 barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
 
 [[concern]]

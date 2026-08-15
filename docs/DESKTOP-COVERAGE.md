@@ -11,8 +11,8 @@
 | hybrid | 14 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 28 |
-| planned | 5 |
+| owned | 29 |
+| planned | 4 |
 
 ## Gaps and high-risk boundaries
 
@@ -21,7 +21,7 @@
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high |
-| P1 | runtime-path-resolution | architecture | planned | hypr-commons | XDG Base Directory specification | high |
+| P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high |
 | P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high |
 | P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland | high |
@@ -76,7 +76,7 @@
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high | Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling. |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
 | P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high | Planned owner is a hypr-commons logind helper (Inhibit RAII, GetSessionByPID / XDG_SESSION_ID, never a fake manager path). Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics. |
-| P1 | runtime-path-resolution | architecture | planned | hypr-commons | XDG Base Directory specification | high | Planned owner is a hypr-commons path-resolver crate (config/data/runtime plus documented fallback; no /run/user/1000 or literal ~). First extract; unblocks telemetry, tokens, idle-control, and voice-dictation. Consumers currently mix XDG variables, dirs helpers, HOME/.config, hardcoded tildes, /tmp, and /run/user/1000. |
+| P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (config/data/runtime; no /run/user/1000, /tmp, or literal ~). hyprstate and logind-idle-control adopted first. Remaining consumers still mix XDG variables, dirs helpers, and HOME/.config. |
 | P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high | Planned owner is linux-multi-theme-toggle publishing versioned tokens onto appearance-profiles (atomic write, one fallback table, greeter-readable snapshot). CSS and Slint palettes are unversioned and parsed independently; LMTT remains the sole writer. |
 | P3 | desktop-distribution | composition | owned | hypr-de | — | low | hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution. |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high | hypr-DE owns controls, OSD, and selected UIs while PipeWire/WirePlumber own routing and device policy. |

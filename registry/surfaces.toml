@@ -1,6 +1,19 @@
 schema = 1
 
 [[surface]]
+id = "hypr-paths-xdg-v0"
+owner = "hypr-paths"
+producers = ["hypr-paths"]
+consumers = ["hyprstate", "logind-idle-control"]
+transport = "Rust library API"
+location = "hypr_paths::ConfigDirs and hypr_paths::BaseDirs"
+version = "0.1"
+maturity = "provisional"
+compatibility = "Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion."
+failure = "Callers receive Error and must not invent fallback paths."
+barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
+
+[[surface]]
 id = "monitor-profile-v0"
 owner = "monitor-profiles"
 producers = ["monitor-profiles", "hyprstate", "hyprstate-gui"]

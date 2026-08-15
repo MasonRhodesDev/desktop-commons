@@ -24,4 +24,4 @@ hypr-DE stays **alpha** until the supporting tools are daily-driver quality for 
 6. **sni-watcher**, **logind-idle-control**, **hyprland-voice-dictation**
 7. **hypr-DE** leaves alpha
 
-`hypr-paths` lives in `crates/hypr-paths`. hypr-commons is private, so the crate must be published to crates.io before public consumers depend on it.
+`hypr-paths` is developed in `crates/hypr-paths` and published as the public repo [MasonRhodesDev/hypr-paths](https://github.com/MasonRhodesDev/hypr-paths) so packaged tools can git-depend on it. crates.io publish waits on a registry token. hyprstate and logind-idle-control are the first adopters.

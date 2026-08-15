@@ -35,7 +35,7 @@ visibility = "public"
 lifecycle = "active"
 role = "session-policy"
 responsibilities = ["lid and suspend policy", "display profile application", "power and GPU policy", "session telemetry"]
-depends_on = ["monitor-profiles"]
+depends_on = ["monitor-profiles", "hypr-paths"]
 
 [[repository]]
 id = "hyprstate-gui"
@@ -109,7 +109,7 @@ visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
 responsibilities = ["per-session idle inhibition", "idle-control D-Bus API", "idle tray item"]
-depends_on = ["sni-watcher"]
+depends_on = ["sni-watcher", "hypr-paths"]
 
 [[repository]]
 id = "sni-watcher"
@@ -185,6 +185,15 @@ lifecycle = "archived"
 role = "notification-daemon"
 responsibilities = ["notification popups", "action-retaining inbox", "Hyprland-native notification UI"]
 depends_on = ["linux-multi-theme-toggle"]
+
+[[repository]]
+id = "hypr-paths"
+github = "MasonRhodesDev/hypr-paths"
+visibility = "public"
+lifecycle = "active"
+role = "ui-library"
+responsibilities = ["fail-closed XDG config paths", "fail-closed XDG data paths", "fail-closed XDG runtime paths"]
+depends_on = []
 
 [[repository]]
 id = "schema-tui"
