@@ -1,0 +1,30 @@
+unit	user	sni-watcher.service
+unit	user	hypridle.service
+unit	user	hyprpolkitagent.service
+unit	user	swaync.service
+unit	user	waybar.service
+unit	user	swaybg.service
+unit	user	waybar-reload.path
+unit	user	waybar-watchdog.timer
+unit	user	wayland-env-guard.path
+unit	user	wayland-env-guard.timer
+unit	user	hyprland-configreload-listener.service
+unit	user	notification-focus-proxy.service
+unit	user	hypr-de-prime-theme.service
+unit	user	udiskie.service
+unit	user	hyprstate.service
+unit	user	logind-idle-control.service
+unit	user	voice-dictation.service
+unit	user	obex.service
+package	hyprstate
+package	vigil
+package	lmtt
+package	logind-idle-control
+package	sni-watcher
+package	hyprland-voice-dictation
+package	xdg-desktop-portal-hyprland
+package	xdg-desktop-portal-gtk
+portal	org.freedesktop.impl.portal.desktop.hyprland
+portal	org.freedesktop.impl.portal.desktop.gtk
+command	hyprstate status
+command	voice-dictation diagnose

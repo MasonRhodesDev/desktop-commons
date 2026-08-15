@@ -17,13 +17,13 @@ barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
 [[concern]]
 id = "hyprland-ipc-convergence"
 area = "architecture"
-status = "planned"
+status = "owned"
 priority = "P1"
-owner = "hypr-commons"
-internal = ["hyprstate", "hyprstate-gui", "waybar-workspace-buttons", "hyprland-voice-dictation", "agent-pet"]
+owner = "hypr-ipc"
+internal = ["hypr-ipc", "hyprstate", "hyprstate-gui", "waybar-workspace-buttons", "hyprland-voice-dictation", "agent-pet"]
 external = ["Hyprland"]
 risk = "high"
-notes = "Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling."
+notes = "Owner crate is hypr-ipc (HIS then lockfile rescan, socket2 listen, hyprctl ok/json, lua dialect boolean). Adopted by hyprstate and voice-dictation. waybar remains C. hypr-DE Lua/socat stay out of the crate."
 barriers = ["BAR-007", "BAR-008", "BAR-012", "BAR-014"]
 
 [[concern]]
@@ -35,7 +35,7 @@ owner = "hypr-logind"
 internal = ["hypr-logind", "logind-idle-control", "hyprland-voice-dictation", "hyprstate"]
 external = ["systemd-logind"]
 risk = "high"
-notes = "Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies for lid/suspend/LockedHint."
+notes = "Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control, voice-dictation, and hyprstate session/inhibit. Lid/suspend/LockedHint policy stays in the hyprstate daemon on the shared proxies."
 barriers = ["BAR-007", "BAR-008", "BAR-020", "BAR-025"]
 
 [[concern]]
@@ -182,7 +182,7 @@ owner = "vigil"
 internal = ["vigil", "hyprstate"]
 external = ["ext-session-lock-v1", "PAM", "systemd-logind"]
 risk = "high"
-notes = "Vigil actively owns login and lock, but hypr-DE invokes vigil-lock while packaging hyprlock and omitting Vigil; crash recovery also lacks a service owner."
+notes = "Vigil owns login and lock. hypr-DE invokes vigil-lock and lists vigil as a runtime dependency. Crash recovery still lacks a service owner."
 barriers = ["BAR-001", "BAR-007", "BAR-013", "BAR-016", "BAR-018", "BAR-020"]
 
 [[concern]]
@@ -851,13 +851,13 @@ barriers = ["BAR-007", "BAR-022", "BAR-023"]
 [[concern]]
 id = "fedora-package-closure"
 area = "operations"
-status = "planned"
+status = "owned"
 priority = "P1"
 owner = "hypr-de"
 internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "vigil", "linux-multi-theme-toggle"]
 external = ["COPR", "Fedora", "third-party COPRs"]
 risk = "high"
-notes = "COPR must stay in parity with Arch: every fedora Requires that is not in Fedora official repos must exist on a COPR enabled by get-hypr-de.sh. Hyprland stack comes from nett00n/hyprland (solopasha is abandoned at 0.49). matugen from heus-sueh/packages. Third-party remainder is overskride, published to solaris765/hypr-de-extras and [mason] by tagging hypr-de-extras. First-party COPR projects (including hyprstate-gui) are created by the tag workflow when missing. Do not copr-cli from a developer machine."
+notes = "COPR stays in parity with Arch: fedora Requires that are not in Fedora official repos exist on a COPR enabled by get-hypr-de.sh. Hyprland stack comes from nett00n/hyprland. matugen from heus-sueh/packages. Third-party remainder is overskride via hypr-de-extras. First-party COPR projects are created by the tag workflow. Do not copr-cli from a developer machine."
 barriers = ["BAR-009", "BAR-018", "BAR-022", "BAR-023"]
 
 [[concern]]

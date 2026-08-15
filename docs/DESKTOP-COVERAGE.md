@@ -11,14 +11,14 @@
 | hybrid | 16 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 31 |
-| planned | 3 |
+| owned | 33 |
+| planned | 1 |
 
 ## Gaps and high-risk boundaries
 
 | Priority | Concern | Area | Status | Owner | External provider | Risk |
 |---|---|---|---|---|---|---|
-| P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high |
+| P1 | hyprland-ipc-convergence | architecture | owned | hypr-ipc | Hyprland | high |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high |
@@ -39,7 +39,7 @@
 | P1 | screen-lock | login | hybrid | vigil | ext-session-lock-v1, PAM, systemd-logind | high |
 | P1 | secure-lock-before-suspend | login | owned | hyprstate | systemd-logind | high |
 | P1 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high |
-| P1 | fedora-package-closure | operations | planned | hypr-de | COPR, Fedora, third-party COPRs | high |
+| P1 | fedora-package-closure | operations | owned | hypr-de | COPR, Fedora, third-party COPRs | high |
 | P1 | package-user-overlay-shadowing | operations | gap | — | systemd user units, chezmoi | high |
 | P1 | suite-doctor | operations | planned | hypr-commons | systemd, journald, package managers, desktop portals | high |
 | P1 | user-data-backup | operations | gap | — | — | high |
@@ -72,9 +72,9 @@
 | P2 | default-applications | applications | external | — | XDG MIME applications, xdg-utils | medium | Browser, editor, media, and file defaults need an explicit package/config source of truth. |
 | P3 | file-manager | applications | external | — | Nautilus | low | Nautilus is the packaged file-manager surface (GTK4/libadwaita, follows LMTT portal color-scheme and accent); udiskie independently owns automount. |
 | P3 | terminal | applications | external | — | Kitty, WezTerm in the personal dotfiles overlay | low | hypr-DE selects Kitty while the personal dotfiles overlay also configures WezTerm; neither implementation is ecosystem-owned. |
-| P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high | Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling. |
+| P1 | hyprland-ipc-convergence | architecture | owned | hypr-ipc | Hyprland | high | Owner crate is hypr-ipc (HIS then lockfile rescan, socket2 listen, hyprctl ok/json, lua dialect boolean). Adopted by hyprstate and voice-dictation. waybar remains C. hypr-DE Lua/socat stay out of the crate. |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
-| P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high | Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies for lid/suspend/LockedHint. |
+| P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high | Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control, voice-dictation, and hyprstate session/inhibit. Lid/suspend/LockedHint policy stays in the hyprstate daemon on the shared proxies. |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. LMTT-owned paths use hypr-paths plus /etc/lmtt and /usr/share/lmtt. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees. |
 | P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | xdg-desktop-portal, GTK, Electron | high | LMTT is the sole writer. Suite apps read the Material You palette through lmtt-core or `lmtt tokens`, not theme files. Foreign apps use the XDG appearance portal (color-scheme, optional accent-color) or LMTT's per-app file modules. They must not use lmtt-core, `lmtt tokens`, or a custom LMTT bus. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only. |
 | P3 | session-config | composition | owned | hypr-de | — | low | hypr-DE is packaged Hyprland configuration and the runtime packages it needs, not a greeter session. Log into stock Hyprland (uwsm). Dotfiles are a personal overlay, not a competing distribution. |
@@ -107,13 +107,13 @@
 | P1 | greeter | login | owned | vigil | libseat, DRM/KMS, libinput, greetd | high | vigil renders directly on KMS and deliberately avoids a compositor in the login path. |
 | P2 | legacy-greeter | login | legacy | greetd-config | ReGreet, Hyprland, greetd | medium | The ReGreet-under-Hyprland path remains documented but vigil is the replacement architecture. |
 | P1 | login-manager | login | external | — | greetd, PAM | high | greetd owns authentication/session dispatch while Mason components own presentation and alternate-session policy. |
-| P1 | screen-lock | login | hybrid | vigil | ext-session-lock-v1, PAM, systemd-logind | high | Vigil actively owns login and lock, but hypr-DE invokes vigil-lock while packaging hyprlock and omitting Vigil; crash recovery also lacks a service owner. |
+| P1 | screen-lock | login | hybrid | vigil | ext-session-lock-v1, PAM, systemd-logind | high | Vigil owns login and lock. hypr-DE invokes vigil-lock and lists vigil as a runtime dependency. Crash recovery still lacks a service owner. |
 | P1 | secure-lock-before-suspend | login | owned | hyprstate | systemd-logind | high | hyprstate requires positive lock confirmation before suspend; a timeout rejects the transition and re-arms lid grace. |
 | P2 | configuration-deployment | operations | hybrid | hypr-de | chezmoi | medium | hypr-DE owns system defaults while chezmoi owns personal overrides and machine variance. |
 | P2 | crash-reporting | operations | gap | — | — | medium | There is no common coredump triage, crash correlation, or opt-in reporting path. |
 | P1 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high | Actions, reusable workflows, and CI container images are pinned to immutable SHAs or registry digests; some internal Git crate revisions remain untagged. |
 | P2 | diagnostics | operations | hybrid | hypr-commons | systemctl, journalctl | medium | Several components have status/doctor commands, but there is no suite-level health command yet. |
-| P1 | fedora-package-closure | operations | planned | hypr-de | COPR, Fedora, third-party COPRs | high | COPR must stay in parity with Arch: every fedora Requires that is not in Fedora official repos must exist on a COPR enabled by get-hypr-de.sh. Hyprland stack comes from nett00n/hyprland (solopasha is abandoned at 0.49). matugen from heus-sueh/packages. Third-party remainder is overskride, published to solaris765/hypr-de-extras and [mason] by tagging hypr-de-extras. First-party COPR projects (including hyprstate-gui) are created by the tag workflow when missing. Do not copr-cli from a developer machine. |
+| P1 | fedora-package-closure | operations | owned | hypr-de | COPR, Fedora, third-party COPRs | high | COPR stays in parity with Arch: fedora Requires that are not in Fedora official repos exist on a COPR enabled by get-hypr-de.sh. Hyprland stack comes from nett00n/hyprland. matugen from heus-sueh/packages. Third-party remainder is overskride via hypr-de-extras. First-party COPR projects are created by the tag workflow. Do not copr-cli from a developer machine. |
 | P2 | package-build-release | operations | owned | packaging-workflows | GitHub Actions, COPR, GitHub Releases, GitHub Pages | medium | Reusable workflows gate package and security checks before release publication; arch-repo validates and atomically publishes the declared package set. Tag workflows submit COPR in the same run as the Arch asset. |
 | P2 | package-integrity | operations | owned | arch-repo | pacman, GitHub Releases, GitHub Actions | medium | Release source archives have pinned checksums; arch-repo signs every package, its validated manifest, and the repository database with a dedicated fingerprint-pinned key. Provenance and SBOM publication remain optional enhancements. |
 | P2 | package-registry-completeness | operations | owned | arch-repo | GitHub Releases, GitHub Pages | medium | packages.toml declares every expected release asset; publication resolves each latest version, validates embedded package metadata, rejects missing or unexpected packages, and emits a hashed manifest. |

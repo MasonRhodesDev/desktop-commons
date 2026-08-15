@@ -17,10 +17,11 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | graphical-session-lifecycle-v0 | provisional | Services must bind startup and teardown to the graphical session and explicitly pull required audio, tray, and compositor dependencies. |
 | greetd-static-config-v1 | legacy | greetd-game-mode is the current owner; greetd-config remains a conflicting functional predecessor. |
 | hypr-de-help-v0 | provisional | SUPER+/ opens the window. Binds are loaded from hyprctl binds -j. First login is marker-gated via hypr-de-welcome. |
+| hypr-ipc-v0 | provisional | HIS if .socket2.sock exists, else lockfile rescan with /proc/<pid>/comm == Hyprland. No /run/user/<uid> fallback. Mutating hyprctl success is stdout exactly ok. |
 | hypr-logind-session-v0 | provisional | GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path. |
 | hypr-paths-xdg-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
-| hyprstate-help-telemetry-v0 | provisional | No envelope version exists. Producer and consumer need one XDG path resolver, additive-field fixtures, socket ownership, and initial-snapshot semantics. |
+| hyprstate-help-telemetry-v0 | provisional | NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it. |
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
 | lmtt-color-css-v0 | legacy | Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only. |
 | lmtt-portal-appearance-v1 | provisional | LMTT writes host gsettings; the real portal emits SettingChanged. Do not emit a fake portal signal. Suite palette tokens are not carried here. |
@@ -55,11 +56,12 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | greetd-static-config-v1 | greetd-game-mode | greetd-game-mode, greetd-config | external:greetd | package/setup-managed greetd configuration | 1 current path plus legacy alternative | legacy |
 | hypr-de-help-v0 | hypr-de | hypr-de | hypr-de | GTK4/libadwaita window plus man pages | unversioned | provisional |
 | hypr-de-theme-v1 | hypr-de | hypr-de | linux-multi-theme-toggle | theme.toml, palette assets, and LMTT module fragments | 1 | stable |
-| hypr-logind-session-v0 | hypr-logind | hypr-logind | logind-idle-control, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
+| hypr-ipc-v0 | hypr-ipc | hypr-ipc | hyprstate, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
+| hypr-logind-session-v0 | hypr-logind | hypr-logind | logind-idle-control, hyprland-voice-dictation, hyprstate | Rust library API | 0.1 | provisional |
 | hypr-paths-xdg-v0 | hypr-paths | hypr-paths | hyprstate, hyprstate-gui, logind-idle-control, vigil, linux-multi-theme-toggle, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
 | hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, hyprstate-gui, waybar-workspace-buttons, hyprland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
 | hyprstate-control-v0 | hyprstate | hyprstate-gui | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
-| hyprstate-help-telemetry-v0 | hyprstate | hyprstate | hyprstate-gui | newline-delimited JSON over Unix stream socket | unversioned | provisional |
+| hyprstate-help-telemetry-v0 | hyprstate | hyprstate | hyprstate-gui | newline-delimited JSON over Unix stream socket | 0 | provisional |
 | hyprstate-power1 | hyprstate | hyprstate | hyprstate, hyprstate-gui | system D-Bus | 1 | stable |
 | idle-control-dbus-v1 | logind-idle-control | logind-idle-control | logind-idle-control, hypr-de | session D-Bus plus runtime state file | 1 | legacy |
 | lmtt-color-css-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | CSS color definitions | unversioned | legacy |
@@ -169,6 +171,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Previous LMTT configuration is backed up and reset remains available.
 - Barriers: BAR-005, BAR-007, BAR-009
 
+## hypr-ipc-v0
+
+- Location: `hypr_ipc::socket2_path, hypr_ipc::connect_socket2, hypr_ipc::hyprctl_ok`
+- Compatibility: HIS if .socket2.sock exists, else lockfile rescan with /proc/<pid>/comm == Hyprland. No /run/user/<uid> fallback. Mutating hyprctl success is stdout exactly ok.
+- Failure behavior: Callers receive Error and must reconnect by re-resolving the instance.
+- Barriers: BAR-007, BAR-008, BAR-012, BAR-014
+
 ## hypr-logind-session-v0
 
 - Location: `hypr_logind::resolve_session, hypr_logind::Inhibitor, login1 proxies`
@@ -200,8 +209,8 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## hyprstate-help-telemetry-v0
 
 - Location: `$XDG_RUNTIME_DIR/hyprstate-telemetry.sock`
-- Compatibility: No envelope version exists. Producer and consumer need one XDG path resolver, additive-field fixtures, socket ownership, and initial-snapshot semantics.
-- Failure behavior: Producer silently drops frames without a listener; GUI skips malformed frames. Current fallback paths disagree and a second GUI can unlink the first listener.
+- Compatibility: NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it.
+- Failure behavior: Producer silently drops frames without a listener; GUI skips malformed frames.
 - Barriers: BAR-002, BAR-007, BAR-010, BAR-025
 
 ## hyprstate-power1

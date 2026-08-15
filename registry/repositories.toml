@@ -35,7 +35,7 @@ visibility = "public"
 lifecycle = "active"
 role = "session-policy"
 responsibilities = ["lid and suspend policy", "display profile application", "power and GPU policy", "session telemetry"]
-depends_on = ["monitor-profiles", "hypr-paths"]
+depends_on = ["monitor-profiles", "hypr-paths", "hypr-logind", "hypr-ipc"]
 
 [[repository]]
 id = "hyprstate-gui"
@@ -100,7 +100,7 @@ visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
 responsibilities = ["offline speech recognition", "focused-window text injection", "dictation HUD and tray"]
-depends_on = ["schema-tui", "hypr-paths", "hypr-logind"]
+depends_on = ["schema-tui", "hypr-paths", "hypr-logind", "hypr-ipc"]
 
 [[repository]]
 id = "logind-idle-control"
@@ -203,6 +203,15 @@ lifecycle = "active"
 role = "ui-library"
 responsibilities = ["fail-closed logind session resolve", "logind inhibitor RAII", "login1 Manager and Session proxies"]
 depends_on = []
+
+[[repository]]
+id = "hypr-ipc"
+github = "MasonRhodesDev/hypr-ipc"
+visibility = "public"
+lifecycle = "active"
+role = "ui-library"
+responsibilities = ["Hyprland instance discovery", "socket2 event listen", "hyprctl ok and json"]
+depends_on = ["hypr-paths"]
 
 [[repository]]
 id = "schema-tui"

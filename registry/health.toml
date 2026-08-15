@@ -1,0 +1,109 @@
+schema = 1
+
+[[unit]]
+id = "sni-watcher.service"
+kind = "user"
+
+[[unit]]
+id = "hypridle.service"
+kind = "user"
+
+[[unit]]
+id = "hyprpolkitagent.service"
+kind = "user"
+
+[[unit]]
+id = "swaync.service"
+kind = "user"
+
+[[unit]]
+id = "waybar.service"
+kind = "user"
+
+[[unit]]
+id = "swaybg.service"
+kind = "user"
+
+[[unit]]
+id = "waybar-reload.path"
+kind = "user"
+
+[[unit]]
+id = "waybar-watchdog.timer"
+kind = "user"
+
+[[unit]]
+id = "wayland-env-guard.path"
+kind = "user"
+
+[[unit]]
+id = "wayland-env-guard.timer"
+kind = "user"
+
+[[unit]]
+id = "hyprland-configreload-listener.service"
+kind = "user"
+
+[[unit]]
+id = "notification-focus-proxy.service"
+kind = "user"
+
+[[unit]]
+id = "hypr-de-prime-theme.service"
+kind = "user"
+
+[[unit]]
+id = "udiskie.service"
+kind = "user"
+
+[[unit]]
+id = "hyprstate.service"
+kind = "user"
+
+[[unit]]
+id = "logind-idle-control.service"
+kind = "user"
+
+[[unit]]
+id = "voice-dictation.service"
+kind = "user"
+
+[[unit]]
+id = "obex.service"
+kind = "user"
+
+[[package]]
+id = "hyprstate"
+
+[[package]]
+id = "vigil"
+
+[[package]]
+id = "lmtt"
+
+[[package]]
+id = "logind-idle-control"
+
+[[package]]
+id = "sni-watcher"
+
+[[package]]
+id = "hyprland-voice-dictation"
+
+[[package]]
+id = "xdg-desktop-portal-hyprland"
+
+[[package]]
+id = "xdg-desktop-portal-gtk"
+
+[[portal]]
+id = "org.freedesktop.impl.portal.desktop.hyprland"
+
+[[portal]]
+id = "org.freedesktop.impl.portal.desktop.gtk"
+
+[[command]]
+id = "hyprstate status"
+
+[[command]]
+id = "voice-dictation diagnose"

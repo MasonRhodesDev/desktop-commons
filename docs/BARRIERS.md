@@ -77,8 +77,8 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | desktop-fedora-enables-extras-copr | file_contains | hypr-de | BAR-009, BAR-018 | fedora-package-closure | — |
 | desktop-help-bind | file_contains | hypr-de | BAR-005, BAR-012 | keybindings | — |
 | desktop-help-window-exists | path_exists | hypr-de | BAR-005, BAR-012 | keybindings | — |
-| desktop-lock-command-is-packaged | conditional_contains | hypr-de | BAR-013, BAR-018 | screen-lock, service-activation-completeness | 2026-10-01 |
-| desktop-lock-does-not-use-pidof | file_not_contains | hypr-de | BAR-020 | screen-lock | 2026-10-01 |
+| desktop-lock-command-is-packaged | conditional_contains | hypr-de | BAR-013, BAR-018 | screen-lock, service-activation-completeness | — |
+| desktop-lock-does-not-use-pidof | file_not_contains | hypr-de | BAR-020 | screen-lock | — |
 | desktop-setup-validates-units | file_contains | hypr-de | BAR-018, BAR-025 | service-activation-completeness | — |
 | dotfiles-do-not-activate-legacy-greetd-owner | file_not_contains | dotfiles | BAR-001, BAR-013 | greetd-config-ownership | — |
 | dotfiles-do-not-shadow-packaged-game-focus | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
@@ -89,13 +89,13 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | — |
 | game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | 2026-10-01 |
 | game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
-| gui-does-not-own-telemetry-socket | file_not_contains | hyprstate-gui | BAR-002, BAR-010 | display-settings | 2026-10-01 |
+| gui-does-not-own-telemetry-socket | file_not_contains | hyprstate-gui | BAR-002, BAR-010 | display-settings | — |
 | hyprstate-rpm-rewrites-git-sources | file_contains | hyprstate | BAR-022, BAR-023 | fedora-package-closure | — |
-| idle-control-cli-requires-daemon-ack | file_not_contains | logind-idle-control | BAR-025 | manual-idle-inhibition | 2026-10-01 |
+| idle-control-cli-requires-daemon-ack | file_not_contains | logind-idle-control | BAR-025 | manual-idle-inhibition | — |
 | legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
 | lmtt-qt6ct-writes-owned-palette | file_contains | linux-multi-theme-toggle | BAR-005, BAR-012 | theme-application | — |
 | packaging-containers-are-digest-pinned | file_contains | packaging-workflows | BAR-022 | dependency-pinning | — |
-| packaging-workflow-references-are-immutable | workflow_references_pinned | hypr-commons, dotfiles, hyprstate, hyprstate-gui, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant, packaging-workflows, arch-repo | BAR-022, BAR-023 | dependency-pinning, release-gating | — |
+| packaging-workflow-references-are-immutable | workflow_references_pinned | hypr-commons, dotfiles, hyprstate, hyprstate-gui, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant, packaging-workflows, arch-repo, hypr-paths, hypr-logind, hypr-ipc | BAR-022, BAR-023 | dependency-pinning, release-gating | — |
 | pacman-repository-does-not-disable-verification | file_not_contains | arch-repo | BAR-022 | package-integrity | — |
 | pacman-repository-has-expected-manifest | path_exists | arch-repo | BAR-024 | package-registry-completeness | — |
 | pacman-repository-signs-packages-and-database | file_contains | arch-repo | BAR-022 | package-integrity | — |
@@ -103,6 +103,6 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | release-requires-arch-repo-dispatch | file_contains | packaging-workflows | BAR-009, BAR-023 | release-gating | — |
 | release-requires-copr-publish | file_contains | packaging-workflows | BAR-009, BAR-023 | release-gating, fedora-package-closure | — |
 | secure-suspend-requires-lock | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
-| telemetry-has-version-envelope | file_contains | hyprstate | BAR-007, BAR-025 | runtime-path-resolution | 2026-11-01 |
-| vigil-preserves-lock-pam-policy | file_contains | vigil | BAR-019 | operator-policy-preservation | 2026-10-01 |
+| telemetry-has-version-envelope | file_contains | hyprstate | BAR-007, BAR-025 | runtime-path-resolution | — |
+| vigil-preserves-lock-pam-policy | file_contains | vigil | BAR-019 | operator-policy-preservation | — |
 | workspace-zones-manpage | path_exists | waybar-workspace-buttons | BAR-005, BAR-012 | workspace-navigation | — |

@@ -24,7 +24,10 @@ hypr-DE stays **alpha** until the supporting tools are daily-driver quality for 
 6. **sni-watcher**, **logind-idle-control**, **hyprland-voice-dictation**
 7. **hypr-DE** leaves alpha
 
-Shared crates are developed in `hypr-commons/crates/` and mirrored as public repos so packaged tools can git-depend on them. crates.io publish waits on a registry token.
+Shared crates are developed in `hypr-commons/crates/` and mirrored as public repos. Tagging the mirror publishes to crates.io from CI (`CARGO_REGISTRY_TOKEN` org secret). Do not `cargo publish` from a laptop.
 
 - [MasonRhodesDev/hypr-paths](https://github.com/MasonRhodesDev/hypr-paths)
-- [MasonRhodesDev/hypr-logind](https://github.com/MasonRhodesDev/hypr-logind) (`8c331f285724e671beb71595d1dc8e07a5fcde73`) — adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies.
+- [MasonRhodesDev/hypr-logind](https://github.com/MasonRhodesDev/hypr-logind) — adopted by logind-idle-control, voice-dictation, and hyprstate session/inhibit
+- [MasonRhodesDev/hypr-ipc](https://github.com/MasonRhodesDev/hypr-ipc) — adopted by hyprstate and voice-dictation
+
+Tag `v0.1.0` on a crate mirror after the org secret `CARGO_REGISTRY_TOKEN` is set. CI publishes. Do not tag until that secret exists.

@@ -17,7 +17,7 @@ barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
 id = "hypr-logind-session-v0"
 owner = "hypr-logind"
 producers = ["hypr-logind"]
-consumers = ["logind-idle-control", "hyprland-voice-dictation"]
+consumers = ["logind-idle-control", "hyprland-voice-dictation", "hyprstate"]
 transport = "Rust library API"
 location = "hypr_logind::resolve_session, hypr_logind::Inhibitor, login1 proxies"
 version = "0.1"
@@ -25,6 +25,19 @@ maturity = "provisional"
 compatibility = "GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path."
 failure = "Callers receive Error and must not invent a session path or hold a synthesized inhibitor."
 barriers = ["BAR-007", "BAR-008", "BAR-020", "BAR-025"]
+
+[[surface]]
+id = "hypr-ipc-v0"
+owner = "hypr-ipc"
+producers = ["hypr-ipc"]
+consumers = ["hyprstate", "hyprland-voice-dictation"]
+transport = "Rust library API"
+location = "hypr_ipc::socket2_path, hypr_ipc::connect_socket2, hypr_ipc::hyprctl_ok"
+version = "0.1"
+maturity = "provisional"
+compatibility = "HIS if .socket2.sock exists, else lockfile rescan with /proc/<pid>/comm == Hyprland. No /run/user/<uid> fallback. Mutating hyprctl success is stdout exactly ok."
+failure = "Callers receive Error and must reconnect by re-resolving the instance."
+barriers = ["BAR-007", "BAR-008", "BAR-012", "BAR-014"]
 
 [[surface]]
 id = "monitor-profile-v0"
@@ -59,10 +72,10 @@ producers = ["hyprstate"]
 consumers = ["hyprstate-gui"]
 transport = "newline-delimited JSON over Unix stream socket"
 location = "$XDG_RUNTIME_DIR/hyprstate-telemetry.sock"
-version = "unversioned"
+version = "0"
 maturity = "provisional"
-compatibility = "No envelope version exists. Producer and consumer need one XDG path resolver, additive-field fixtures, socket ownership, and initial-snapshot semantics."
-failure = "Producer silently drops frames without a listener; GUI skips malformed frames. Current fallback paths disagree and a second GUI can unlink the first listener."
+compatibility = "NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it."
+failure = "Producer silently drops frames without a listener; GUI skips malformed frames."
 barriers = ["BAR-002", "BAR-007", "BAR-010", "BAR-025"]
 
 [[surface]]
