@@ -11,8 +11,8 @@
 | hybrid | 14 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 29 |
-| planned | 4 |
+| owned | 30 |
+| planned | 3 |
 
 ## Gaps and high-risk boundaries
 
@@ -20,7 +20,7 @@
 |---|---|---|---|---|---|---|
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
-| P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high |
+| P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high |
 | P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high |
@@ -75,7 +75,7 @@
 | P3 | terminal | applications | external | — | Kitty, WezTerm in the personal dotfiles overlay | low | hypr-DE selects Kitty while the personal dotfiles overlay also configures WezTerm; neither implementation is ecosystem-owned. |
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high | Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling. |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
-| P1 | logind-helper-convergence | architecture | planned | hypr-commons | systemd-logind | high | Planned owner is a hypr-commons logind helper (Inhibit RAII, GetSessionByPID / XDG_SESSION_ID, never a fake manager path). Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics. |
+| P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high | Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies for lid/suspend/LockedHint. |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees. |
 | P1 | theme-contract-convergence | architecture | planned | linux-multi-theme-toggle | — | high | Planned owner is linux-multi-theme-toggle publishing versioned tokens onto appearance-profiles (atomic write, one fallback table, greeter-readable snapshot). CSS and Slint palettes are unversioned and parsed independently; LMTT remains the sole writer. |
 | P3 | desktop-distribution | composition | owned | hypr-de | — | low | hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution. |

@@ -114,8 +114,8 @@ Extract only when a second consumer adopts; order by duplication count:
 1. **hypr-ipc** — socket2 event stream + instance discovery + typed hyprctl
    JSON queries. Today ×4 (hyprstate ✦best, waybar-workspace-buttons, hyprdm,
    voice-dictation).
-2. **logind-util** — Manager/Session zbus proxies, session resolution with
-   scoring + XDG_SESSION_ID fallback, InhibitorLock RAII. Today ×3.
+2. **hypr-logind** — extracted. Public mirror MasonRhodesDev/hypr-logind.
+   idle-control and voice-dictation adopted. hyprstate still has local proxies.
 3. **directive-conf** — `#@` parser with pluggable key charset. Today ×2
    dialects.
 4. **packaging templates** — dist/+packaging skeleton (spec, PKGBUILD,

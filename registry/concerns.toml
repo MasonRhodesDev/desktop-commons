@@ -29,13 +29,13 @@ barriers = ["BAR-007", "BAR-008", "BAR-012", "BAR-014"]
 [[concern]]
 id = "logind-helper-convergence"
 area = "architecture"
-status = "planned"
+status = "owned"
 priority = "P1"
-owner = "hypr-commons"
-internal = ["hyprstate", "logind-idle-control", "hyprland-voice-dictation"]
+owner = "hypr-logind"
+internal = ["hypr-logind", "logind-idle-control", "hyprland-voice-dictation", "hyprstate"]
 external = ["systemd-logind"]
 risk = "high"
-notes = "Planned owner is a hypr-commons logind helper (Inhibit RAII, GetSessionByPID / XDG_SESSION_ID, never a fake manager path). Session resolution, zbus proxies, inhibitor RAII, and identity classification are repeated with different semantics."
+notes = "Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies for lid/suspend/LockedHint."
 barriers = ["BAR-007", "BAR-008", "BAR-020", "BAR-025"]
 
 [[concern]]

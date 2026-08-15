@@ -13,7 +13,7 @@ hypr-DE stays **alpha** until the supporting tools are daily-driver quality for 
 
 1. **Foundations** ([hypr-commons#3](https://github.com/MasonRhodesDev/hypr-commons/issues/3))
    - `hypr-paths` — fail-closed XDG config/data/runtime (no `/run/user/<uid>`, no `/tmp`, no `~`)
-   - logind helper
+   - `hypr-logind` — Inhibit RAII, GetSessionByPID / XDG_SESSION_ID / scored ListSessions, never the manager path
    - Hyprland IPC helper
    - suite-doctor (local dump + shared issue template)
    - LMTT token publish onto appearance-profiles
@@ -24,4 +24,7 @@ hypr-DE stays **alpha** until the supporting tools are daily-driver quality for 
 6. **sni-watcher**, **logind-idle-control**, **hyprland-voice-dictation**
 7. **hypr-DE** leaves alpha
 
-`hypr-paths` is developed in `crates/hypr-paths` and published as the public repo [MasonRhodesDev/hypr-paths](https://github.com/MasonRhodesDev/hypr-paths) so packaged tools can git-depend on it. crates.io publish waits on a registry token. hyprstate and logind-idle-control are the first adopters.
+Shared crates are developed in `hypr-commons/crates/` and mirrored as public repos so packaged tools can git-depend on them. crates.io publish waits on a registry token.
+
+- [MasonRhodesDev/hypr-paths](https://github.com/MasonRhodesDev/hypr-paths)
+- [MasonRhodesDev/hypr-logind](https://github.com/MasonRhodesDev/hypr-logind) (`8c331f285724e671beb71595d1dc8e07a5fcde73`) — adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies.

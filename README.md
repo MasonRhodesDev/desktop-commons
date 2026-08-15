@@ -31,9 +31,10 @@ scripts/
   architecture.py   # registry validation and documentation generation
   conformance.py    # live GitHub or sibling-checkout barrier scanner
 crates/             # shared Rust utilities, extracted as tools converge
-                    # hypr-paths is first (public mirror: MasonRhodesDev/hypr-paths).
-                    # Planned next: hyprland socket2/instance discovery, logind
-                    # zbus proxies, #@ directive-file parsing, sysfs helpers
+                    # hypr-paths (MasonRhodesDev/hypr-paths), hypr-logind
+                    # (MasonRhodesDev/hypr-logind). Planned next: hyprland
+                    # socket2/instance discovery, #@ directive-file parsing,
+                    # sysfs helpers
 ```
 
 ## Working with the registry

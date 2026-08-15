@@ -100,7 +100,7 @@ visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
 responsibilities = ["offline speech recognition", "focused-window text injection", "dictation HUD and tray"]
-depends_on = ["schema-tui", "hypr-paths"]
+depends_on = ["schema-tui", "hypr-paths", "hypr-logind"]
 
 [[repository]]
 id = "logind-idle-control"
@@ -109,7 +109,7 @@ visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
 responsibilities = ["per-session idle inhibition", "idle-control D-Bus API", "idle tray item"]
-depends_on = ["sni-watcher", "hypr-paths"]
+depends_on = ["sni-watcher", "hypr-paths", "hypr-logind"]
 
 [[repository]]
 id = "sni-watcher"
@@ -193,6 +193,15 @@ visibility = "public"
 lifecycle = "active"
 role = "ui-library"
 responsibilities = ["fail-closed XDG config paths", "fail-closed XDG data paths", "fail-closed XDG runtime paths"]
+depends_on = []
+
+[[repository]]
+id = "hypr-logind"
+github = "MasonRhodesDev/hypr-logind"
+visibility = "public"
+lifecycle = "active"
+role = "ui-library"
+responsibilities = ["fail-closed logind session resolve", "logind inhibitor RAII", "login1 Manager and Session proxies"]
 depends_on = []
 
 [[repository]]
