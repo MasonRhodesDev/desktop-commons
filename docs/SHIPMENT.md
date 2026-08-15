@@ -16,7 +16,7 @@ hypr-DE stays **alpha** until the supporting tools are daily-driver quality for 
    - `hypr-logind` — Inhibit RAII, GetSessionByPID / XDG_SESSION_ID / scored ListSessions, never the manager path
    - Hyprland IPC helper
    - suite-doctor (local dump + shared issue template)
-   - LMTT token publish onto appearance-profiles
+   - LMTT tokens via `lmtt-core` / `lmtt tokens`; published beside appearance-profiles snapshots
 2. **vigil**
 3. **hyprstate**
 4. **hyprstate-gui** (registered power surface; closes #3)
