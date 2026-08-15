@@ -63,14 +63,14 @@ notes = "hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consu
 barriers = ["BAR-005", "BAR-007", "BAR-022", "BAR-023"]
 
 [[concern]]
-id = "desktop-distribution"
+id = "session-config"
 area = "composition"
 status = "owned"
 owner = "hypr-de"
 internal = ["hypr-de", "dotfiles"]
 external = []
 risk = "low"
-notes = "hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution."
+notes = "hypr-DE is packaged Hyprland configuration and the runtime packages it needs, not a greeter session. Log into stock Hyprland (uwsm). Dotfiles are a personal overlay, not a competing distribution."
 barriers = ["BAR-001", "BAR-013"]
 
 [[concern]]
@@ -81,7 +81,7 @@ owner = ""
 internal = ["hypr-de"]
 external = ["Hyprland"]
 risk = "high"
-notes = "The ecosystem intentionally builds on Hyprland and currently requires its newer Lua configuration API."
+notes = "hypr-DE requires Hyprland 0.55 or newer (Lua config). hyprland-git satisfies that when it Provides hyprland>=0.55."
 barriers = ["BAR-012"]
 
 [[concern]]
@@ -92,7 +92,7 @@ owner = ""
 internal = ["hypr-de"]
 external = ["UWSM", "systemd user manager"]
 risk = "medium"
-notes = "UWSM and XDG session entries establish the graphical session and environment."
+notes = "Stock Hyprland (uwsm) session entries start the graphical session. Vigil enables greetd as the display manager when none is set. hypr-DE does not add a greeter session; it supplies config and user units for Hyprland (uwsm)."
 barriers = ["BAR-005", "BAR-012"]
 
 [[concern]]
@@ -391,7 +391,7 @@ owner = "waybar-workspace-buttons"
 internal = ["waybar-workspace-buttons", "hypr-de"]
 external = ["Hyprland", "Waybar"]
 risk = "medium"
-notes = "The CFFI module and workspace-zones plugin own workspace presentation and scratch-zone behavior."
+notes = "The packaged CFFI module owns waybar workspace buttons. workspace-zones is a separate hyprpm plugin (ABI-locked, not in the RPM/PKGBUILD); SUPER+ALT+S / hyper+S / SUPER+CTRL+ALT+S call it. man workspace-zones is the reference. Named scratchpad SUPER+S / SUPER+0 is built-in special:magic."
 barriers = ["BAR-005", "BAR-012", "BAR-014"]
 
 [[concern]]
@@ -402,7 +402,7 @@ owner = ""
 internal = ["hypr-de", "dotfiles"]
 external = ["Fuzzel"]
 risk = "low"
-notes = "Fuzzel supplies application launch and the generated keybind cheatsheet picker."
+notes = "Fuzzel supplies application launch and the SUPER+SHIFT+/ keybind cheatsheet picker. SUPER+/ opens hypr-de-help."
 barriers = ["BAR-012"]
 
 [[concern]]
@@ -477,9 +477,9 @@ area = "appearance"
 status = "owned"
 owner = "linux-multi-theme-toggle"
 internal = ["linux-multi-theme-toggle", "hypr-de"]
-external = ["matugen", "GTK settings", "XDG portal"]
+external = ["matugen", "GTK settings", "XDG portal", "qt6ct"]
 risk = "medium"
-notes = "LMTT is the only palette generator and application-theme fan-out."
+notes = "LMTT is the only palette generator and application-theme fan-out. Qt apps using qt6ct get an owned ~/.config/qt6ct/colors/lmtt.conf plus a merged [Appearance] (Fusion, custom_palette, icon_theme); Fonts and other qt6ct sections stay the user's. A non-qt6ct QT_QPA_PLATFORMTHEME is left alone."
 barriers = ["BAR-001", "BAR-005", "BAR-014"]
 
 [[concern]]
@@ -521,9 +521,9 @@ area = "appearance"
 status = "external"
 owner = ""
 internal = ["hypr-de"]
-external = ["Hyprsunset or compositor color-temperature provider"]
+external = ["hyprsunset"]
 risk = "medium"
-notes = "Provider selection and ownership are not yet explicit in the ecosystem contract."
+notes = "hyprsunset is a Recommends/optdepend and is not autostarted. Users opt in from ~/.config/hypr/local.lua."
 barriers = ["BAR-012"]
 
 [[concern]]
@@ -545,7 +545,7 @@ owner = "hypr-de"
 internal = ["hypr-de", "dotfiles"]
 external = ["Hyprland"]
 risk = "medium"
-notes = "hypr-DE owns defaults and generated discoverability; local.lua is the user extension seam."
+notes = "hypr-DE owns defaults and generated discoverability. SUPER+/ opens hypr-de-help (live binds + session explanation). SUPER+SHIFT+/ is the fuzzel cheatsheet. man hypr-de and man workspace-zones document the rest. local.lua is the user extension seam."
 barriers = ["BAR-001", "BAR-005"]
 
 [[concern]]
@@ -631,9 +631,9 @@ area = "desktop-integration"
 status = "hybrid"
 owner = "hypr-de"
 internal = ["hypr-de"]
-external = ["xdg-desktop-portal", "xdg-desktop-portal-hyprland"]
+external = ["xdg-desktop-portal", "xdg-desktop-portal-hyprland", "xdg-desktop-portal-gtk"]
 risk = "high"
-notes = "hypr-DE packages XDPH configuration, while personal dotfiles also route Settings/default through GTK/WLR backends absent from the DE manifest."
+notes = "hypr-DE packages XDPH configuration plus the GTK Settings backend LMTT appearance needs. Personal overlays must not replace that portal routing."
 barriers = ["BAR-001", "BAR-010", "BAR-012", "BAR-014", "BAR-018"]
 
 [[concern]]
@@ -664,9 +664,9 @@ area = "desktop-integration"
 status = "hybrid"
 owner = "hypr-de"
 internal = ["hypr-de", "hyprland-voice-dictation"]
-external = ["PipeWire", "WirePlumber", "pavucontrol", "hyprpwcenter"]
+external = ["PipeWire", "WirePlumber", "pipewire-pulse", "pipewire-alsa", "pavucontrol", "hyprpwcenter"]
 risk = "high"
-notes = "hypr-DE owns controls, OSD, and selected UIs while PipeWire/WirePlumber own routing and device policy."
+notes = "hypr-DE owns volume keys (wpctl), OSD, waybar pulse module, pavucontrol (app mixer), and hyprpwcenter (patchbay). PipeWire+WirePlumber own routing. Pulse and ALSA apps reach PipeWire via pipewire-pulse and pipewire-alsa. MPRIS transport is playerctl, not this concern."
 barriers = ["BAR-001", "BAR-012", "BAR-014", "BAR-018"]
 
 [[concern]]
@@ -688,19 +688,19 @@ owner = "hypr-de"
 internal = ["hypr-de"]
 external = ["NetworkManager", "network-manager-applet", "networkmanager-dmenu"]
 risk = "medium"
-notes = "hypr-DE owns launcher and bar integration while NetworkManager remains the policy and mechanism owner."
+notes = "hypr-DE requires NetworkManager, enables the service on install, and owns nm-applet / bar integration. NetworkManager remains the policy and mechanism owner."
 barriers = ["BAR-001", "BAR-012"]
 
 [[concern]]
 id = "bluetooth"
 area = "desktop-integration"
-status = "gap"
-owner = ""
+status = "hybrid"
+owner = "hypr-de"
 internal = ["hypr-de"]
-external = []
+external = ["BlueZ", "Overskride", "WirePlumber"]
 risk = "medium"
-notes = "No Bluetooth daemon/UI dependency or desktop integration is selected; BlueZ plus Blueman is a candidate, not current coverage."
-barriers = ["BAR-012"]
+notes = "hypr-DE enables bluetooth.service, packages BlueZ plus OBEX, and opens Overskride from the waybar bluetooth module (left-click). Right-click toggles adapter power. No tray applet: waybar is the indicator. PipeWire/WirePlumber own A2DP/HFP/LE audio. JustWorksRepairing and Experimental stay operator policy."
+barriers = ["BAR-001", "BAR-012", "BAR-013", "BAR-018"]
 
 [[concern]]
 id = "removable-storage"
@@ -716,13 +716,13 @@ barriers = ["BAR-012"]
 [[concern]]
 id = "secrets-keyring"
 area = "desktop-integration"
-status = "gap"
+status = "hybrid"
 priority = "P1"
-owner = ""
-internal = ["hypr-de", "dotfiles", "greetd-config"]
-external = ["GNOME Keyring", "Bitwarden/rbw"]
+owner = "hypr-de"
+internal = ["hypr-de"]
+external = ["GNOME Keyring"]
 risk = "high"
-notes = "The API-key importer and its list-session-env helper are both present in dotfiles; PAM/keyring ownership and lifecycle remain split across the overlay and legacy login configuration."
+notes = "hypr-DE packages gnome-keyring, exports GNOME_KEYRING_CONTROL, and adds optional pam_gnome_keyring lines to greetd PAM when missing."
 barriers = ["BAR-004", "BAR-010", "BAR-012", "BAR-018", "BAR-025"]
 
 [[concern]]
@@ -731,9 +731,9 @@ area = "applications"
 status = "external"
 owner = ""
 internal = ["hypr-de"]
-external = ["Thunar"]
+external = ["Nautilus"]
 risk = "low"
-notes = "Thunar is the packaged file-manager surface; udiskie independently owns automount."
+notes = "Nautilus is the packaged file-manager surface (GTK4/libadwaita, follows LMTT portal color-scheme and accent); udiskie independently owns automount."
 barriers = ["BAR-012"]
 
 [[concern]]
@@ -800,7 +800,7 @@ owner = "packaging-workflows"
 internal = ["packaging-workflows", "arch-repo"]
 external = ["GitHub Actions", "COPR", "GitHub Releases", "GitHub Pages"]
 risk = "medium"
-notes = "Reusable workflows gate package and security checks before release publication; arch-repo validates and atomically publishes the declared package set."
+notes = "Reusable workflows gate package and security checks before release publication; arch-repo validates and atomically publishes the declared package set. Tag workflows submit COPR in the same run as the Arch asset."
 barriers = ["BAR-007", "BAR-009", "BAR-012", "BAR-015", "BAR-022", "BAR-023", "BAR-024"]
 
 [[concern]]
@@ -822,7 +822,7 @@ owner = "packaging-workflows"
 internal = ["packaging-workflows", "hyprstate", "vigil", "linux-multi-theme-toggle"]
 external = ["GitHub Actions", "COPR"]
 risk = "medium"
-notes = "Reusable tag workflows build Arch and RPM packages, run configured security policy, and publish release assets only after all required gates succeed."
+notes = "Reusable tag workflows build Arch and RPM packages, run configured security policy, and publish release assets only after all required gates succeed. A release must publish COPR and [mason]; missing COPR_CONFIG/COPR_WEBHOOK_URL or ARCH_REPO_TOKEN fails the job. COPR projects are created from CI, not from a laptop."
 barriers = ["BAR-022", "BAR-023"]
 
 [[concern]]
@@ -851,13 +851,13 @@ barriers = ["BAR-007", "BAR-022", "BAR-023"]
 [[concern]]
 id = "fedora-package-closure"
 area = "operations"
-status = "gap"
+status = "planned"
 priority = "P1"
-owner = ""
-internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "hypr-de", "vigil", "linux-multi-theme-toggle"]
+owner = "hypr-de"
+internal = ["packaging-workflows", "hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "vigil", "linux-multi-theme-toggle"]
 external = ["COPR", "Fedora", "third-party COPRs"]
 risk = "high"
-notes = "hyprstate and related Fedora specs now rewrite vendored Git crate sources offline. Remaining gates are COPR/Arch split publication and Lua Hyprland packaging."
+notes = "COPR must stay in parity with Arch: every fedora Requires that is not in Fedora official repos must exist on a COPR enabled by get-hypr-de.sh. Hyprland stack comes from nett00n/hyprland (solopasha is abandoned at 0.49). matugen from heus-sueh/packages. Third-party remainder is overskride, published to solaris765/hypr-de-extras and [mason] by tagging hypr-de-extras. First-party COPR projects (including hyprstate-gui) are created by the tag workflow when missing. Do not copr-cli from a developer machine."
 barriers = ["BAR-009", "BAR-018", "BAR-022", "BAR-023"]
 
 [[concern]]

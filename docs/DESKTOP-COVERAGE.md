@@ -7,12 +7,12 @@
 | Status | Count |
 |---|---:|
 | external | 22 |
-| gap | 16 |
-| hybrid | 14 |
+| gap | 13 |
+| hybrid | 16 |
 | legacy | 1 |
 | non-goal | 1 |
 | owned | 31 |
-| planned | 2 |
+| planned | 3 |
 
 ## Gaps and high-risk boundaries
 
@@ -23,11 +23,11 @@
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high |
 | P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | xdg-desktop-portal, GTK, Electron | high |
-| P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high |
-| P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland | high |
+| P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pipewire-pulse, pipewire-alsa, pavucontrol, hyprpwcenter | high |
+| P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland, xdg-desktop-portal-gtk | high |
 | P1 | policy-auth-agent | desktop-integration | external | — | polkit, Hyprland polkit authentication agent | high |
 | P1 | screen-sharing | desktop-integration | external | — | PipeWire, xdg-desktop-portal-hyprland | high |
-| P1 | secrets-keyring | desktop-integration | gap | — | GNOME Keyring, Bitwarden/rbw | high |
+| P1 | secrets-keyring | desktop-integration | hybrid | hypr-de | GNOME Keyring | high |
 | P1 | display-policy | display | owned | hyprstate | Hyprland IPC | high |
 | P1 | accessibility | input | gap | — | AT-SPI is used opportunistically | high |
 | P1 | alternate-game-session | login | owned | greetd-game-mode | greetd, gamescope, Steam, bubblewrap, Tailscale | high |
@@ -39,7 +39,7 @@
 | P1 | screen-lock | login | hybrid | vigil | ext-session-lock-v1, PAM, systemd-logind | high |
 | P1 | secure-lock-before-suspend | login | owned | hyprstate | systemd-logind | high |
 | P1 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high |
-| P1 | fedora-package-closure | operations | gap | — | COPR, Fedora, third-party COPRs | high |
+| P1 | fedora-package-closure | operations | planned | hypr-de | COPR, Fedora, third-party COPRs | high |
 | P1 | package-user-overlay-shadowing | operations | gap | — | systemd user units, chezmoi | high |
 | P1 | suite-doctor | operations | planned | hypr-commons | systemd, journald, package managers, desktop portals | high |
 | P1 | user-data-backup | operations | gap | — | — | high |
@@ -52,7 +52,6 @@
 | P1 | privilege-minimization | session | owned | greetd-game-mode | systemd, udev, sudo | high |
 | P1 | service-activation-completeness | session | gap | — | systemd | high |
 | P2 | color-management | appearance | gap | — | — | medium |
-| P2 | bluetooth | desktop-integration | gap | — | — | medium |
 | P2 | clipboard-history | desktop-integration | gap | — | — | medium |
 | P2 | remote-desktop | desktop-integration | gap | — | — | medium |
 | P2 | input-method | input | gap | — | — | medium |
@@ -67,38 +66,38 @@
 | P3 | application-ui-tokens | appearance | owned | slint-kit | Slint | low | slint-kit converts LMTT semantic colors into consistent application controls and tokens; vigil consumes the kit for greeter and lock chrome. |
 | P2 | color-management | appearance | gap | — | — | medium | No ICC, HDR policy, calibration, or compositor color-management owner is registered. |
 | P3 | icons-cursors-fonts | appearance | hybrid | linux-multi-theme-toggle | GTK settings, fontconfig, icon themes, cursor themes | low | LMTT selects externally implemented themes and fonts. |
-| P2 | night-light | appearance | external | — | Hyprsunset or compositor color-temperature provider | medium | Provider selection and ownership are not yet explicit in the ecosystem contract. |
-| P2 | theme-application | appearance | owned | linux-multi-theme-toggle | matugen, GTK settings, XDG portal | medium | LMTT is the only palette generator and application-theme fan-out. |
+| P2 | night-light | appearance | external | — | hyprsunset | medium | hyprsunset is a Recommends/optdepend and is not autostarted. Users opt in from ~/.config/hypr/local.lua. |
+| P2 | theme-application | appearance | owned | linux-multi-theme-toggle | matugen, GTK settings, XDG portal, qt6ct | medium | LMTT is the only palette generator and application-theme fan-out. Qt apps using qt6ct get an owned ~/.config/qt6ct/colors/lmtt.conf plus a merged [Appearance] (Fusion, custom_palette, icon_theme); Fonts and other qt6ct sections stay the user's. A non-qt6ct QT_QPA_PLATFORMTHEME is left alone. |
 | P2 | wallpaper | appearance | hybrid | hypr-de | matugen, swaybg | medium | hypr-DE owns user-facing selection while LMTT derives palettes and an external backend renders the image. |
 | P2 | default-applications | applications | external | — | XDG MIME applications, xdg-utils | medium | Browser, editor, media, and file defaults need an explicit package/config source of truth. |
-| P3 | file-manager | applications | external | — | Thunar | low | Thunar is the packaged file-manager surface; udiskie independently owns automount. |
+| P3 | file-manager | applications | external | — | Nautilus | low | Nautilus is the packaged file-manager surface (GTK4/libadwaita, follows LMTT portal color-scheme and accent); udiskie independently owns automount. |
 | P3 | terminal | applications | external | — | Kitty, WezTerm in the personal dotfiles overlay | low | hypr-DE selects Kitty while the personal dotfiles overlay also configures WezTerm; neither implementation is ecosystem-owned. |
 | P1 | hyprland-ipc-convergence | architecture | planned | hypr-commons | Hyprland | high | Planned owner is a hypr-commons Hyprland IPC helper (instance discovery, .socket vs .socket2, dialect file via the shared XDG hypr dir). Five repositories independently implement instance discovery, path construction, framing, reconnect, timeout, and command dialect handling. |
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high | Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control and voice-dictation. hyprstate still uses local proxies for lid/suspend/LockedHint. |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. LMTT-owned paths use hypr-paths plus /etc/lmtt and /usr/share/lmtt. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees. |
 | P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | xdg-desktop-portal, GTK, Electron | high | LMTT is the sole writer. Suite apps read the Material You palette through lmtt-core or `lmtt tokens`, not theme files. Foreign apps use the XDG appearance portal (color-scheme, optional accent-color) or LMTT's per-app file modules. They must not use lmtt-core, `lmtt tokens`, or a custom LMTT bus. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only. |
-| P3 | desktop-distribution | composition | owned | hypr-de | — | low | hypr-DE is the package-owned default desktop; dotfiles are a personal overlay, not a competing distribution. |
-| P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pavucontrol, hyprpwcenter | high | hypr-DE owns controls, OSD, and selected UIs while PipeWire/WirePlumber own routing and device policy. |
-| P2 | bluetooth | desktop-integration | gap | — | — | medium | No Bluetooth daemon/UI dependency or desktop integration is selected; BlueZ plus Blueman is a candidate, not current coverage. |
+| P3 | session-config | composition | owned | hypr-de | — | low | hypr-DE is packaged Hyprland configuration and the runtime packages it needs, not a greeter session. Log into stock Hyprland (uwsm). Dotfiles are a personal overlay, not a competing distribution. |
+| P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pipewire-pulse, pipewire-alsa, pavucontrol, hyprpwcenter | high | hypr-DE owns volume keys (wpctl), OSD, waybar pulse module, pavucontrol (app mixer), and hyprpwcenter (patchbay). PipeWire+WirePlumber own routing. Pulse and ALSA apps reach PipeWire via pipewire-pulse and pipewire-alsa. MPRIS transport is playerctl, not this concern. |
+| P2 | bluetooth | desktop-integration | hybrid | hypr-de | BlueZ, Overskride, WirePlumber | medium | hypr-DE enables bluetooth.service, packages BlueZ plus OBEX, and opens Overskride from the waybar bluetooth module (left-click). Right-click toggles adapter power. No tray applet: waybar is the indicator. PipeWire/WirePlumber own A2DP/HFP/LE audio. JustWorksRepairing and Experimental stay operator policy. |
 | P2 | clipboard | desktop-integration | external | — | wl-clipboard | medium | Basic copy/paste and screenshot handoff use wl-clipboard; persistent history is a separate uncovered concern. |
 | P2 | clipboard-history | desktop-integration | gap | — | — | medium | No persistent history provider, secret exclusion policy, retention policy, or picker integration is registered. |
-| P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland | high | hypr-DE packages XDPH configuration, while personal dotfiles also route Settings/default through GTK/WLR backends absent from the DE manifest. |
+| P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland, xdg-desktop-portal-gtk | high | hypr-DE packages XDPH configuration plus the GTK Settings backend LMTT appearance needs. Personal overlays must not replace that portal routing. |
 | P3 | media-control | desktop-integration | external | — | MPRIS, playerctl | low | Owned components invoke media pause/resume through the external MPRIS bridge. |
-| P2 | network-management | desktop-integration | hybrid | hypr-de | NetworkManager, network-manager-applet, networkmanager-dmenu | medium | hypr-DE owns launcher and bar integration while NetworkManager remains the policy and mechanism owner. |
+| P2 | network-management | desktop-integration | hybrid | hypr-de | NetworkManager, network-manager-applet, networkmanager-dmenu | medium | hypr-DE requires NetworkManager, enables the service on install, and owns nm-applet / bar integration. NetworkManager remains the policy and mechanism owner. |
 | P1 | policy-auth-agent | desktop-integration | external | — | polkit, Hyprland polkit authentication agent | high | The selected agent must be package-owned and uniquely autostarted. |
 | P2 | remote-desktop | desktop-integration | gap | — | — | medium | No remote-control provider, consent model, or support boundary is selected. |
 | P2 | removable-storage | desktop-integration | external | — | udisks2, udiskie | medium | Automount policy and user-facing error handling are not registered. |
 | P2 | screen-recording | desktop-integration | hybrid | hypr-de | gpu-screen-recorder, PipeWire | medium | hypr-DE owns recording workflow and Waybar integration; gpu-screen-recorder is the selected capture engine but remains a Fedora packaging gate. |
 | P1 | screen-sharing | desktop-integration | external | — | PipeWire, xdg-desktop-portal-hyprland | high | External portals provide capture consent and stream negotiation; no suite-level doctor currently verifies the path. |
 | P3 | screenshots | desktop-integration | hybrid | hypr-de | grim, slurp, swappy, hyprpicker, wl-clipboard | low | hypr-DE owns workflow and keybinds while external tools perform capture. |
-| P1 | secrets-keyring | desktop-integration | gap | — | GNOME Keyring, Bitwarden/rbw | high | The API-key importer and its list-session-env helper are both present in dotfiles; PAM/keyring ownership and lifecycle remain split across the overlay and legacy login configuration. |
+| P1 | secrets-keyring | desktop-integration | hybrid | hypr-de | GNOME Keyring | high | hypr-DE packages gnome-keyring, exports GNOME_KEYRING_CONTROL, and adds optional pam_gnome_keyring lines to greetd PAM when missing. |
 | P1 | display-policy | display | owned | hyprstate | Hyprland IPC | high | hyprstate is the only session writer for profile selection and internal-panel state. |
 | P2 | display-settings | display | owned | hyprstate-gui | — | medium | The GUI edits neutral profile intent while hyprstate applies and reconciles it. |
 | P3 | monitor-schema | display | owned | monitor-profiles | — | low | One neutral layout definition spans pre-login and the user session. |
 | P1 | accessibility | input | gap | — | AT-SPI is used opportunistically | high | There is no ecosystem-level keyboard navigation, screen-reader, magnification, contrast, or accessibility acceptance contract. |
 | P2 | input-method | input | gap | — | — | medium | No selected IME provider or Wayland text-input integration is registered. |
-| P2 | keybindings | input | owned | hypr-de | Hyprland | medium | hypr-DE owns defaults and generated discoverability; local.lua is the user extension seam. |
+| P2 | keybindings | input | owned | hypr-de | Hyprland | medium | hypr-DE owns defaults and generated discoverability. SUPER+/ opens hypr-de-help (live binds + session explanation). SUPER+SHIFT+/ is the fuzzel cheatsheet. man hypr-de and man workspace-zones document the rest. local.lua is the user extension seam. |
 | P2 | voice-input | input | owned | hyprland-voice-dictation | PipeWire or ALSA, ONNX Runtime, wtype | medium | The daemon owns capture and recognition; Hyprland supplies only the trigger. |
 | P1 | alternate-game-session | login | owned | greetd-game-mode | greetd, gamescope, Steam, bubblewrap, Tailscale | high | A one-shot approved flag selects the gamescope session and returns to vigil afterward. |
 | P1 | authentication | login | external | — | PAM, FIDO2/WebAuthn, systemd-logind | high | Authentication mechanisms stay outside UI components; game mode adds a narrow fail-closed passkey gate. |
@@ -114,12 +113,12 @@
 | P2 | crash-reporting | operations | gap | — | — | medium | There is no common coredump triage, crash correlation, or opt-in reporting path. |
 | P1 | dependency-pinning | operations | gap | — | GitHub Actions, container registries, Git | high | Actions, reusable workflows, and CI container images are pinned to immutable SHAs or registry digests; some internal Git crate revisions remain untagged. |
 | P2 | diagnostics | operations | hybrid | hypr-commons | systemctl, journalctl | medium | Several components have status/doctor commands, but there is no suite-level health command yet. |
-| P1 | fedora-package-closure | operations | gap | — | COPR, Fedora, third-party COPRs | high | hyprstate and related Fedora specs now rewrite vendored Git crate sources offline. Remaining gates are COPR/Arch split publication and Lua Hyprland packaging. |
-| P2 | package-build-release | operations | owned | packaging-workflows | GitHub Actions, COPR, GitHub Releases, GitHub Pages | medium | Reusable workflows gate package and security checks before release publication; arch-repo validates and atomically publishes the declared package set. |
+| P1 | fedora-package-closure | operations | planned | hypr-de | COPR, Fedora, third-party COPRs | high | COPR must stay in parity with Arch: every fedora Requires that is not in Fedora official repos must exist on a COPR enabled by get-hypr-de.sh. Hyprland stack comes from nett00n/hyprland (solopasha is abandoned at 0.49). matugen from heus-sueh/packages. Third-party remainder is overskride, published to solaris765/hypr-de-extras and [mason] by tagging hypr-de-extras. First-party COPR projects (including hyprstate-gui) are created by the tag workflow when missing. Do not copr-cli from a developer machine. |
+| P2 | package-build-release | operations | owned | packaging-workflows | GitHub Actions, COPR, GitHub Releases, GitHub Pages | medium | Reusable workflows gate package and security checks before release publication; arch-repo validates and atomically publishes the declared package set. Tag workflows submit COPR in the same run as the Arch asset. |
 | P2 | package-integrity | operations | owned | arch-repo | pacman, GitHub Releases, GitHub Actions | medium | Release source archives have pinned checksums; arch-repo signs every package, its validated manifest, and the repository database with a dedicated fingerprint-pinned key. Provenance and SBOM publication remain optional enhancements. |
 | P2 | package-registry-completeness | operations | owned | arch-repo | GitHub Releases, GitHub Pages | medium | packages.toml declares every expected release asset; publication resolves each latest version, validates embedded package metadata, rejects missing or unexpected packages, and emits a hashed manifest. |
 | P1 | package-user-overlay-shadowing | operations | gap | — | systemd user units, chezmoi | high | Legacy dotfile units and documentation can shadow package-owned gaming/session services or reference payloads no longer present. |
-| P2 | release-gating | operations | owned | packaging-workflows | GitHub Actions, COPR | medium | Reusable tag workflows build Arch and RPM packages, run configured security policy, and publish release assets only after all required gates succeed. |
+| P2 | release-gating | operations | owned | packaging-workflows | GitHub Actions, COPR | medium | Reusable tag workflows build Arch and RPM packages, run configured security policy, and publish release assets only after all required gates succeed. A release must publish COPR and [mason]; missing COPR_CONFIG/COPR_WEBHOOK_URL or ARCH_REPO_TOKEN fails the job. COPR projects are created from CI, not from a laptop. |
 | P2 | rollback | operations | external | — | snapper with package-manager hooks, snap-pac, Timeshift | medium | Rollback is recommended but not selected or verified by the desktop package. |
 | P1 | suite-doctor | operations | planned | hypr-commons | systemd, journald, package managers, desktop portals | high | Planned owner is hypr-commons. A generated health contract should verify Lua support, packages, units, service ordering, portals, lock readiness, registries, and provider ownership. |
 | P2 | system-updates | operations | external | — | pacman/paru, dnf, COPR | medium | The desktop intentionally ships no bespoke updater. |
@@ -132,15 +131,15 @@
 | P1 | power-policy | power | owned | hyprstate | UPower, systemd-logind, Linux sysfs | high | hyprstate powerd is the exclusive platform-profile and hardware-knob writer. |
 | P1 | suspend-policy | power | hybrid | hyprstate | systemd-logind, systemd suspend targets | high | hyprstate owns lid grace, lock-before-suspend, and cancellation; logind performs suspension. |
 | P2 | usb-wake | power | owned | hyprstate | udev, systemd-sleep, Linux sysfs | medium | Packaged hooks and rules preserve selected input-device wake capability. |
-| P1 | compositor | session | external | — | Hyprland | high | The ecosystem intentionally builds on Hyprland and currently requires its newer Lua configuration API. |
+| P1 | compositor | session | external | — | Hyprland | high | hypr-DE requires Hyprland 0.55 or newer (Lua config). hyprland-git satisfies that when it Provides hyprland>=0.55. |
 | P1 | operator-policy-preservation | session | gap | — | PAM, pacman, RPM | high | Arch Vigil packaging does not preserve the documented operator-edited vigil-lock PAM policy. |
 | P1 | privilege-minimization | session | owned | greetd-game-mode | systemd, udev, sudo | high | Game mode receives only udev-classified joystick nodes through a dedicated group. Its obsolete fgconsole grant was removed; the remaining exact systemctl and runfile-removal grants have active call sites. |
 | P1 | service-activation-completeness | session | gap | — | systemd | high | Required services are inconsistently depended upon, preset, or bound to graphical-session lifetime; setup paths can report success without post-validation. |
 | P3 | service-supervision | session | external | — | systemd | low | User and system units own startup, ordering, restart, watchdog, and journald integration. |
-| P2 | session-launch | session | external | — | UWSM, systemd user manager | medium | UWSM and XDG session entries establish the graphical session and environment. |
+| P2 | session-launch | session | external | — | UWSM, systemd user manager | medium | Stock Hyprland (uwsm) session entries start the graphical session. Vigil enables greetd as the display manager when none is set. hypr-DE does not add a greeter session; it supplies config and user units for Hyprland (uwsm). |
 | P2 | unified-settings | settings | hybrid | hyprstate-gui | provider-specific settings tools | medium | Displays and power have a GUI; themes have a TUI; audio, network, Bluetooth, input, accessibility, and defaults remain fragmented. |
 | P3 | agent-activity | shell | owned | agent-pet | Wayland layer shell, D-Bus | low | Agent-pet owns harness normalization, activity aggregation, mascot rendering, and its tray. |
-| P3 | application-launcher | shell | external | — | Fuzzel | low | Fuzzel supplies application launch and the generated keybind cheatsheet picker. |
+| P3 | application-launcher | shell | external | — | Fuzzel | low | Fuzzel supplies application launch and the SUPER+SHIFT+/ keybind cheatsheet picker. SUPER+/ opens hypr-de-help. |
 | P2 | desktop-bar | shell | external | — | Waybar | medium | Waybar is the shell host; owned components extend workspace and tray behavior. |
 | P3 | desktop-icons | shell | non-goal | — | — | low | A desktop icon surface is intentionally outside the current shell design. |
 | P3 | notification-history | shell | external | — | Sway Notification Center | low | Action history and control-center UI are delegated to SwayNC. |
@@ -149,4 +148,4 @@
 | P3 | search-indexing | shell | gap | — | — | low | Application launch exists, but file/content search and indexing are not covered. |
 | P3 | tray-host | shell | external | — | Waybar tray module | low | Waybar displays items but must not own the watcher name. |
 | P2 | tray-registry | shell | owned | sni-watcher | StatusNotifierItem protocol | medium | sni-watcher owns the registry so item lifetime is independent from Waybar. |
-| P2 | workspace-navigation | shell | owned | waybar-workspace-buttons | Hyprland, Waybar | medium | The CFFI module and workspace-zones plugin own workspace presentation and scratch-zone behavior. |
+| P2 | workspace-navigation | shell | owned | waybar-workspace-buttons | Hyprland, Waybar | medium | The packaged CFFI module owns waybar workspace buttons. workspace-zones is a separate hyprpm plugin (ABI-locked, not in the RPM/PKGBUILD); SUPER+ALT+S / hyper+S / SUPER+CTRL+ALT+S call it. man workspace-zones is the reference. Named scratchpad SUPER+S / SUPER+0 is built-in special:magic. |

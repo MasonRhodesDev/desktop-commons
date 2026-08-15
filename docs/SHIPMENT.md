@@ -1,6 +1,6 @@
 # Shipment plan
 
-hypr-DE stays **alpha** until the supporting tools are daily-driver quality for people other than the author.
+hypr-DE stays **alpha** until the supporting tools are daily-driver quality for people other than the author. It is packaged Hyprland configuration plus those tools, not a greeter session; log into stock Hyprland (uwsm).
 
 ## Rules
 

@@ -16,6 +16,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | game-mode-home-mask-v0 | provisional | The bind policy is the security boundary for game-session home access. |
 | graphical-session-lifecycle-v0 | provisional | Services must bind startup and teardown to the graphical session and explicitly pull required audio, tray, and compositor dependencies. |
 | greetd-static-config-v1 | legacy | greetd-game-mode is the current owner; greetd-config remains a conflicting functional predecessor. |
+| hypr-de-help-v0 | provisional | SUPER+/ opens the window. Binds are loaded from hyprctl binds -j. First login is marker-gated via hypr-de-welcome. |
 | hypr-logind-session-v0 | provisional | GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path. |
 | hypr-paths-xdg-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
@@ -23,6 +24,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
 | lmtt-color-css-v0 | legacy | Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only. |
 | lmtt-portal-appearance-v1 | provisional | LMTT writes host gsettings; the real portal emits SettingChanged. Do not emit a fake portal signal. Suite palette tokens are not carried here. |
+| lmtt-qt6ct-v0 | provisional | LMTT owns the colors file. Appearance keys color_scheme_path, custom_palette, style, and icon_theme are merged. Fonts and other sections stay user-owned. A non-qt6ct QT_QPA_PLATFORMTHEME skips the conf merge. |
 | lmtt-slint-token-v0 | legacy | Superseded by lmtt-tokens-v1. Do not add consumers. |
 | lmtt-tokens-v1 | provisional | Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract. |
 | lock-pam-policy-v1 | provisional | The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution. |
@@ -51,6 +53,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | graphical-session-lifecycle-v0 | hypr-de | external:uwsm, hypr-de | hyprstate, sni-watcher, logind-idle-control, hyprland-voice-dictation, agent-pet | systemd user targets, wants, parts, and ordering | unversioned | provisional |
 | greetd-greeter-v1 | external:greetd | external:greetd | vigil, greetd-game-mode, greetd-config | greetd IPC and PAM | greetd protocol | external |
 | greetd-static-config-v1 | greetd-game-mode | greetd-game-mode, greetd-config | external:greetd | package/setup-managed greetd configuration | 1 current path plus legacy alternative | legacy |
+| hypr-de-help-v0 | hypr-de | hypr-de | hypr-de | GTK4/libadwaita window plus man pages | unversioned | provisional |
 | hypr-de-theme-v1 | hypr-de | hypr-de | linux-multi-theme-toggle | theme.toml, palette assets, and LMTT module fragments | 1 | stable |
 | hypr-logind-session-v0 | hypr-logind | hypr-logind | logind-idle-control, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
 | hypr-paths-xdg-v0 | hypr-paths | hypr-paths | hyprstate, hyprstate-gui, logind-idle-control, vigil, linux-multi-theme-toggle, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
@@ -61,6 +64,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | idle-control-dbus-v1 | logind-idle-control | logind-idle-control | logind-idle-control, hypr-de | session D-Bus plus runtime state file | 1 | legacy |
 | lmtt-color-css-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | CSS color definitions | unversioned | legacy |
 | lmtt-portal-appearance-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | external:xdg-desktop-portal, external:gtk, external:electron | XDG desktop portal Settings (gsettings write, portal ReadOne / SettingChanged) | 1 | provisional |
+| lmtt-qt6ct-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle | external:qt6ct | qt6ct color scheme file plus merged INI Appearance | unversioned | provisional |
 | lmtt-slint-token-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | JSON file plus filesystem watch | unversioned | legacy |
 | lmtt-tokens-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, hyprstate-gui, vigil, waybar-workspace-buttons | lmtt-core library API and `lmtt tokens` CLI | 1 | provisional |
 | lock-pam-policy-v1 | vigil | external:operator, vigil | vigil | PAM service policy | PAM stack | provisional |
@@ -70,7 +74,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | monitor-profile-v0 | monitor-profiles | monitor-profiles, hyprstate, hyprstate-gui | hyprstate, hyprstate-gui, vigil | TOML files | unversioned | provisional |
 | notification-replace-tag-v1 | hyprstate | hyprstate | external:notification-daemon, hyprnotice | freedesktop notification hint | 1 | stable |
 | precompositor-gpu-selection-v1 | hyprstate | hyprstate | hypr-de | pre-session CLI output and runtime intent file | 1 | stable |
-| release-package-v1 | packaging-workflows | hyprstate, hyprstate-gui, hypr-de, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
+| release-package-v1 | packaging-workflows | hyprstate, hyprstate-gui, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
 | schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, hyprland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
 | secure-suspend-v0 | hyprstate | vigil, hyprstate | external:systemd-logind | lock request, LockedHint readiness, then logind suspend | unversioned | provisional |
 | slint-kit-api-0.2 | slint-kit | slint-kit | hyprstate-gui, vigil | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
@@ -151,6 +155,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Running both setup paths rewrites or symlinks the same tree and can leave the login path incoherent.
 - Barriers: BAR-001, BAR-004, BAR-013, BAR-018, BAR-019
 
+## hypr-de-help-v0
+
+- Location: `hypr-de-help, man hypr-de, man workspace-zones`
+- Compatibility: SUPER+/ opens the window. Binds are loaded from hyprctl binds -j. First login is marker-gated via hypr-de-welcome.
+- Failure behavior: Missing GTK falls back to notify-send. Missing hyprctl still shows How it works without binds.
+- Barriers: BAR-005, BAR-012
+
 ## hypr-de-theme-v1
 
 - Location: `/usr/share/hypr-de/themes and ~/.local/share/hypr-de/themes`
@@ -221,6 +232,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: If the portal does not confirm color-scheme, foreign GTK/Electron apps may keep the previous scheme. Suite apps still load tokens.json.
 - Barriers: BAR-005, BAR-007, BAR-010, BAR-025
 
+## lmtt-qt6ct-v0
+
+- Location: `~/.config/qt6ct/colors/lmtt.conf and [Appearance] in ~/.config/qt6ct/qt6ct.conf`
+- Compatibility: LMTT owns the colors file. Appearance keys color_scheme_path, custom_palette, style, and icon_theme are merged. Fonts and other sections stay user-owned. A non-qt6ct QT_QPA_PLATFORMTHEME skips the conf merge.
+- Failure behavior: Qt widgets keep the previous qt6ct palette; GTK and portal appearance are unaffected.
+- Barriers: BAR-005, BAR-007, BAR-012
+
 ## lmtt-slint-token-v0
 
 - Location: `~/.config/matugen/lmtt-slint.json`
@@ -287,8 +305,8 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## release-package-v1
 
 - Location: `v* tags and *.pkg.tar.zst release assets`
-- Compatibility: Version consistency and source checksums are enforced; workflow dependencies are immutable and configured package/security gates complete before release assets publish.
-- Failure behavior: A failed Arch, RPM, or configured security gate prevents release asset publication and downstream repository dispatch.
+- Compatibility: Version consistency and source checksums are enforced; workflow dependencies are immutable and configured package/security gates complete before release assets publish. rpm-enabled tags must submit COPR and dispatch arch-repo; missing publish secrets fail the release.
+- Failure behavior: A failed Arch, RPM, security, COPR, or arch-repo dispatch gate prevents treating the tag as published.
 - Barriers: BAR-007, BAR-009, BAR-015, BAR-022, BAR-023
 
 ## schema-tui-schema-v1

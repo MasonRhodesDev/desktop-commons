@@ -144,6 +144,32 @@ failure = "Previous LMTT configuration is backed up and reset remains available.
 barriers = ["BAR-005", "BAR-007", "BAR-009"]
 
 [[surface]]
+id = "lmtt-qt6ct-v0"
+owner = "linux-multi-theme-toggle"
+producers = ["linux-multi-theme-toggle"]
+consumers = ["external:qt6ct"]
+transport = "qt6ct color scheme file plus merged INI Appearance"
+location = "~/.config/qt6ct/colors/lmtt.conf and [Appearance] in ~/.config/qt6ct/qt6ct.conf"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "LMTT owns the colors file. Appearance keys color_scheme_path, custom_palette, style, and icon_theme are merged. Fonts and other sections stay user-owned. A non-qt6ct QT_QPA_PLATFORMTHEME skips the conf merge."
+failure = "Qt widgets keep the previous qt6ct palette; GTK and portal appearance are unaffected."
+barriers = ["BAR-005", "BAR-007", "BAR-012"]
+
+[[surface]]
+id = "hypr-de-help-v0"
+owner = "hypr-de"
+producers = ["hypr-de"]
+consumers = ["hypr-de"]
+transport = "GTK4/libadwaita window plus man pages"
+location = "hypr-de-help, man hypr-de, man workspace-zones"
+version = "unversioned"
+maturity = "provisional"
+compatibility = "SUPER+/ opens the window. Binds are loaded from hyprctl binds -j. First login is marker-gated via hypr-de-welcome."
+failure = "Missing GTK falls back to notify-send. Missing hyprctl still shows How it works without binds."
+barriers = ["BAR-005", "BAR-012"]
+
+[[surface]]
 id = "logind-inhibitor-identity-v1"
 owner = "hyprstate"
 producers = ["hyprstate", "logind-idle-control", "hyprland-voice-dictation"]
@@ -263,14 +289,14 @@ barriers = ["BAR-005", "BAR-007", "BAR-012"]
 [[surface]]
 id = "release-package-v1"
 owner = "packaging-workflows"
-producers = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
+producers = ["hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
 consumers = ["arch-repo"]
 transport = "Git tag, GitHub Release, Arch package, and source RPM"
 location = "v* tags and *.pkg.tar.zst release assets"
 version = "repository package version"
 maturity = "stable"
-compatibility = "Version consistency and source checksums are enforced; workflow dependencies are immutable and configured package/security gates complete before release assets publish."
-failure = "A failed Arch, RPM, or configured security gate prevents release asset publication and downstream repository dispatch."
+compatibility = "Version consistency and source checksums are enforced; workflow dependencies are immutable and configured package/security gates complete before release assets publish. rpm-enabled tags must submit COPR and dispatch arch-repo; missing publish secrets fail the release."
+failure = "A failed Arch, RPM, security, COPR, or arch-repo dispatch gate prevents treating the tag as published."
 barriers = ["BAR-007", "BAR-009", "BAR-015", "BAR-022", "BAR-023"]
 
 [[surface]]

@@ -15,9 +15,9 @@ id = "hypr-de"
 github = "MasonRhodesDev/hypr-DE"
 visibility = "public"
 lifecycle = "active"
-role = "desktop-distribution"
-responsibilities = ["packaged Hyprland session", "desktop composition", "default configuration"]
-depends_on = ["hyprstate", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil"]
+role = "session-config"
+responsibilities = ["packaged Hyprland configuration", "runtime package set", "default configuration"]
+depends_on = ["hyprstate", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "hypr-de-extras"]
 
 [[repository]]
 id = "dotfiles"
@@ -230,3 +230,12 @@ lifecycle = "active"
 role = "delivery"
 responsibilities = ["pacman repository aggregation", "GitHub Pages package publication"]
 depends_on = ["packaging-workflows"]
+
+[[repository]]
+id = "hypr-de-extras"
+github = "MasonRhodesDev/hypr-de-extras"
+visibility = "public"
+lifecycle = "active"
+role = "delivery"
+responsibilities = ["COPR hosting for third-party hypr-DE deps that Fedora and other COPRs do not ship", "Arch PKGBUILD for overskride"]
+depends_on = []

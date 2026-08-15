@@ -70,17 +70,68 @@ id = "desktop-bluetooth-ui-is-packaged"
 kind = "conditional_contains"
 repository = "hypr-de"
 when_path = "dist/waybar/config.jsonc"
-when_pattern = "\\bblueman-manager\\b"
+when_pattern = "\\boverskride\\b"
 path = "deps.toml"
-pattern = "\"blueman\""
+pattern = "\"overskride\""
 barriers = ["BAR-012", "BAR-018"]
 concerns = ["bluetooth"]
 severity = "error"
-message = "A configured Blueman action requires Blueman in the desktop dependency manifest."
+message = "A configured Overskride action requires Overskride in the desktop dependency manifest."
 
-[assertion.waiver]
-reason = "Known P2: Waybar invokes blueman-manager but deps.toml omits Blueman."
-expires = "2026-11-01"
+[[assertion]]
+id = "desktop-bluetooth-daemon-is-enabled"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/libexec/hypr-de-sys-setup"
+pattern = "systemctl enable bluetooth\\.service"
+barriers = ["BAR-012", "BAR-018"]
+concerns = ["bluetooth"]
+severity = "error"
+message = "The desktop must enable bluetooth.service on install so the waybar module and Overskride have a running adapter."
+
+[[assertion]]
+id = "desktop-setup-validates-units"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/bin/hypr-de-setup"
+pattern = "preset_and_check"
+barriers = ["BAR-018", "BAR-025"]
+concerns = ["service-activation-completeness"]
+severity = "error"
+message = "hypr-de-setup must verify user units are enabled and fail if they are not."
+
+[[assertion]]
+id = "desktop-fedora-enables-extras-copr"
+kind = "file_contains"
+repository = "hypr-de"
+path = "get-hypr-de.sh"
+pattern = "solaris765/hypr-de-extras"
+barriers = ["BAR-009", "BAR-018"]
+concerns = ["fedora-package-closure"]
+severity = "error"
+message = "get-hypr-de.sh must enable solaris765/hypr-de-extras so Fedora can install third-party deps Fedora and other COPRs do not ship."
+
+[[assertion]]
+id = "desktop-fedora-enables-current-hyprland-copr"
+kind = "file_contains"
+repository = "hypr-de"
+path = "get-hypr-de.sh"
+pattern = "nett00n/hyprland"
+barriers = ["BAR-009", "BAR-018"]
+concerns = ["fedora-package-closure"]
+severity = "error"
+message = "get-hypr-de.sh must enable a current Hyprland COPR (nett00n/hyprland); solopasha is abandoned below the 0.55 Lua floor."
+
+[[assertion]]
+id = "desktop-fedora-drops-abandoned-hyprland-copr"
+kind = "file_not_contains"
+repository = "hypr-de"
+path = "get-hypr-de.sh"
+pattern = "solopasha/hyprland"
+barriers = ["BAR-009", "BAR-018"]
+concerns = ["fedora-package-closure"]
+severity = "error"
+message = "get-hypr-de.sh must not enable the abandoned solopasha/hyprland COPR."
 
 [[assertion]]
 id = "desktop-composes-persistent-tray-watcher"
@@ -151,7 +202,7 @@ expires = "2026-11-01"
 [[assertion]]
 id = "packaging-workflow-references-are-immutable"
 kind = "workflow_references_pinned"
-repositories = ["hypr-commons", "dotfiles", "hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant", "packaging-workflows", "arch-repo"]
+repositories = ["hypr-commons", "dotfiles", "hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant", "packaging-workflows", "arch-repo"]
 barriers = ["BAR-022", "BAR-023"]
 concerns = ["dependency-pinning", "release-gating"]
 severity = "error"
@@ -182,7 +233,7 @@ message = "Reusable workflow containers must be pinned to registry digests."
 [[assertion]]
 id = "arch-packages-pin-source-checksums"
 kind = "file_not_contains"
-repositories = ["hyprstate", "hyprstate-gui", "hypr-de", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
+repositories = ["hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
 path = "packaging/PKGBUILD"
 pattern = "sha256sums=\\(['\"]SKIP['\"]\\)"
 barriers = ["BAR-022", "BAR-023"]
@@ -232,6 +283,48 @@ barriers = ["BAR-023"]
 concerns = ["release-gating"]
 severity = "error"
 message = "Release assets must publish only after required package and security gates."
+
+[[assertion]]
+id = "release-requires-copr-publish"
+kind = "file_contains"
+repository = "packaging-workflows"
+path = ".github/workflows/release.yml"
+pattern = "a release must publish COPR"
+barriers = ["BAR-009", "BAR-023"]
+concerns = ["release-gating", "fedora-package-closure"]
+severity = "error"
+message = "rpm-enabled tag releases must fail when COPR publish secrets are missing."
+
+[[assertion]]
+id = "release-requires-arch-repo-dispatch"
+kind = "file_contains"
+repository = "packaging-workflows"
+path = ".github/workflows/release.yml"
+pattern = "a release must republish \\[mason\\]"
+barriers = ["BAR-009", "BAR-023"]
+concerns = ["release-gating"]
+severity = "error"
+message = "Tag releases must fail when ARCH_REPO_TOKEN is missing rather than waiting on cron."
+
+[[assertion]]
+id = "extras-release-is-ci-owned"
+kind = "path_exists"
+repository = "hypr-de-extras"
+path = ".github/workflows/release.yml"
+barriers = ["BAR-009", "BAR-023"]
+concerns = ["fedora-package-closure"]
+severity = "error"
+message = "hypr-de-extras must publish overskride from a tag workflow, not a local copr-cli script."
+
+[[assertion]]
+id = "extras-has-no-laptop-copr-setup"
+kind = "path_absent"
+repository = "hypr-de-extras"
+path = "scripts/setup-copr.sh"
+barriers = ["BAR-009"]
+concerns = ["fedora-package-closure"]
+severity = "error"
+message = "COPR project creation belongs in CI, not a developer-machine setup script."
 
 [[assertion]]
 id = "dotfiles-do-not-shadow-packaged-game-focus"
@@ -315,3 +408,45 @@ message = "The CLI must not report success from a destination-less emit_signal w
 [assertion.waiver]
 reason = "Known P1: Enable/Disable/Toggle print success immediately after emit_signal."
 expires = "2026-10-01"
+
+[[assertion]]
+id = "lmtt-qt6ct-writes-owned-palette"
+kind = "file_contains"
+repository = "linux-multi-theme-toggle"
+path = "lmtt-modules/src/qt.rs"
+pattern = "colors/lmtt\\.conf"
+barriers = ["BAR-005", "BAR-012"]
+concerns = ["theme-application"]
+severity = "error"
+message = "LMTT must write an owned qt6ct color scheme file rather than only exporting QT_QPA_PLATFORMTHEME."
+
+[[assertion]]
+id = "desktop-help-window-exists"
+kind = "path_exists"
+repository = "hypr-de"
+path = "dist/bin/hypr-de-help"
+barriers = ["BAR-005", "BAR-012"]
+concerns = ["keybindings"]
+severity = "error"
+message = "hypr-DE must ship the welcome/help window."
+
+[[assertion]]
+id = "desktop-help-bind"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/hypr/main.lua"
+pattern = "hypr-de-help"
+barriers = ["BAR-005", "BAR-012"]
+concerns = ["keybindings"]
+severity = "error"
+message = "SUPER+/ must open hypr-de-help."
+
+[[assertion]]
+id = "workspace-zones-manpage"
+kind = "path_exists"
+repository = "waybar-workspace-buttons"
+path = "man/workspace-zones.7"
+barriers = ["BAR-005", "BAR-012"]
+concerns = ["workspace-navigation"]
+severity = "error"
+message = "workspace-zones must ship a man page."
