@@ -12,6 +12,7 @@ them.
 | [0001](0001-architecture-registry.md) | accepted | `hypr-commons` owns the federated architecture registry and review barriers |
 | [0002](0002-event-driven-slint-runtime.md) | accepted | Long-lived Slint applications freeze their render clock when no work is due |
 | [0003](0003-suite-package-boundaries.md) | accepted | Hypr-DE installs only the core session; suite applications remain independently installable |
+| [0004](0004-capture-free-lock-warning.md) | accepted | Vigil warnings use compositor background effects and never capture the desktop |
 
 ## When an ADR is required
 
