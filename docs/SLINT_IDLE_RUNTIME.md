@@ -2,6 +2,8 @@
 
 Status: **implemented as `hypr-slint-runtime` 0.1.0** (2026-08-20).
 
+Decision record: [ADR 0002](adr/0002-event-driven-slint-runtime.md).
+
 ## Goal
 
 A Slint application with no dirty window, visible animation, or due timer must
