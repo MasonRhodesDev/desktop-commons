@@ -12,3 +12,5 @@ concurrency:
 jobs:
   ci:
     uses: MasonRhodesDev/packaging-workflows/.github/workflows/rust-ci.yml@7638b87d1f43cc64aa6b8a4fbbca478bbb845fd3 # v1
+    with:
+      pacman-deps: fontconfig
