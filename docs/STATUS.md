@@ -5,7 +5,7 @@
 > surfaces, ownership, external providers, and gaps live in `registry/` and
 > the generated `ECOSYSTEM.md`, `SURFACES.md`, and `DESKTOP-COVERAGE.md`.
 
-_Last updated: 2026-06-12 (from mason-work)._
+_Last updated: 2026-08-20 (from mason-work)._
 
 ## hyprstate v2 (Rust rewrite + packaging) — IN FLIGHT
 
@@ -66,7 +66,11 @@ locally from a `--head` srpm.
   couchcord — converge on the hyprstate dist/+packaging pattern during
   normal maintenance.
 - **Crates extraction queue** (PATTERNS.md): hypr-ipc → logind-util →
-  directive-conf; extract on second consumer.
+  directive-conf → hypr-slint-runtime; extract on second consumer.
+- **Slint idle runtime accepted** (2026-08-20): Vigil-lock thermal evidence
+  exposed fixed 16 ms loops and pre-dirty fullscreen buffer acquisition.
+  `docs/SLINT_IDLE_RUNTIME.md` records the event-driven shared-runtime boundary,
+  adoption order, and idle/defrost verification gates.
 - lmtt is on zbus 4 — bump to 5 when touched.
 
 ## Resuming on a fresh machine

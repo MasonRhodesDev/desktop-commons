@@ -29,6 +29,11 @@ in tests. Reference: couchcord (InputSource/Renderer, couchcordd).
 one-shot tools; priority classes decide sequential vs concurrent execution.
 Reference: lmtt ThemeModule + `inventory!`.
 
+**Freezeable UI runtime** — custom Slint platforms block indefinitely when no
+window is dirty, no visible animation is active, and no timer is due;
+`request_redraw` marks dirty+wakes, and presentation buffers are acquired only
+inside the dirty branch. Reference design: `docs/SLINT_IDLE_RUNTIME.md`.
+
 ## Robustness
 
 **Endpoint rediscovery** — on repeated connect failure, re-resolve the
@@ -120,6 +125,9 @@ Extract only when a second consumer adopts; order by duplication count:
    dialects.
 4. **packaging templates** — dist/+packaging skeleton (spec, PKGBUILD,
    build-srpm.sh) copied per tool until it stabilizes, then a generator.
+5. **hypr-slint-runtime** — event-driven Slint scheduling, coalescing wake,
+   per-output dirty tracking, and idle observability. Qualified by Vigil,
+   Vigil-lock, and Voice Dictation; see `SLINT_IDLE_RUNTIME.md`.
 
 ## Decision record
 
