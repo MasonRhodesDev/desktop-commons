@@ -1,0 +1,11 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  crates:
+    uses: MasonRhodesDev/packaging-workflows/.github/workflows/crates-publish.yml@7638b87d1f43cc64aa6b8a4fbbca478bbb845fd3 # v1
+    secrets:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

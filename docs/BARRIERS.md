@@ -40,9 +40,9 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-002 | 1 |
 | BAR-003 | 0 |
 | BAR-004 | 0 |
-| BAR-005 | 4 |
+| BAR-005 | 5 |
 | BAR-006 | 0 |
-| BAR-007 | 1 |
+| BAR-007 | 2 |
 | BAR-008 | 0 |
 | BAR-009 | 9 |
 | BAR-010 | 2 |
@@ -60,7 +60,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-022 | 6 |
 | BAR-023 | 7 |
 | BAR-024 | 1 |
-| BAR-025 | 6 |
+| BAR-025 | 7 |
 
 Assertions with zero counts remain review-only barriers until an executable check is added.
 
@@ -95,7 +95,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
 | lmtt-qt6ct-writes-owned-palette | file_contains | linux-multi-theme-toggle | BAR-005, BAR-012 | theme-application | — |
 | packaging-containers-are-digest-pinned | file_contains | packaging-workflows | BAR-022 | dependency-pinning | — |
-| packaging-workflow-references-are-immutable | workflow_references_pinned | hypr-commons, dotfiles, hyprstate, hyprstate-gui, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant, packaging-workflows, arch-repo, hypr-paths, hypr-logind, hypr-ipc | BAR-022, BAR-023 | dependency-pinning, release-gating | — |
+| packaging-workflow-references-are-immutable | workflow_references_pinned | hypr-commons, dotfiles, hyprstate, hyprstate-gui, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant, packaging-workflows, arch-repo, hypr-paths, hypr-logind, hypr-ipc, hypr-slint-runtime | BAR-022, BAR-023 | dependency-pinning, release-gating | — |
 | pacman-repository-does-not-disable-verification | file_not_contains | arch-repo | BAR-022 | package-integrity | — |
 | pacman-repository-has-expected-manifest | path_exists | arch-repo | BAR-024 | package-registry-completeness | — |
 | pacman-repository-signs-packages-and-database | file_contains | arch-repo | BAR-022 | package-integrity | — |
@@ -103,6 +103,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | release-requires-arch-repo-dispatch | file_contains | packaging-workflows | BAR-009, BAR-023 | release-gating | — |
 | release-requires-copr-publish | file_contains | packaging-workflows | BAR-009, BAR-023 | release-gating, fedora-package-closure | — |
 | secure-suspend-requires-lock | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
+| slint-idle-runtime-pins-slint | file_contains | hypr-commons | BAR-005, BAR-007, BAR-025 | slint-idle-runtime | — |
 | telemetry-has-version-envelope | file_contains | hyprstate | BAR-007, BAR-025 | runtime-path-resolution | — |
 | vigil-preserves-lock-pam-policy | file_contains | vigil | BAR-019 | operator-policy-preservation | — |
 | workspace-zones-manpage | path_exists | waybar-workspace-buttons | BAR-005, BAR-012 | workspace-navigation | — |

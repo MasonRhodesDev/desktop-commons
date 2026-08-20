@@ -29,5 +29,6 @@ Shared crates are developed in `hypr-commons/crates/` and mirrored as public rep
 - [MasonRhodesDev/hypr-paths](https://github.com/MasonRhodesDev/hypr-paths)
 - [MasonRhodesDev/hypr-logind](https://github.com/MasonRhodesDev/hypr-logind) — adopted by logind-idle-control, voice-dictation, and hyprstate session/inhibit
 - [MasonRhodesDev/hypr-ipc](https://github.com/MasonRhodesDev/hypr-ipc) — adopted by hyprstate and voice-dictation
+- [MasonRhodesDev/hypr-slint-runtime](https://github.com/MasonRhodesDev/hypr-slint-runtime) — adopted by Vigil and voice-dictation
 
 Tag `v0.1.0` on a crate mirror after the org secret `CARGO_REGISTRY_TOKEN` is set. CI publishes. Do not tag until that secret exists.

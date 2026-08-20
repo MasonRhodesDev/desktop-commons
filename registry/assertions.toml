@@ -190,11 +190,22 @@ message = "Cross-process telemetry must carry an explicit envelope version."
 [[assertion]]
 id = "packaging-workflow-references-are-immutable"
 kind = "workflow_references_pinned"
-repositories = ["hypr-commons", "dotfiles", "hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant", "packaging-workflows", "arch-repo", "hypr-paths", "hypr-logind", "hypr-ipc"]
+repositories = ["hypr-commons", "dotfiles", "hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant", "packaging-workflows", "arch-repo", "hypr-paths", "hypr-logind", "hypr-ipc", "hypr-slint-runtime"]
 barriers = ["BAR-022", "BAR-023"]
 concerns = ["dependency-pinning", "release-gating"]
 severity = "error"
 message = "Actions and reusable workflows must use immutable commit SHAs."
+
+[[assertion]]
+id = "slint-idle-runtime-pins-slint"
+kind = "file_contains"
+repository = "hypr-commons"
+path = "crates/hypr-slint-runtime/Cargo.toml"
+pattern = "slint = \\{ version = \"=1\\.17\\.1\""
+barriers = ["BAR-005", "BAR-007", "BAR-025"]
+concerns = ["slint-idle-runtime"]
+severity = "error"
+message = "The shared runtime and its consumers must inhabit one exact Slint type universe."
 
 [[assertion]]
 id = "hyprstate-rpm-rewrites-git-sources"

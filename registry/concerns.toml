@@ -63,6 +63,18 @@ notes = "hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consu
 barriers = ["BAR-005", "BAR-007", "BAR-022", "BAR-023"]
 
 [[concern]]
+id = "slint-idle-runtime"
+area = "architecture"
+status = "owned"
+priority = "P1"
+owner = "hypr-slint-runtime"
+internal = ["hypr-slint-runtime", "vigil", "hyprland-voice-dictation"]
+external = ["Slint"]
+risk = "high"
+notes = "The shared runtime pins Slint 1.17.1 and owns event/deadline scheduling, coalescing wake, dirty outputs, and idle metrics. Presenters remain application-owned. Static or hidden UIs must not run a fixed-rate render clock."
+barriers = ["BAR-005", "BAR-007", "BAR-008", "BAR-025"]
+
+[[concern]]
 id = "session-config"
 area = "composition"
 status = "owned"

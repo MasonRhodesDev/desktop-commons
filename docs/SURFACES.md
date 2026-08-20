@@ -20,6 +20,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hypr-ipc-v0 | provisional | HIS if .socket2.sock exists, else lockfile rescan with /proc/<pid>/comm == Hyprland. No /run/user/<uid> fallback. Mutating hyprctl success is stdout exactly ok. |
 | hypr-logind-session-v0 | provisional | GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path. |
 | hypr-paths-xdg-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
+| hypr-slint-runtime-v0 | provisional | All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely. |
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
 | hyprstate-help-telemetry-v0 | provisional | NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it. |
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
@@ -59,6 +60,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hypr-ipc-v0 | hypr-ipc | hypr-ipc | hyprstate, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
 | hypr-logind-session-v0 | hypr-logind | hypr-logind | logind-idle-control, hyprland-voice-dictation, hyprstate | Rust library API | 0.1 | provisional |
 | hypr-paths-xdg-v0 | hypr-paths | hypr-paths | hyprstate, hyprstate-gui, logind-idle-control, vigil, linux-multi-theme-toggle, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
+| hypr-slint-runtime-v0 | hypr-slint-runtime | hypr-slint-runtime | vigil, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
 | hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, hyprstate-gui, waybar-workspace-buttons, hyprland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
 | hyprstate-control-v0 | hyprstate | hyprstate-gui | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
 | hyprstate-help-telemetry-v0 | hyprstate | hyprstate | hyprstate-gui | newline-delimited JSON over Unix stream socket | 0 | provisional |
@@ -191,6 +193,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion.
 - Failure behavior: Callers receive Error and must not invent fallback paths.
 - Barriers: BAR-005, BAR-010, BAR-020, BAR-025
+
+## hypr-slint-runtime-v0
+
+- Location: `hypr_slint_runtime::{WakeHandle, DirtySet, IdleScheduler, Metrics}`
+- Compatibility: All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely.
+- Failure behavior: Presenters remain application-owned. They must acquire buffers only for outputs returned by DirtySet::take_all and expose idle counters during soak testing.
+- Barriers: BAR-005, BAR-007, BAR-008, BAR-025
 
 ## hyprland-ipc-v1
 

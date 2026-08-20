@@ -1,6 +1,6 @@
 # Slint idle runtime
 
-Status: **accepted design; implementation pending** (2026-08-20).
+Status: **implemented as `hypr-slint-runtime` 0.1.0** (2026-08-20).
 
 ## Goal
 
@@ -65,8 +65,8 @@ flowchart TD
 
 ## Shared crate boundary
 
-The implementation belongs in `hypr-commons` as a Rust crate tentatively
-named `hypr-slint-runtime`. It is a platform/runtime adapter, not a `.slint`
+The implementation belongs in `hypr-commons` as the Rust crate
+`hypr-slint-runtime`. It is a platform/runtime adapter, not a `.slint`
 language plugin.
 
 The shared crate owns:
@@ -127,9 +127,8 @@ not a frame loop or one-second polling process.
 
 ## Adoption
 
-The suite currently mixes Slint 1.14 and 1.17. Production consumers must first
-converge on one exact Slint release so a process never contains incompatible
-Slint platform/runtime types.
+The crate and production consumers pin Slint exactly to 1.17.1 so a process
+never contains incompatible Slint platform/runtime types.
 
 Adoption order:
 

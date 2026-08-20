@@ -33,8 +33,8 @@ scripts/
 crates/             # shared Rust utilities, extracted as tools converge
                     # hypr-paths (MasonRhodesDev/hypr-paths), hypr-logind
                     # (MasonRhodesDev/hypr-logind). Planned next: hyprland
-                    # socket2/instance discovery, #@ directive-file parsing,
-                    # sysfs helpers
+                    # socket2/instance discovery, hypr-slint-runtime,
+                    # #@ directive-file parsing, sysfs helpers
 ```
 
 ## Working with the registry

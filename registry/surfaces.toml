@@ -53,6 +53,19 @@ failure = "Consumer emits diagnostics and retains or derives a safe display layo
 barriers = ["BAR-003", "BAR-004", "BAR-007"]
 
 [[surface]]
+id = "hypr-slint-runtime-v0"
+owner = "hypr-slint-runtime"
+producers = ["hypr-slint-runtime"]
+consumers = ["vigil", "hyprland-voice-dictation"]
+transport = "Rust library API"
+location = "hypr_slint_runtime::{WakeHandle, DirtySet, IdleScheduler, Metrics}"
+version = "0.1"
+maturity = "provisional"
+compatibility = "All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely."
+failure = "Presenters remain application-owned. They must acquire buffers only for outputs returned by DirtySet::take_all and expose idle counters during soak testing."
+barriers = ["BAR-005", "BAR-007", "BAR-008", "BAR-025"]
+
+[[surface]]
 id = "appearance-profile-v1"
 owner = "appearance-profiles"
 producers = ["appearance-profiles", "linux-multi-theme-toggle"]

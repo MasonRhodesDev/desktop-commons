@@ -11,7 +11,7 @@
 | hybrid | 16 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 33 |
+| owned | 34 |
 | planned | 1 |
 
 ## Gaps and high-risk boundaries
@@ -22,6 +22,7 @@
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high |
+| P1 | slint-idle-runtime | architecture | owned | hypr-slint-runtime | Slint | high |
 | P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | xdg-desktop-portal, GTK, Electron | high |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pipewire-pulse, pipewire-alsa, pavucontrol, hyprpwcenter | high |
 | P1 | desktop-portals | desktop-integration | hybrid | hypr-de | xdg-desktop-portal, xdg-desktop-portal-hyprland, xdg-desktop-portal-gtk | high |
@@ -76,6 +77,7 @@
 | P1 | internal-version-skew | architecture | gap | — | Git dependency resolution | high | hyprstate-gui pins an older hyprstate-fsm revision and schema-tui consumers are not manifest-pinned despite lockfile convergence. |
 | P1 | logind-helper-convergence | architecture | owned | hypr-logind | systemd-logind | high | Owner crate is hypr-logind (Inhibit RAII, GetSessionByPID then XDG_SESSION_ID then scored ListSessions, never the manager path). Adopted by logind-idle-control, voice-dictation, and hyprstate session/inhibit. Lid/suspend/LockedHint policy stays in the hyprstate daemon on the shared proxies. |
 | P1 | runtime-path-resolution | architecture | owned | hypr-paths | XDG Base Directory specification | high | Owner crate is hypr-paths (XDG Base Directory — the Wayland/freedesktop path contract, not an X11 leftover). Adopted by hyprstate, hyprstate-gui, logind-idle-control, vigil, lmtt, and voice-dictation. waybar-workspace-buttons follows the same contract in C. LMTT-owned paths use hypr-paths plus /etc/lmtt and /usr/share/lmtt. Remaining dirs:: helpers in LMTT modules write into other apps' XDG trees. |
+| P1 | slint-idle-runtime | architecture | owned | hypr-slint-runtime | Slint | high | The shared runtime pins Slint 1.17.1 and owns event/deadline scheduling, coalescing wake, dirty outputs, and idle metrics. Presenters remain application-owned. Static or hidden UIs must not run a fixed-rate render clock. |
 | P1 | theme-contract-convergence | architecture | owned | linux-multi-theme-toggle | xdg-desktop-portal, GTK, Electron | high | LMTT is the sole writer. Suite apps read the Material You palette through lmtt-core or `lmtt tokens`, not theme files. Foreign apps use the XDG appearance portal (color-scheme, optional accent-color) or LMTT's per-app file modules. They must not use lmtt-core, `lmtt tokens`, or a custom LMTT bus. User data tokens.json is published beside the appearance-profiles snapshot. CSS under matugen is foreign-app fan-out only. |
 | P3 | session-config | composition | owned | hypr-de | — | low | hypr-DE is packaged Hyprland configuration and the runtime packages it needs, not a greeter session. Log into stock Hyprland (uwsm). Dotfiles are a personal overlay, not a competing distribution. |
 | P1 | audio | desktop-integration | hybrid | hypr-de | PipeWire, WirePlumber, pipewire-pulse, pipewire-alsa, pavucontrol, hyprpwcenter | high | hypr-DE owns volume keys (wpctl), OSD, waybar pulse module, pavucontrol (app mixer), and hyprpwcenter (patchbay). PipeWire+WirePlumber own routing. Pulse and ALSA apps reach PipeWire via pipewire-pulse and pipewire-alsa. MPRIS transport is playerctl, not this concern. |

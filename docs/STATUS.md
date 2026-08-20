@@ -66,11 +66,11 @@ locally from a `--head` srpm.
   couchcord — converge on the hyprstate dist/+packaging pattern during
   normal maintenance.
 - **Crates extraction queue** (PATTERNS.md): hypr-ipc → logind-util →
-  directive-conf → hypr-slint-runtime; extract on second consumer.
-- **Slint idle runtime accepted** (2026-08-20): Vigil-lock thermal evidence
+  directive-conf; extract on second consumer.
+- **Slint idle runtime implemented** (2026-08-20): Vigil-lock thermal evidence
   exposed fixed 16 ms loops and pre-dirty fullscreen buffer acquisition.
-  `docs/SLINT_IDLE_RUNTIME.md` records the event-driven shared-runtime boundary,
-  adoption order, and idle/defrost verification gates.
+  `hypr-slint-runtime` 0.1.0 implements the event-driven shared-runtime boundary,
+  coalescing wake, dirty outputs, idle metrics, and fake-clock gates.
 - lmtt is on zbus 4 — bump to 5 when touched.
 
 ## Resuming on a fresh machine
