@@ -74,7 +74,6 @@ flowchart LR
     repo_linux_multi_theme_toggle --> repo_dotfiles
     repo_vigil --> repo_greetd_game_mode
     repo_hypr_de_extras --> repo_hypr_de
-    repo_hyprland_voice_dictation --> repo_hypr_de
     repo_hyprstate --> repo_hypr_de
     repo_linux_multi_theme_toggle --> repo_hypr_de
     repo_logind_idle_control --> repo_hypr_de

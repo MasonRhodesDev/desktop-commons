@@ -17,7 +17,7 @@ visibility = "public"
 lifecycle = "active"
 role = "session-config"
 responsibilities = ["packaged Hyprland configuration", "runtime package set", "default configuration"]
-depends_on = ["hyprstate", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "hypr-de-extras"]
+depends_on = ["hyprstate", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "vigil", "hypr-de-extras"]
 
 [[repository]]
 id = "dotfiles"

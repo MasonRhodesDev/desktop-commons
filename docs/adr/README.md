@@ -11,6 +11,7 @@ them.
 |---|---|---|
 | [0001](0001-architecture-registry.md) | accepted | `hypr-commons` owns the federated architecture registry and review barriers |
 | [0002](0002-event-driven-slint-runtime.md) | accepted | Long-lived Slint applications freeze their render clock when no work is due |
+| [0003](0003-suite-package-boundaries.md) | accepted | Hypr-DE installs only the core session; suite applications remain independently installable |
 
 ## When an ADR is required
 
@@ -37,5 +38,3 @@ current sources are audited:
 2. User/shared desktop-state layering and per-user override resolution.
 3. Hyprstate ownership of monitor profiles and origin-monitor focus.
 4. Released-package-only production installation and shared supply-chain gates.
-5. Hypr-DE dependency boundaries: orchestration package versus optional apps.
-
