@@ -40,6 +40,18 @@ before-sleep paths commit immediately. A second locker joins the warning over
 an unprivileged runtime socket, requests immediate commitment, and reports
 success only after compositor lock confirmation.
 
+Callers that must establish readiness use `vigil-lock --wait`. Vigil detaches
+the long-lived locker and returns zero only after compositor confirmation;
+warning cancellation returns 3 and pre-confirmation failure remains nonzero.
+This is the boundary used by idle and before-sleep policy.
+
+Development and automation use the separately linked `vigil-sim`, which has
+no PAM, logind, greetd, DRM, input-device, power, or session-lock dependencies.
+Its control socket acknowledges `lock --wait` and frame exports only after the
+corresponding frame is presented. Headless scenario fixtures run the real
+theme/UI renderer with an injected clock and emit deterministic state, trace,
+and frame fingerprints without affecting the host session.
+
 ## Consequences
 
 - Live desktop changes remain visible beneath frost without a captured frame.
@@ -53,6 +65,8 @@ success only after compositor lock confirmation.
 - The simulator and production backend deliberately use different blur
   implementations; the dependency boundary prevents simulator code from
   entering the lock binary.
+- Readiness means compositor-confirmed lock, never merely process startup or a
+  request to commit.
 
 ## Rejected alternatives
 
