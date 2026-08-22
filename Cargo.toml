@@ -5,4 +5,5 @@ members = [
     "crates/hypr-logind",
     "crates/hypr-ipc",
     "crates/hypr-slint-runtime",
+    "crates/hypr-singleton",
 ]

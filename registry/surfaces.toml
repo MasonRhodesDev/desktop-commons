@@ -558,3 +558,16 @@ maturity = "provisional"
 compatibility = "The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution."
 failure = "Packaging replacement can remove required authentication policy or local hardening."
 barriers = ["BAR-004", "BAR-009", "BAR-019", "BAR-021"]
+
+[[surface]]
+id = "singleton-guard-v1"
+owner = "hypr-commons"
+producers = ["hypr-commons"]
+consumers = ["vigil"]
+transport = "flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/hypr-singleton"
+location = "crates/hypr-singleton"
+version = "0.1.0"
+maturity = "provisional"
+compatibility = "Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime."
+failure = "Bypassing the guard (or unlinking the lock file) allows concurrent instances - for vigil-lock, stacked lockers (vigil#50)."
+barriers = []

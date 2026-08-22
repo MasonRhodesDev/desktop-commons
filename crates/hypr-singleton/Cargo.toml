@@ -1,0 +1,12 @@
+[package]
+name = "hypr-singleton"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "flock-based single-instance guard for the hypr suite; kernel-released on any death"
+repository = "https://github.com/MasonRhodesDev/hypr-commons"
+publish = true
+
+[dependencies]
+hypr-paths = { path = "../hypr-paths", version = "0.1.0" }
+libc = "0.2"

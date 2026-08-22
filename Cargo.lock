@@ -726,6 +726,14 @@ name = "hypr-paths"
 version = "0.1.0"
 
 [[package]]
+name = "hypr-singleton"
+version = "0.1.0"
+dependencies = [
+ "hypr-paths",
+ "libc",
+]
+
+[[package]]
 name = "hypr-slint-runtime"
 version = "0.1.0"
 dependencies = [
