@@ -8,5 +8,7 @@ repository = "https://github.com/MasonRhodesDev/desktop-commons"
 publish = true
 
 [dependencies]
-xdg-paths = { path = "../xdg-paths", version = "0.2.0" }
+# Registry dependency on purpose: consumers pull singleton-guard by git, and a
+# path dependency would vendor a second xdg-paths source next to crates.io.
+xdg-paths = "0.2.0"
 libc = "0.2"

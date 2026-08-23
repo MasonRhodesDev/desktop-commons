@@ -7,3 +7,8 @@ members = [
     "crates/slint-idle-runtime",
     "crates/singleton-guard",
 ]
+
+# Workspace builds use the local copy; git consumers of singleton-guard resolve
+# xdg-paths from crates.io (patches do not propagate to dependents).
+[patch.crates-io]
+xdg-paths = { path = "crates/xdg-paths" }
