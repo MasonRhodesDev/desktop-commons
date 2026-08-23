@@ -706,38 +706,11 @@ checksum = "48ce8546b993eaf241d69ded33b1be6d205dd9857ec879d9d18bd05d3676e144"
 
 [[package]]
 name = "hypr-ipc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "hypr-paths",
  "serde_json",
  "tokio",
-]
-
-[[package]]
-name = "hypr-logind"
-version = "0.1.0"
-dependencies = [
- "libc",
- "zbus",
-]
-
-[[package]]
-name = "hypr-paths"
-version = "0.1.0"
-
-[[package]]
-name = "hypr-singleton"
-version = "0.1.0"
-dependencies = [
- "hypr-paths",
- "libc",
-]
-
-[[package]]
-name = "hypr-slint-runtime"
-version = "0.1.0"
-dependencies = [
- "slint",
+ "xdg-paths",
 ]
 
 [[package]]
@@ -1240,6 +1213,14 @@ name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
+
+[[package]]
+name = "logind-session"
+version = "0.2.0"
+dependencies = [
+ "libc",
+ "zbus",
+]
 
 [[package]]
 name = "lyon_algorithms"
@@ -1873,6 +1854,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "singleton-guard"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "xdg-paths",
+]
+
+[[package]]
 name = "siphasher"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1922,6 +1911,13 @@ dependencies = [
  "slint-macros",
  "unicode-segmentation",
  "vtable",
+]
+
+[[package]]
+name = "slint-idle-runtime"
+version = "0.2.0"
+dependencies = [
+ "slint",
 ]
 
 [[package]]
@@ -2660,6 +2656,10 @@ name = "writeable"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
+
+[[package]]
+name = "xdg-paths"
+version = "0.2.0"
 
 [[package]]
 name = "xmlwriter"

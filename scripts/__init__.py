@@ -1,1 +1,1 @@
-"""hypr-commons architecture tooling."""
+"""desktop-commons architecture tooling."""

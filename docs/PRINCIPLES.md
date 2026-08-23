@@ -108,7 +108,7 @@ binaries or anything root executes.
 The suite is a web of small contracts. Each one is registered in
 `registry/surfaces.toml` with an owner, producers, consumers, transport,
 location, version, compatibility policy, and failure behavior. Provider
-repositories own canonical schemas; hypr-commons owns the relationship and
+repositories own canonical schemas; desktop-commons owns the relationship and
 barrier registry. New D-Bus names use a domain actually controlled by the
 project and encode incompatible interface versions in the interface name.
 
@@ -118,3 +118,15 @@ Every daemon ships a `doctor`/`status` subcommand that checks its real
 preconditions (couchcord's de-risk gate, voice-dictation's diagnose,
 hyprstate's status). A README troubleshooting section is the fallback, not
 the mechanism.
+
+## 13. Names: `hypr` only when the component only works with Hyprland
+
+A component that depends on Hyprland IPC, its config dialect, or its
+plugins is named for it (`hyprstate`, `hypr-ipc`, `hypr-de`,
+`waybar-workspace-buttons`). Anything that talks Wayland protocols, D-Bus,
+logind, XDG, or a neutral file contract gets a neutral name (`vigil`,
+`dials`, `lmtt`, `sni-watcher`, `monitor-profiles`). Applies to repositories,
+crates, binaries, desktop entries, D-Bus names, and desktop-entry keys
+(`X-Dials-Section`, not `X-HyprDE-`). Existing generic crates under a
+`hypr` name are tracked as debt in `concerns.toml` (`component-naming`) and
+renamed at their next breaking release, not patched with aliases.

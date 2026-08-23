@@ -69,7 +69,7 @@ locally from a `--head` srpm.
   directive-conf; extract on second consumer.
 - **Slint idle runtime implemented** (2026-08-20): Vigil-lock thermal evidence
   exposed fixed 16 ms loops and pre-dirty fullscreen buffer acquisition.
-  `hypr-slint-runtime` 0.1.0 implements the event-driven shared-runtime boundary,
+  `slint-idle-runtime` 0.1.0 implements the event-driven shared-runtime boundary,
   coalescing wake, dirty outputs, idle metrics, and fake-clock gates.
 - lmtt is on zbus 4 — bump to 5 when touched.
 

@@ -18,9 +18,6 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | greetd-static-config-v1 | legacy | greetd-game-mode is the current owner; greetd-config remains a conflicting functional predecessor. |
 | hypr-de-help-v0 | provisional | SUPER+/ opens the window. Binds are loaded from hyprctl binds -j. First login is marker-gated via hypr-de-welcome. |
 | hypr-ipc-v0 | provisional | HIS if .socket2.sock exists, else lockfile rescan with /proc/<pid>/comm == Hyprland. No /run/user/<uid> fallback. Mutating hyprctl success is stdout exactly ok. |
-| hypr-logind-session-v0 | provisional | GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path. |
-| hypr-paths-xdg-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
-| hypr-slint-runtime-v0 | provisional | All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely. |
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
 | hyprstate-help-telemetry-v0 | provisional | NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it. |
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
@@ -32,14 +29,19 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | lock-pam-policy-v1 | provisional | The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution. |
 | logind-inhibitor-identity-v1 | provisional | The inhibitor who field is the canonical executable/service identity. |
 | logind-locked-hint-v1 | provisional | LockedHint is the authoritative cross-component lock state; process-name detection is not compatible. |
+| logind-session-v0 | provisional | GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path. |
 | monitor-profile-v0 | provisional | Unknown fields are rejected; malformed profiles are skipped; user profiles override same-named system profiles. Add an explicit version and golden cross-consumer fixtures before extending the schema. |
 | schema-tui-schema-v1 | provisional | Schema version is parsed but not enforced; consumers use an unpinned Git dependency. |
 | secure-suspend-v0 | provisional | Locker readiness and suspend policy need one written positive-acknowledgement contract. |
+| settings-entry-v1 | provisional | Categories=Settings; is the freedesktop convention and also lists the entry in LXQt and Xfce settings managers. X-Dials-Section only picks the group. NoDisplay, Hidden, OnlyShowIn/NotShowIn, and a missing TryExec hide an entry. Exec field codes are dropped. |
+| singleton-guard-v1 | provisional | Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime. |
+| slint-idle-runtime-v0 | provisional | All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely. |
 | slint-kit-api-0.2 | provisional | Compile-time failures catch source drift, but there are no tagged releases or API snapshot tests. |
 | vigil-banner-v1 | provisional | Banner and cancellation state must remain presentation-only; game-mode owns approval and dispatch. |
 | vigil-lock-protocol-v1 | provisional | Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths. |
 | voice-dictation-dbus-v1 | legacy | The CLI wraps an unversioned com.voicedictation.Control interface. D-Bus Status should become authoritative before removing legacy side channels. |
 | waybar-cffi-v2 | provisional | Waybar ABI and Hyprland commit compatibility must be encoded in package metadata and load-tested. |
+| xdg-paths-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
 
 ## Complete surface registry
 
@@ -52,42 +54,44 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | game-mode-approval-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | permission-locked Unix socket, WebAuthn, Web Push, and Tailscale HTTPS | 1 | provisional |
 | game-mode-armed-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | one-shot runtime flag consumed by greetd dispatch | 1 | provisional |
 | game-mode-home-mask-v0 | greetd-game-mode | greetd-game-mode | external:bubblewrap | bubblewrap bind policy and override flag | unversioned | provisional |
-| graphical-session-lifecycle-v0 | hypr-de | external:uwsm, hypr-de | hyprstate, sni-watcher, logind-idle-control, hyprland-voice-dictation, agent-pet | systemd user targets, wants, parts, and ordering | unversioned | provisional |
+| graphical-session-lifecycle-v0 | hypr-de | external:uwsm, hypr-de | hyprstate, sni-watcher, logind-idle-control, wayland-voice-dictation, agent-pet | systemd user targets, wants, parts, and ordering | unversioned | provisional |
 | greetd-greeter-v1 | external:greetd | external:greetd | vigil, greetd-game-mode, greetd-config | greetd IPC and PAM | greetd protocol | external |
 | greetd-static-config-v1 | greetd-game-mode | greetd-game-mode, greetd-config | external:greetd | package/setup-managed greetd configuration | 1 current path plus legacy alternative | legacy |
 | hypr-de-help-v0 | hypr-de | hypr-de | hypr-de | GTK4/libadwaita window plus man pages | unversioned | provisional |
 | hypr-de-theme-v1 | hypr-de | hypr-de | linux-multi-theme-toggle | theme.toml, palette assets, and LMTT module fragments | 1 | stable |
-| hypr-ipc-v0 | hypr-ipc | hypr-ipc | hyprstate, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
-| hypr-logind-session-v0 | hypr-logind | hypr-logind | logind-idle-control, hyprland-voice-dictation, hyprstate | Rust library API | 0.1 | provisional |
-| hypr-paths-xdg-v0 | hypr-paths | hypr-paths | hyprstate, hyprstate-gui, logind-idle-control, vigil, linux-multi-theme-toggle, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
-| hypr-slint-runtime-v0 | hypr-slint-runtime | hypr-slint-runtime | vigil, hyprland-voice-dictation | Rust library API | 0.1 | provisional |
-| hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, hyprstate-gui, waybar-workspace-buttons, hyprland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
-| hyprstate-control-v0 | hyprstate | hyprstate-gui | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
-| hyprstate-help-telemetry-v0 | hyprstate | hyprstate | hyprstate-gui | newline-delimited JSON over Unix stream socket | 0 | provisional |
-| hyprstate-power1 | hyprstate | hyprstate | hyprstate, hyprstate-gui | system D-Bus | 1 | stable |
+| hypr-ipc-v0 | hypr-ipc | hypr-ipc | hyprstate, wayland-voice-dictation | Rust library API | 0.1 | provisional |
+| hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, dials, waybar-workspace-buttons, wayland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
+| hyprstate-control-v0 | hyprstate | dials | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
+| hyprstate-help-telemetry-v0 | hyprstate | hyprstate | dials | newline-delimited JSON over Unix stream socket | 0 | provisional |
+| hyprstate-power1 | hyprstate | hyprstate | hyprstate, dials | system D-Bus | 1 | stable |
 | idle-control-dbus-v1 | logind-idle-control | logind-idle-control | logind-idle-control, hypr-de | session D-Bus plus runtime state file | 1 | legacy |
 | lmtt-color-css-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | CSS color definitions | unversioned | legacy |
 | lmtt-portal-appearance-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | external:xdg-desktop-portal, external:gtk, external:electron | XDG desktop portal Settings (gsettings write, portal ReadOne / SettingChanged) | 1 | provisional |
 | lmtt-qt6ct-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle | external:qt6ct | qt6ct color scheme file plus merged INI Appearance | unversioned | provisional |
 | lmtt-slint-token-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | JSON file plus filesystem watch | unversioned | legacy |
-| lmtt-tokens-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, hyprstate-gui, vigil, waybar-workspace-buttons | lmtt-core library API and `lmtt tokens` CLI | 1 | provisional |
+| lmtt-tokens-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, dials, vigil, waybar-workspace-buttons | lmtt-core library API and `lmtt tokens` CLI | 1 | provisional |
 | lock-pam-policy-v1 | vigil | external:operator, vigil | vigil | PAM service policy | PAM stack | provisional |
-| logind-inhibitor-identity-v1 | hyprstate | hyprstate, logind-idle-control, hyprland-voice-dictation | hyprstate | systemd-logind inhibitor rows | 1 | provisional |
+| logind-inhibitor-identity-v1 | hyprstate | hyprstate, logind-idle-control, wayland-voice-dictation | hyprstate | systemd-logind inhibitor rows | 1 | provisional |
 | logind-locked-hint-v1 | vigil | vigil | hyprstate, logind-idle-control | systemd-logind session LockedHint and lock/unlock signals | logind API | provisional |
+| logind-session-v0 | logind-session | logind-session | logind-idle-control, wayland-voice-dictation, hyprstate | Rust library API | 0.1 | provisional |
 | mason-pacman-repository-v1 | arch-repo | arch-repo | hypr-de, dotfiles, greetd-game-mode, deck-tenant | pacman repository database over GitHub Pages | packages.toml schema 1 plus pacman repository metadata | stable |
-| monitor-profile-v0 | monitor-profiles | monitor-profiles, hyprstate, hyprstate-gui | hyprstate, hyprstate-gui, vigil | TOML files | unversioned | provisional |
+| monitor-profile-v0 | monitor-profiles | monitor-profiles, hyprstate, dials | hyprstate, dials, vigil | TOML files | unversioned | provisional |
 | notification-replace-tag-v1 | hyprstate | hyprstate | external:notification-daemon, hyprnotice | freedesktop notification hint | 1 | stable |
 | precompositor-gpu-selection-v1 | hyprstate | hyprstate | hypr-de | pre-session CLI output and runtime intent file | 1 | stable |
-| release-package-v1 | packaging-workflows | hyprstate, hyprstate-gui, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, hyprland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
-| schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, hyprland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
+| release-package-v1 | packaging-workflows | hyprstate, dials, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, wayland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
+| schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, wayland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
 | secure-suspend-v0 | hyprstate | vigil, hyprstate | external:systemd-logind | lock request, LockedHint readiness, then logind suspend | unversioned | provisional |
-| slint-kit-api-0.2 | slint-kit | slint-kit | hyprstate-gui, vigil | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
+| settings-entry-v1 | dials | dials, linux-multi-theme-toggle | dials | XDG desktop entries | 1 | provisional |
+| singleton-guard-v1 | desktop-commons | desktop-commons | vigil | flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/singleton-guard | 0.1.0 | provisional |
+| slint-idle-runtime-v0 | slint-idle-runtime | slint-idle-runtime | vigil, wayland-voice-dictation | Rust library API | 0.1 | provisional |
+| slint-kit-api-0.2 | slint-kit | slint-kit | dials, vigil | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
 | sni-waybar-ordering-v1 | sni-watcher | sni-watcher | hypr-de | systemd user-unit ordering and D-Bus ownership | 1 | stable |
-| status-notifier-v1 | sni-watcher | sni-watcher | logind-idle-control, hyprland-voice-dictation, agent-pet, hypr-de | StatusNotifier D-Bus protocol | freedesktop/KDE SNI | stable |
+| status-notifier-v1 | sni-watcher | sni-watcher | logind-idle-control, wayland-voice-dictation, agent-pet, hypr-de | StatusNotifier D-Bus protocol | freedesktop/KDE SNI | stable |
 | vigil-banner-v1 | vigil | greetd-game-mode | vigil | greeter banner/countdown state | 1 | provisional |
 | vigil-lock-protocol-v1 | vigil | vigil | external:hyprland, hyprstate | ext-session-lock-v1, PAM, and logind LockedHint | Wayland ext-session-lock-v1 | provisional |
-| voice-dictation-dbus-v1 | hyprland-voice-dictation | hyprland-voice-dictation | hypr-de | session D-Bus, CLI, and live Unix stream | 1 | legacy |
+| voice-dictation-dbus-v1 | wayland-voice-dictation | wayland-voice-dictation | hypr-de | session D-Bus, CLI, and live Unix stream | 1 | legacy |
 | waybar-cffi-v2 | waybar-workspace-buttons | waybar-workspace-buttons | external:waybar, external:hyprland | Waybar CFFI module and Hyprland plugin ABI | wbcffi 2 plus exact Hyprland build hash | provisional |
+| xdg-paths-v0 | xdg-paths | xdg-paths | hyprstate, dials, logind-idle-control, vigil, linux-multi-theme-toggle, wayland-voice-dictation | Rust library API | 0.1 | provisional |
 
 ## agent-pet-event-v1
 
@@ -180,27 +184,6 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Callers receive Error and must reconnect by re-resolving the instance.
 - Barriers: BAR-007, BAR-008, BAR-012, BAR-014
 
-## hypr-logind-session-v0
-
-- Location: `hypr_logind::resolve_session, hypr_logind::Inhibitor, login1 proxies`
-- Compatibility: GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path.
-- Failure behavior: Callers receive Error and must not invent a session path or hold a synthesized inhibitor.
-- Barriers: BAR-007, BAR-008, BAR-020, BAR-025
-
-## hypr-paths-xdg-v0
-
-- Location: `hypr_paths::ConfigDirs and hypr_paths::BaseDirs`
-- Compatibility: Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion.
-- Failure behavior: Callers receive Error and must not invent fallback paths.
-- Barriers: BAR-005, BAR-010, BAR-020, BAR-025
-
-## hypr-slint-runtime-v0
-
-- Location: `hypr_slint_runtime::{WakeHandle, DirtySet, IdleScheduler, Metrics}`
-- Compatibility: All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely.
-- Failure behavior: Presenters remain application-owned. They must acquire buffers only for outputs returned by DirtySet::take_all and expose idle counters during soak testing.
-- Barriers: BAR-005, BAR-007, BAR-008, BAR-025
-
 ## hyprland-ipc-v1
 
 - Location: `$XDG_RUNTIME_DIR/hypr/<instance>/.socket2.sock`
@@ -292,6 +275,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: A missing or delayed hint must block secure suspend rather than time out into suspension.
 - Barriers: BAR-005, BAR-007, BAR-016, BAR-020, BAR-025
 
+## logind-session-v0
+
+- Location: `logind_session::resolve_session, logind_session::Inhibitor, login1 proxies`
+- Compatibility: GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path.
+- Failure behavior: Callers receive Error and must not invent a session path or hold a synthesized inhibitor.
+- Barriers: BAR-007, BAR-008, BAR-020, BAR-025
+
 ## mason-pacman-repository-v1
 
 - Location: `https://masonrhodesdev.github.io/arch-repo/x86_64`
@@ -341,6 +331,27 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Lock readiness timeout aborts the suspend transition and re-arms lid grace; suspend proceeds only after positive lock confirmation.
 - Barriers: BAR-001, BAR-007, BAR-016, BAR-025
 
+## settings-entry-v1
+
+- Location: `$XDG_DATA_HOME/applications and $XDG_DATA_DIRS/applications; Categories=Settings; or X-Dials-Section=<Appearance|Hardware|Network|System|Other>`
+- Compatibility: Categories=Settings; is the freedesktop convention and also lists the entry in LXQt and Xfce settings managers. X-Dials-Section only picks the group. NoDisplay, Hidden, OnlyShowIn/NotShowIn, and a missing TryExec hide an entry. Exec field codes are dropped.
+- Failure behavior: A tool without a desktop entry is simply not listed; dials never embeds or imports another tool.
+- Barriers: BAR-001, BAR-012
+
+## singleton-guard-v1
+
+- Location: `crates/singleton-guard`
+- Compatibility: Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime.
+- Failure behavior: Bypassing the guard (or unlinking the lock file) allows concurrent instances - for vigil-lock, stacked lockers (vigil#50).
+- Barriers: 
+
+## slint-idle-runtime-v0
+
+- Location: `slint_idle_runtime::{WakeHandle, DirtySet, IdleScheduler, Metrics}`
+- Compatibility: All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely.
+- Failure behavior: Presenters remain application-owned. They must acquire buffers only for outputs returned by DirtySet::take_all and expose idle counters during soak testing.
+- Barriers: BAR-005, BAR-007, BAR-008, BAR-025
+
 ## slint-kit-api-0.2
 
 - Location: `slint-kit crate and ui/*.slint`
@@ -389,3 +400,10 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: Waybar ABI and Hyprland commit compatibility must be encoded in package metadata and load-tested.
 - Failure behavior: Waybar refuses an incompatible module; the plugin reports version mismatch and does not load.
 - Barriers: BAR-005, BAR-007, BAR-009, BAR-012, BAR-023
+
+## xdg-paths-v0
+
+- Location: `xdg_paths::ConfigDirs and xdg_paths::BaseDirs`
+- Compatibility: Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion.
+- Failure behavior: Callers receive Error and must not invent fallback paths.
+- Barriers: BAR-005, BAR-010, BAR-020, BAR-025

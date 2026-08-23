@@ -1,7 +1,7 @@
-# hypr-commons
+# desktop-commons
 
 Architecture registry, design principles, recurring patterns, and eventually
-shared code for the Mason Hyprland desktop ecosystem.
+shared code for the Mason Wayland desktop ecosystem (Hyprland session today).
 
 The registries are the source of truth for repository responsibilities,
 cross-repository surfaces, desktop capability ownership, external providers,
@@ -31,9 +31,9 @@ scripts/
   architecture.py   # registry validation and documentation generation
   conformance.py    # live GitHub or sibling-checkout barrier scanner
 crates/             # shared Rust utilities, extracted as tools converge
-                    # hypr-paths (MasonRhodesDev/hypr-paths), hypr-logind
-                    # (MasonRhodesDev/hypr-logind). Planned next: hyprland
-                    # socket2/instance discovery, hypr-slint-runtime,
+                    # xdg-paths (MasonRhodesDev/xdg-paths), logind-session
+                    # (MasonRhodesDev/logind-session). Planned next: hyprland
+                    # socket2/instance discovery, slint-idle-runtime,
                     # #@ directive-file parsing, sysfs helpers
 ```
 

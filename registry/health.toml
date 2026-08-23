@@ -88,7 +88,7 @@ id = "logind-idle-control"
 id = "sni-watcher"
 
 [[package]]
-id = "hyprland-voice-dictation"
+id = "wayland-voice-dictation"
 
 [[package]]
 id = "xdg-desktop-portal-hyprland"

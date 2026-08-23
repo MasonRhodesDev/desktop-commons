@@ -119,13 +119,13 @@ Extract only when a second consumer adopts; order by duplication count:
 1. **hypr-ipc** — socket2 event stream + instance discovery + typed hyprctl
    JSON queries. Today ×4 (hyprstate ✦best, waybar-workspace-buttons, hyprdm,
    voice-dictation).
-2. **hypr-logind** — extracted. Public mirror MasonRhodesDev/hypr-logind.
+2. **logind-session** — extracted. Public mirror MasonRhodesDev/logind-session.
    idle-control and voice-dictation adopted. hyprstate still has local proxies.
 3. **directive-conf** — `#@` parser with pluggable key charset. Today ×2
    dialects.
 4. **packaging templates** — dist/+packaging skeleton (spec, PKGBUILD,
    build-srpm.sh) copied per tool until it stabilizes, then a generator.
-5. **hypr-slint-runtime** — event-driven Slint scheduling, coalescing wake,
+5. **slint-idle-runtime** — event-driven Slint scheduling, coalescing wake,
    per-output dirty tracking, and idle observability. Qualified by Vigil,
    Vigil-lock, and Voice Dictation; see `SLINT_IDLE_RUNTIME.md`.
 

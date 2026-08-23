@@ -21,7 +21,7 @@ package	vigil
 package	lmtt
 package	logind-idle-control
 package	sni-watcher
-package	hyprland-voice-dictation
+package	wayland-voice-dictation
 package	xdg-desktop-portal-hyprland
 package	xdg-desktop-portal-gtk
 portal	org.freedesktop.impl.portal.desktop.hyprland

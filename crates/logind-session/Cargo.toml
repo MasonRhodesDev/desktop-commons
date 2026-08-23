@@ -1,10 +1,10 @@
 [package]
-name = "hypr-logind"
-version = "0.1.0"
+name = "logind-session"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "Fail-closed systemd-logind session resolve and inhibitor RAII"
-repository = "https://github.com/MasonRhodesDev/hypr-logind"
+repository = "https://github.com/MasonRhodesDev/logind-session"
 publish = true
 
 [dependencies]

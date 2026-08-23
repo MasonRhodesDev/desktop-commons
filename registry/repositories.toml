@@ -2,8 +2,8 @@ schema = 1
 generated_at = "2026-08-14"
 
 [[repository]]
-id = "hypr-commons"
-github = "MasonRhodesDev/hypr-commons"
+id = "desktop-commons"
+github = "MasonRhodesDev/desktop-commons"
 visibility = "private"
 lifecycle = "active"
 role = "architecture"
@@ -35,16 +35,16 @@ visibility = "public"
 lifecycle = "active"
 role = "session-policy"
 responsibilities = ["lid and suspend policy", "display profile application", "power and GPU policy", "session telemetry"]
-depends_on = ["monitor-profiles", "hypr-paths", "hypr-logind", "hypr-ipc"]
+depends_on = ["monitor-profiles", "xdg-paths", "logind-session", "hypr-ipc"]
 
 [[repository]]
-id = "hyprstate-gui"
-github = "MasonRhodesDev/hyprstate-gui"
+id = "dials"
+github = "MasonRhodesDev/dials"
 visibility = "public"
 lifecycle = "active"
 role = "settings-surface"
-responsibilities = ["display profile editing", "power policy editing", "live policy explanation"]
-depends_on = ["hyprstate", "monitor-profiles", "slint-kit", "hypr-paths"]
+responsibilities = ["desktop settings window", "display profile editing", "power policy editing", "live policy explanation", "launching external settings tools from XDG desktop entries"]
+depends_on = ["hyprstate", "monitor-profiles", "slint-kit", "xdg-paths"]
 
 [[repository]]
 id = "monitor-profiles"
@@ -72,7 +72,7 @@ visibility = "public"
 lifecycle = "active"
 role = "theme-engine"
 responsibilities = ["Material You palette generation", "application theme fan-out", "theme configuration"]
-depends_on = ["appearance-profiles", "schema-tui", "hypr-paths"]
+depends_on = ["appearance-profiles", "schema-tui", "xdg-paths"]
 
 [[repository]]
 id = "slint-kit"
@@ -93,14 +93,13 @@ responsibilities = ["event-driven workspace buttons", "per-workspace scratch zon
 depends_on = ["linux-multi-theme-toggle"]
 
 [[repository]]
-id = "hyprland-voice-dictation"
-github = "MasonRhodesDev/hyprland-voice-dictation"
-local = "wayland-voice-dictation"
+id = "wayland-voice-dictation"
+github = "MasonRhodesDev/wayland-voice-dictation"
 visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
 responsibilities = ["offline speech recognition", "focused-window text injection", "dictation HUD and tray"]
-depends_on = ["schema-tui", "hypr-paths", "hypr-logind", "hypr-ipc", "hypr-slint-runtime"]
+depends_on = ["schema-tui", "xdg-paths", "logind-session", "hypr-ipc", "slint-idle-runtime"]
 
 [[repository]]
 id = "logind-idle-control"
@@ -109,7 +108,7 @@ visibility = "public"
 lifecycle = "active"
 role = "desktop-service"
 responsibilities = ["per-session idle inhibition", "idle-control D-Bus API", "idle tray item"]
-depends_on = ["sni-watcher", "hypr-paths", "hypr-logind"]
+depends_on = ["sni-watcher", "xdg-paths", "logind-session"]
 
 [[repository]]
 id = "sni-watcher"
@@ -127,7 +126,7 @@ visibility = "public"
 lifecycle = "active"
 role = "login-and-lock"
 responsibilities = ["bare-KMS greetd greeter", "multi-monitor login layout", "ext-session-lock-v1 session lock"]
-depends_on = ["monitor-profiles", "hypr-paths", "hypr-slint-runtime"]
+depends_on = ["monitor-profiles", "xdg-paths", "slint-idle-runtime"]
 
 [[repository]]
 id = "greetd-game-mode"
@@ -187,8 +186,8 @@ responsibilities = ["notification popups", "action-retaining inbox", "Hyprland-n
 depends_on = ["linux-multi-theme-toggle"]
 
 [[repository]]
-id = "hypr-paths"
-github = "MasonRhodesDev/hypr-paths"
+id = "xdg-paths"
+github = "MasonRhodesDev/xdg-paths"
 visibility = "public"
 lifecycle = "active"
 role = "ui-library"
@@ -196,8 +195,8 @@ responsibilities = ["fail-closed XDG config paths", "fail-closed XDG data paths"
 depends_on = []
 
 [[repository]]
-id = "hypr-logind"
-github = "MasonRhodesDev/hypr-logind"
+id = "logind-session"
+github = "MasonRhodesDev/logind-session"
 visibility = "public"
 lifecycle = "active"
 role = "ui-library"
@@ -211,11 +210,11 @@ visibility = "public"
 lifecycle = "active"
 role = "ui-library"
 responsibilities = ["Hyprland instance discovery", "socket2 event listen", "hyprctl ok and json"]
-depends_on = ["hypr-paths"]
+depends_on = ["xdg-paths"]
 
 [[repository]]
-id = "hypr-slint-runtime"
-github = "MasonRhodesDev/hypr-slint-runtime"
+id = "slint-idle-runtime"
+github = "MasonRhodesDev/slint-idle-runtime"
 visibility = "public"
 lifecycle = "active"
 role = "ui-library"

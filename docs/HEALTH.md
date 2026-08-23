@@ -37,7 +37,7 @@ Nothing is uploaded.
 | `lmtt` |
 | `logind-idle-control` |
 | `sni-watcher` |
-| `hyprland-voice-dictation` |
+| `wayland-voice-dictation` |
 | `xdg-desktop-portal-hyprland` |
 | `xdg-desktop-portal-gtk` |
 

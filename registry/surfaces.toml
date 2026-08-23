@@ -1,12 +1,12 @@
 schema = 1
 
 [[surface]]
-id = "hypr-paths-xdg-v0"
-owner = "hypr-paths"
-producers = ["hypr-paths"]
-consumers = ["hyprstate", "hyprstate-gui", "logind-idle-control", "vigil", "linux-multi-theme-toggle", "hyprland-voice-dictation"]
+id = "xdg-paths-v0"
+owner = "xdg-paths"
+producers = ["xdg-paths"]
+consumers = ["hyprstate", "dials", "logind-idle-control", "vigil", "linux-multi-theme-toggle", "wayland-voice-dictation"]
 transport = "Rust library API"
-location = "hypr_paths::ConfigDirs and hypr_paths::BaseDirs"
+location = "xdg_paths::ConfigDirs and xdg_paths::BaseDirs"
 version = "0.1"
 maturity = "provisional"
 compatibility = "Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion."
@@ -14,12 +14,12 @@ failure = "Callers receive Error and must not invent fallback paths."
 barriers = ["BAR-005", "BAR-010", "BAR-020", "BAR-025"]
 
 [[surface]]
-id = "hypr-logind-session-v0"
-owner = "hypr-logind"
-producers = ["hypr-logind"]
-consumers = ["logind-idle-control", "hyprland-voice-dictation", "hyprstate"]
+id = "logind-session-v0"
+owner = "logind-session"
+producers = ["logind-session"]
+consumers = ["logind-idle-control", "wayland-voice-dictation", "hyprstate"]
 transport = "Rust library API"
-location = "hypr_logind::resolve_session, hypr_logind::Inhibitor, login1 proxies"
+location = "logind_session::resolve_session, logind_session::Inhibitor, login1 proxies"
 version = "0.1"
 maturity = "provisional"
 compatibility = "GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path."
@@ -30,7 +30,7 @@ barriers = ["BAR-007", "BAR-008", "BAR-020", "BAR-025"]
 id = "hypr-ipc-v0"
 owner = "hypr-ipc"
 producers = ["hypr-ipc"]
-consumers = ["hyprstate", "hyprland-voice-dictation"]
+consumers = ["hyprstate", "wayland-voice-dictation"]
 transport = "Rust library API"
 location = "hypr_ipc::socket2_path, hypr_ipc::connect_socket2, hypr_ipc::hyprctl_ok"
 version = "0.1"
@@ -42,8 +42,8 @@ barriers = ["BAR-007", "BAR-008", "BAR-012", "BAR-014"]
 [[surface]]
 id = "monitor-profile-v0"
 owner = "monitor-profiles"
-producers = ["monitor-profiles", "hyprstate", "hyprstate-gui"]
-consumers = ["hyprstate", "hyprstate-gui", "vigil"]
+producers = ["monitor-profiles", "hyprstate", "dials"]
+consumers = ["hyprstate", "dials", "vigil"]
 transport = "TOML files"
 location = "/etc/monitor-profiles/*.toml and ~/.config/hypr/profiles/*.toml"
 version = "unversioned"
@@ -53,12 +53,12 @@ failure = "Consumer emits diagnostics and retains or derives a safe display layo
 barriers = ["BAR-003", "BAR-004", "BAR-007"]
 
 [[surface]]
-id = "hypr-slint-runtime-v0"
-owner = "hypr-slint-runtime"
-producers = ["hypr-slint-runtime"]
-consumers = ["vigil", "hyprland-voice-dictation"]
+id = "slint-idle-runtime-v0"
+owner = "slint-idle-runtime"
+producers = ["slint-idle-runtime"]
+consumers = ["vigil", "wayland-voice-dictation"]
 transport = "Rust library API"
-location = "hypr_slint_runtime::{WakeHandle, DirtySet, IdleScheduler, Metrics}"
+location = "slint_idle_runtime::{WakeHandle, DirtySet, IdleScheduler, Metrics}"
 version = "0.1"
 maturity = "provisional"
 compatibility = "All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely."
@@ -82,7 +82,7 @@ barriers = ["BAR-003", "BAR-004", "BAR-007"]
 id = "hyprstate-help-telemetry-v0"
 owner = "hyprstate"
 producers = ["hyprstate"]
-consumers = ["hyprstate-gui"]
+consumers = ["dials"]
 transport = "newline-delimited JSON over Unix stream socket"
 location = "$XDG_RUNTIME_DIR/hyprstate-telemetry.sock"
 version = "0"
@@ -95,7 +95,7 @@ barriers = ["BAR-002", "BAR-007", "BAR-010", "BAR-025"]
 id = "hyprstate-power1"
 owner = "hyprstate"
 producers = ["hyprstate"]
-consumers = ["hyprstate", "hyprstate-gui"]
+consumers = ["hyprstate", "dials"]
 transport = "system D-Bus"
 location = "org.hyprstate.Power1"
 version = "1"
@@ -108,7 +108,7 @@ barriers = ["BAR-001", "BAR-002", "BAR-007", "BAR-011"]
 id = "lmtt-tokens-v1"
 owner = "linux-multi-theme-toggle"
 producers = ["linux-multi-theme-toggle"]
-consumers = ["slint-kit", "hyprstate-gui", "vigil", "waybar-workspace-buttons"]
+consumers = ["slint-kit", "dials", "vigil", "waybar-workspace-buttons"]
 transport = "lmtt-core library API and `lmtt tokens` CLI"
 location = "lmtt_core::tokens and `lmtt tokens`"
 version = "1"
@@ -198,7 +198,7 @@ barriers = ["BAR-005", "BAR-012"]
 [[surface]]
 id = "logind-inhibitor-identity-v1"
 owner = "hyprstate"
-producers = ["hyprstate", "logind-idle-control", "hyprland-voice-dictation"]
+producers = ["hyprstate", "logind-idle-control", "wayland-voice-dictation"]
 consumers = ["hyprstate"]
 transport = "systemd-logind inhibitor rows"
 location = "org.freedesktop.login1.Manager.ListInhibitors"
@@ -225,7 +225,7 @@ barriers = ["BAR-001", "BAR-007", "BAR-010", "BAR-014", "BAR-025"]
 id = "status-notifier-v1"
 owner = "sni-watcher"
 producers = ["sni-watcher"]
-consumers = ["logind-idle-control", "hyprland-voice-dictation", "agent-pet", "hypr-de"]
+consumers = ["logind-idle-control", "wayland-voice-dictation", "agent-pet", "hypr-de"]
 transport = "StatusNotifier D-Bus protocol"
 location = "org.kde.StatusNotifierWatcher"
 version = "freedesktop/KDE SNI"
@@ -238,7 +238,7 @@ barriers = ["BAR-005", "BAR-010", "BAR-014"]
 id = "hyprland-ipc-v1"
 owner = "external:hyprland"
 producers = ["external:hyprland"]
-consumers = ["hyprstate", "hyprstate-gui", "waybar-workspace-buttons", "hyprland-voice-dictation", "agent-pet", "hypr-de"]
+consumers = ["hyprstate", "dials", "waybar-workspace-buttons", "wayland-voice-dictation", "agent-pet", "hypr-de"]
 transport = "Hyprland event socket and hyprctl JSON/dispatch"
 location = "$XDG_RUNTIME_DIR/hypr/<instance>/.socket2.sock"
 version = "Hyprland release API"
@@ -249,8 +249,8 @@ barriers = ["BAR-005", "BAR-012", "BAR-014"]
 
 [[surface]]
 id = "voice-dictation-dbus-v1"
-owner = "hyprland-voice-dictation"
-producers = ["hyprland-voice-dictation"]
+owner = "wayland-voice-dictation"
+producers = ["wayland-voice-dictation"]
 consumers = ["hypr-de"]
 transport = "session D-Bus, CLI, and live Unix stream"
 location = "com.voicedictation.Control and packaged voice-dictation executable"
@@ -263,7 +263,7 @@ barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-014", "BAR-020", "BAR-025"]
 [[surface]]
 id = "schema-tui-schema-v1"
 owner = "schema-tui"
-producers = ["linux-multi-theme-toggle", "hyprland-voice-dictation"]
+producers = ["linux-multi-theme-toggle", "wayland-voice-dictation"]
 consumers = ["schema-tui"]
 transport = "JSON Schema and TOML"
 location = "repository-owned config-schema.json"
@@ -315,7 +315,7 @@ barriers = ["BAR-005", "BAR-007", "BAR-012"]
 [[surface]]
 id = "release-package-v1"
 owner = "packaging-workflows"
-producers = ["hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
+producers = ["hyprstate", "dials", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "wayland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
 consumers = ["arch-repo"]
 transport = "Git tag, GitHub Release, Arch package, and source RPM"
 location = "v* tags and *.pkg.tar.zst release assets"
@@ -354,7 +354,7 @@ barriers = ["BAR-001", "BAR-007", "BAR-010", "BAR-014"]
 [[surface]]
 id = "hyprstate-control-v0"
 owner = "hyprstate"
-producers = ["hyprstate-gui"]
+producers = ["dials"]
 consumers = ["hyprstate"]
 transport = "TOML/directive files, one-word state files, and subprocess CLI calls"
 location = "~/.config/hypr/power.conf, power-override, monitor profiles, and /var/lib/hyprstate/profile"
@@ -365,10 +365,23 @@ failure = "Path, CLI, and package skew presents as unavailable state or command 
 barriers = ["BAR-001", "BAR-002", "BAR-007", "BAR-010", "BAR-025"]
 
 [[surface]]
+id = "settings-entry-v1"
+owner = "dials"
+producers = ["dials", "linux-multi-theme-toggle"]
+consumers = ["dials"]
+transport = "XDG desktop entries"
+location = "$XDG_DATA_HOME/applications and $XDG_DATA_DIRS/applications; Categories=Settings; or X-Dials-Section=<Appearance|Hardware|Network|System|Other>"
+version = "1"
+maturity = "provisional"
+compatibility = "Categories=Settings; is the freedesktop convention and also lists the entry in LXQt and Xfce settings managers. X-Dials-Section only picks the group. NoDisplay, Hidden, OnlyShowIn/NotShowIn, and a missing TryExec hide an entry. Exec field codes are dropped."
+failure = "A tool without a desktop entry is simply not listed; dials never embeds or imports another tool."
+barriers = ["BAR-001", "BAR-012"]
+
+[[surface]]
 id = "slint-kit-api-0.2"
 owner = "slint-kit"
 producers = ["slint-kit"]
-consumers = ["hyprstate-gui", "vigil"]
+consumers = ["dials", "vigil"]
 transport = "Rust API, Slint imports, semantic properties, and controls"
 location = "slint-kit crate and ui/*.slint"
 version = "0.2 commit-pinned API"
@@ -472,7 +485,7 @@ barriers = ["BAR-001", "BAR-007", "BAR-016", "BAR-025"]
 id = "graphical-session-lifecycle-v0"
 owner = "hypr-de"
 producers = ["external:uwsm", "hypr-de"]
-consumers = ["hyprstate", "sni-watcher", "logind-idle-control", "hyprland-voice-dictation", "agent-pet"]
+consumers = ["hyprstate", "sni-watcher", "logind-idle-control", "wayland-voice-dictation", "agent-pet"]
 transport = "systemd user targets, wants, parts, and ordering"
 location = "graphical-session.target and packaged user units"
 version = "unversioned"
@@ -561,11 +574,11 @@ barriers = ["BAR-004", "BAR-009", "BAR-019", "BAR-021"]
 
 [[surface]]
 id = "singleton-guard-v1"
-owner = "hypr-commons"
-producers = ["hypr-commons"]
+owner = "desktop-commons"
+producers = ["desktop-commons"]
 consumers = ["vigil"]
-transport = "flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/hypr-singleton"
-location = "crates/hypr-singleton"
+transport = "flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/singleton-guard"
+location = "crates/singleton-guard"
 version = "0.1.0"
 maturity = "provisional"
 compatibility = "Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime."

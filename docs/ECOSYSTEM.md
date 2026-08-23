@@ -13,7 +13,7 @@ flowchart LR
         repo_couchcord["couchcord"]
     end
     subgraph role_architecture["architecture"]
-        repo_hypr_commons["hypr-commons"]
+        repo_desktop_commons["desktop-commons"]
     end
     subgraph role_contract["contract"]
         repo_appearance_profiles["appearance-profiles"]
@@ -26,9 +26,9 @@ flowchart LR
     end
     subgraph role_desktop_service["desktop-service"]
         repo_agent_pet["agent-pet"]
-        repo_hyprland_voice_dictation["hyprland-voice-dictation"]
         repo_logind_idle_control["logind-idle-control"]
         repo_sni_watcher["sni-watcher"]
+        repo_wayland_voice_dictation["wayland-voice-dictation"]
     end
     subgraph role_desktop_shell_extension["desktop-shell-extension"]
         repo_waybar_workspace_buttons["waybar-workspace-buttons"]
@@ -52,7 +52,7 @@ flowchart LR
         repo_hyprstate["hyprstate"]
     end
     subgraph role_settings_surface["settings-surface"]
-        repo_hyprstate_gui["hyprstate-gui"]
+        repo_dials["dials"]
     end
     subgraph role_steam_deck_service["steam-deck-service"]
         repo_deck_tenant["deck-tenant"]
@@ -62,13 +62,17 @@ flowchart LR
     end
     subgraph role_ui_library["ui-library"]
         repo_hypr_ipc["hypr-ipc"]
-        repo_hypr_logind["hypr-logind"]
-        repo_hypr_paths["hypr-paths"]
-        repo_hypr_slint_runtime["hypr-slint-runtime"]
+        repo_logind_session["logind-session"]
         repo_schema_tui["schema-tui"]
+        repo_slint_idle_runtime["slint-idle-runtime"]
         repo_slint_kit["slint-kit"]
+        repo_xdg_paths["xdg-paths"]
     end
     repo_packaging_workflows --> repo_arch_repo
+    repo_hyprstate --> repo_dials
+    repo_monitor_profiles --> repo_dials
+    repo_slint_kit --> repo_dials
+    repo_xdg_paths --> repo_dials
     repo_hypr_de --> repo_dotfiles
     repo_hyprstate --> repo_dotfiles
     repo_linux_multi_theme_toggle --> repo_dotfiles
@@ -80,32 +84,28 @@ flowchart LR
     repo_sni_watcher --> repo_hypr_de
     repo_vigil --> repo_hypr_de
     repo_waybar_workspace_buttons --> repo_hypr_de
-    repo_hypr_paths --> repo_hypr_ipc
-    repo_hypr_ipc --> repo_hyprland_voice_dictation
-    repo_hypr_logind --> repo_hyprland_voice_dictation
-    repo_hypr_paths --> repo_hyprland_voice_dictation
-    repo_hypr_slint_runtime --> repo_hyprland_voice_dictation
-    repo_schema_tui --> repo_hyprland_voice_dictation
+    repo_xdg_paths --> repo_hypr_ipc
     repo_linux_multi_theme_toggle --> repo_hyprnotice
     repo_hypr_ipc --> repo_hyprstate
-    repo_hypr_logind --> repo_hyprstate
-    repo_hypr_paths --> repo_hyprstate
+    repo_logind_session --> repo_hyprstate
     repo_monitor_profiles --> repo_hyprstate
-    repo_hypr_paths --> repo_hyprstate_gui
-    repo_hyprstate --> repo_hyprstate_gui
-    repo_monitor_profiles --> repo_hyprstate_gui
-    repo_slint_kit --> repo_hyprstate_gui
+    repo_xdg_paths --> repo_hyprstate
     repo_appearance_profiles --> repo_linux_multi_theme_toggle
-    repo_hypr_paths --> repo_linux_multi_theme_toggle
     repo_schema_tui --> repo_linux_multi_theme_toggle
-    repo_hypr_logind --> repo_logind_idle_control
-    repo_hypr_paths --> repo_logind_idle_control
+    repo_xdg_paths --> repo_linux_multi_theme_toggle
+    repo_logind_session --> repo_logind_idle_control
     repo_sni_watcher --> repo_logind_idle_control
+    repo_xdg_paths --> repo_logind_idle_control
     repo_linux_multi_theme_toggle --> repo_slint_kit
-    repo_hypr_paths --> repo_vigil
-    repo_hypr_slint_runtime --> repo_vigil
     repo_monitor_profiles --> repo_vigil
+    repo_slint_idle_runtime --> repo_vigil
+    repo_xdg_paths --> repo_vigil
     repo_linux_multi_theme_toggle --> repo_waybar_workspace_buttons
+    repo_hypr_ipc --> repo_wayland_voice_dictation
+    repo_logind_session --> repo_wayland_voice_dictation
+    repo_schema_tui --> repo_wayland_voice_dictation
+    repo_slint_idle_runtime --> repo_wayland_voice_dictation
+    repo_xdg_paths --> repo_wayland_voice_dictation
 ```
 
 ## Repository registry
@@ -117,26 +117,26 @@ flowchart LR
 | [arch-repo](https://github.com/MasonRhodesDev/arch-repo) | delivery | active | pacman repository aggregation; GitHub Pages package publication |
 | [couchcord](https://github.com/MasonRhodesDev/couchcord) | alternate-session-service | active | controller-driven Discord voice control; gamescope activity overlay; couch-session diagnostics |
 | [deck-tenant](https://github.com/MasonRhodesDev/deck-tenant) | steam-deck-service | active | rootless package tenant; SteamOS package persistence; per-user service wiring |
+| [desktop-commons](https://github.com/MasonRhodesDev/desktop-commons) | architecture | active | ecosystem registry; architecture barriers; cross-repository decisions |
+| [dials](https://github.com/MasonRhodesDev/dials) | settings-surface | active | desktop settings window; display profile editing; power policy editing; live policy explanation; launching external settings tools from XDG desktop entries |
 | [dotfiles](https://github.com/MasonRhodesDev/dotfiles) | personal-overlay | active | machine-specific configuration; personal package selection; chezmoi deployment |
 | [greetd-config](https://github.com/MasonRhodesDev/greetd-config) | login-configuration | archived | ReGreet under Hyprland; PAM composition; legacy game-mode configuration |
 | [greetd-game-mode](https://github.com/MasonRhodesDev/greetd_game_mode) | alternate-session | active | gamepad-triggered game session; passkey approval gate; greetd dispatch |
-| [hypr-commons](https://github.com/MasonRhodesDev/hypr-commons) | architecture | active | ecosystem registry; architecture barriers; cross-repository decisions |
 | [hypr-de](https://github.com/MasonRhodesDev/hypr-DE) | session-config | active | packaged Hyprland configuration; runtime package set; default configuration |
 | [hypr-de-extras](https://github.com/MasonRhodesDev/hypr-de-extras) | delivery | active | COPR hosting for third-party hypr-DE deps that Fedora and other COPRs do not ship; Arch PKGBUILD for overskride |
 | [hypr-ipc](https://github.com/MasonRhodesDev/hypr-ipc) | ui-library | active | Hyprland instance discovery; socket2 event listen; hyprctl ok and json |
-| [hypr-logind](https://github.com/MasonRhodesDev/hypr-logind) | ui-library | active | fail-closed logind session resolve; logind inhibitor RAII; login1 Manager and Session proxies |
-| [hypr-paths](https://github.com/MasonRhodesDev/hypr-paths) | ui-library | active | fail-closed XDG config paths; fail-closed XDG data paths; fail-closed XDG runtime paths |
-| [hypr-slint-runtime](https://github.com/MasonRhodesDev/hypr-slint-runtime) | ui-library | active | event-driven Slint scheduling; coalescing redraw wake; per-output dirty tracking; idle observability |
-| [hyprland-voice-dictation](https://github.com/MasonRhodesDev/hyprland-voice-dictation) | desktop-service | active | offline speech recognition; focused-window text injection; dictation HUD and tray |
 | [hyprnotice](https://github.com/MasonRhodesDev/hyprnotice) | notification-daemon | archived | notification popups; action-retaining inbox; Hyprland-native notification UI |
 | [hyprstate](https://github.com/MasonRhodesDev/hyprstate) | session-policy | active | lid and suspend policy; display profile application; power and GPU policy; session telemetry |
-| [hyprstate-gui](https://github.com/MasonRhodesDev/hyprstate-gui) | settings-surface | active | display profile editing; power policy editing; live policy explanation |
 | [linux-multi-theme-toggle](https://github.com/MasonRhodesDev/linux-multi-theme-toggle) | theme-engine | active | Material You palette generation; application theme fan-out; theme configuration |
 | [logind-idle-control](https://github.com/MasonRhodesDev/logind-idle-control) | desktop-service | active | per-session idle inhibition; idle-control D-Bus API; idle tray item |
+| [logind-session](https://github.com/MasonRhodesDev/logind-session) | ui-library | active | fail-closed logind session resolve; logind inhibitor RAII; login1 Manager and Session proxies |
 | [monitor-profiles](https://github.com/MasonRhodesDev/monitor-profiles) | contract | active | neutral monitor topology schema; profile selection; layout resolution |
 | [packaging-workflows](https://github.com/MasonRhodesDev/packaging-workflows) | delivery | active | reusable Arch packaging; reusable COPR packaging; GitHub release publication |
 | [schema-tui](https://github.com/MasonRhodesDev/schema-tui) | ui-library | active | schema-driven TOML configuration editing |
+| [slint-idle-runtime](https://github.com/MasonRhodesDev/slint-idle-runtime) | ui-library | active | event-driven Slint scheduling; coalescing redraw wake; per-output dirty tracking; idle observability |
 | [slint-kit](https://github.com/MasonRhodesDev/slint-kit) | ui-library | active | shared Slint controls; design tokens; live LMTT token bridge |
 | [sni-watcher](https://github.com/MasonRhodesDev/sni-watcher) | desktop-service | active | persistent StatusNotifier registry; tray survival across bar reloads |
 | [vigil](https://github.com/MasonRhodesDev/vigil) | login-and-lock | active | bare-KMS greetd greeter; multi-monitor login layout; ext-session-lock-v1 session lock |
 | [waybar-workspace-buttons](https://github.com/MasonRhodesDev/waybar-workspace-buttons) | desktop-shell-extension | active | event-driven workspace buttons; per-workspace scratch zones |
+| [wayland-voice-dictation](https://github.com/MasonRhodesDev/wayland-voice-dictation) | desktop-service | active | offline speech recognition; focused-window text injection; dictation HUD and tray |
+| [xdg-paths](https://github.com/MasonRhodesDev/xdg-paths) | ui-library | active | fail-closed XDG config paths; fail-closed XDG data paths; fail-closed XDG runtime paths |

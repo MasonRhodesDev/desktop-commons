@@ -35,7 +35,7 @@ impl SingletonGuard {
 #[derive(Debug)]
 pub enum Error {
     /// `$XDG_RUNTIME_DIR` missing, empty, or not absolute.
-    RuntimeDir(hypr_paths::Error),
+    RuntimeDir(xdg_paths::Error),
     /// Opening or locking the lock file failed for a reason other than a
     /// live owner.
     Io(PathBuf, io::Error),
@@ -59,7 +59,7 @@ impl std::error::Error for Error {}
 ///   for the lifetime of the process.
 /// - `Ok(None)` — another live process owns it.
 pub fn try_acquire(name: &str) -> Result<Option<SingletonGuard>, Error> {
-    let dirs = hypr_paths::BaseDirs::from_env().map_err(Error::RuntimeDir)?;
+    let dirs = xdg_paths::BaseDirs::from_env().map_err(Error::RuntimeDir)?;
     try_acquire_at(&dirs.runtime_dir().join(format!("{name}.lock")))
 }
 
@@ -96,7 +96,7 @@ mod tests {
 
     fn temp_lock_path(tag: &str) -> PathBuf {
         let mut path = std::env::temp_dir();
-        path.push(format!("hypr-singleton-test-{tag}-{}", std::process::id()));
+        path.push(format!("singleton-guard-test-{tag}-{}", std::process::id()));
         path
     }
 

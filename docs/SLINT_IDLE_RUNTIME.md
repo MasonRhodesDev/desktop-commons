@@ -1,6 +1,6 @@
 # Slint idle runtime
 
-Status: **implemented as `hypr-slint-runtime` 0.1.0** (2026-08-20).
+Status: **implemented as `slint-idle-runtime` 0.1.0** (2026-08-20).
 
 Decision record: [ADR 0002](adr/0002-event-driven-slint-runtime.md).
 
@@ -67,8 +67,8 @@ flowchart TD
 
 ## Shared crate boundary
 
-The implementation belongs in `hypr-commons` as the Rust crate
-`hypr-slint-runtime`. It is a platform/runtime adapter, not a `.slint`
+The implementation belongs in `desktop-commons` as the Rust crate
+`slint-idle-runtime`. It is a platform/runtime adapter, not a `.slint`
 language plugin.
 
 The shared crate owns:
@@ -89,7 +89,7 @@ Application-specific crates own:
 
 ```mermaid
 flowchart TB
-    A[Vigil, Vigil-lock, Voice Dictation, future Slint apps] --> R[hypr-slint-runtime]
+    A[Vigil, Vigil-lock, Voice Dictation, future Slint apps] --> R[slint-idle-runtime]
     R --> W[WakeHandle]
     R --> D[DirtySet]
     R --> S[IdleScheduler]

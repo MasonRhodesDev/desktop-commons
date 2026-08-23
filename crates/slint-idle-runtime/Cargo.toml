@@ -1,12 +1,12 @@
 [package]
-name = "hypr-slint-runtime"
-version = "0.1.0"
+name = "slint-idle-runtime"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.92"
 license = "MIT"
 description = "Event-driven idle scheduling and redraw coordination for long-lived Slint apps"
-repository = "https://github.com/MasonRhodesDev/hypr-slint-runtime"
-documentation = "https://docs.rs/hypr-slint-runtime"
+repository = "https://github.com/MasonRhodesDev/slint-idle-runtime"
+documentation = "https://docs.rs/slint-idle-runtime"
 readme = "README.md"
 keywords = ["slint", "wayland", "idle", "scheduler"]
 categories = ["gui"]

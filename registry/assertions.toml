@@ -190,7 +190,7 @@ message = "Cross-process telemetry must carry an explicit envelope version."
 [[assertion]]
 id = "packaging-workflow-references-are-immutable"
 kind = "workflow_references_pinned"
-repositories = ["hypr-commons", "dotfiles", "hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant", "packaging-workflows", "arch-repo", "hypr-paths", "hypr-logind", "hypr-ipc", "hypr-slint-runtime"]
+repositories = ["desktop-commons", "dotfiles", "hyprstate", "dials", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "wayland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant", "packaging-workflows", "arch-repo", "xdg-paths", "logind-session", "hypr-ipc", "slint-idle-runtime"]
 barriers = ["BAR-022", "BAR-023"]
 concerns = ["dependency-pinning", "release-gating"]
 severity = "error"
@@ -199,8 +199,8 @@ message = "Actions and reusable workflows must use immutable commit SHAs."
 [[assertion]]
 id = "slint-idle-runtime-pins-slint"
 kind = "file_contains"
-repository = "hypr-commons"
-path = "crates/hypr-slint-runtime/Cargo.toml"
+repository = "desktop-commons"
+path = "crates/slint-idle-runtime/Cargo.toml"
 pattern = "slint = \\{ version = \"=1\\.17\\.1\""
 barriers = ["BAR-005", "BAR-007", "BAR-025"]
 concerns = ["slint-idle-runtime"]
@@ -232,7 +232,7 @@ message = "Reusable workflow containers must be pinned to registry digests."
 [[assertion]]
 id = "arch-packages-pin-source-checksums"
 kind = "file_not_contains"
-repositories = ["hyprstate", "hyprstate-gui", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "hyprland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
+repositories = ["hyprstate", "dials", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "wayland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
 path = "packaging/PKGBUILD"
 pattern = "sha256sums=\\(['\"]SKIP['\"]\\)"
 barriers = ["BAR-022", "BAR-023"]
@@ -377,7 +377,7 @@ message = "Lock discovery must not use machine-wide process-name matching."
 [[assertion]]
 id = "gui-does-not-own-telemetry-socket"
 kind = "file_not_contains"
-repository = "hyprstate-gui"
+repository = "dials"
 path = "src/telemetry.rs"
 pattern = "UnixListener"
 barriers = ["BAR-002", "BAR-010"]

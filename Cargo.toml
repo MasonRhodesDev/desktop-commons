@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/hypr-paths",
-    "crates/hypr-logind",
+    "crates/xdg-paths",
+    "crates/logind-session",
     "crates/hypr-ipc",
-    "crates/hypr-slint-runtime",
-    "crates/hypr-singleton",
+    "crates/slint-idle-runtime",
+    "crates/singleton-guard",
 ]

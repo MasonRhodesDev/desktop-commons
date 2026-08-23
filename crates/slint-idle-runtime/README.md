@@ -1,4 +1,4 @@
-# hypr-slint-runtime
+# slint-idle-runtime
 
 Shared event-driven idle mechanics for long-lived Slint applications.
 
@@ -7,7 +7,7 @@ per-output dirty tracking, frame/timer/indefinite scheduling, redraw adapter
 glue, and idle metrics. Presentation remains application-owned.
 
 ```rust
-use hypr_slint_runtime::{DirtySet, IdleScheduler, Metrics, WakeHandle};
+use slint_idle_runtime::{DirtySet, IdleScheduler, Metrics, WakeHandle};
 use std::sync::Arc;
 
 let dirty = Arc::new(DirtySet::<u32>::new());
@@ -31,7 +31,7 @@ let decision = IdleScheduler::default().from_slint([&window]);
 wait_for_event_or_deadline(decision);
 # fn event_loop_ping() {}
 # fn render_and_commit(_: u32) {}
-# fn wait_for_event_or_deadline(_: hypr_slint_runtime::WaitDecision) {}
+# fn wait_for_event_or_deadline(_: slint_idle_runtime::WaitDecision) {}
 # let window: slint::Window = panic!();
 ```
 
