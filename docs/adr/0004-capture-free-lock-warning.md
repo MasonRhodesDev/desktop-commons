@@ -86,8 +86,9 @@ and frame fingerprints without affecting the host session.
   sleep inhibitor covers it.
 - Wallpaper assets must be ready before their fade begins; late assets extend
   the warning instead of producing a blank handoff.
-- Output topology changes before commitment cancel rather than risking partial
-  coverage.
+- Output topology changes before commitment cancel the warning rather than
+  risk partial coverage; the non-cancelable transition commits instead, and
+  the new output gets a lock surface like any hotplug-while-locked.
 - The simulator and production backend deliberately use different blur
   implementations; the dependency boundary prevents simulator code from
   entering the lock binary.
