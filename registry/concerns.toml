@@ -82,7 +82,7 @@ owner = "hypr-de"
 internal = ["hypr-de", "dotfiles"]
 external = []
 risk = "low"
-notes = "hypr-DE is packaged Hyprland configuration and the runtime packages it needs, not a greeter session. Log into stock Hyprland (uwsm). Dotfiles are a personal overlay, not a competing distribution."
+notes = "hypr-DE is packaged Hyprland configuration and the runtime packages it needs, not a greeter session. Log into stock Hyprland (uwsm). Dotfiles are a personal overlay, not a competing distribution. Fresh-install validated 2026-08-23 at 0.2.21 on both Arch (57/57) and Fedora 44 (56/56, first Fedora run) via tests/qemu-fresh."
 barriers = ["BAR-001", "BAR-013"]
 
 [[concern]]
