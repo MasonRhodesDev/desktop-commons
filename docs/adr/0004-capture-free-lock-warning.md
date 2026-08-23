@@ -1,6 +1,7 @@
 # ADR 0004: Capture-free, interruptible lock warning
 
-- Status: accepted
+- Status: accepted (amended 2026-08-23: manual-lock transition, reveal,
+  frost opacity lever — vigil #52)
 - Date: 2026-08-20
 
 ## Context
@@ -35,10 +36,32 @@ not contain a production CPU/GPU desktop-blur path. Its safe windowed simulator
 may blur its generated fake desktop solely to preview the compositor-owned
 effect.
 
-Idle policy is the only path that uses the warning. Manual lock and
-before-sleep paths commit immediately. A second locker joins the warning over
-an unprivileged runtime socket, requests immediate commitment, and reports
-success only after compositor lock confirmation.
+Idle policy is the only path that uses the cancelable warning. Manual lock
+and before-sleep paths run a short **non-cancelable transition** (default
+400 ms, each ramp clamped to 2 s) on the same overlay machinery before
+requesting `ext-session-lock-v1`: input is ignored, output hotplug commits
+immediately rather than cancelling, and the wallpaper never holds the commit.
+`vigil-lock --immediate` restores the instant commit. A second locker joins
+either pre-lock phase over an unprivileged runtime socket, requests immediate
+commitment, and reports success only after compositor lock confirmation.
+
+On unlock, after authorization, Vigil maps a pointer-transparent,
+keyboard-inert **reveal** overlay per output while still locked, then sends
+`unlock_and_destroy`, then fades wallpaper and frost out and exits. The wait
+for the overlays to map and the fade itself are both bounded; the desktop is
+never shown before `unlock_and_destroy`, and `unlock_and_destroy` is never
+sent before authorization.
+
+**Frost strength.** `ext-background-effect-v1` only toggles a blur region;
+it has no strength parameter. Vigil therefore drives frost as a
+whole-surface opacity: `hyprland-surface-v1` `set_opacity` (documented to
+multiply "blur behind the surface in addition to the surface's content",
+and applied in Hyprland's blur pass regardless of
+`decoration:blur:ignore_opacity`), else `wp-alpha-modifier-v1` (portable;
+ramps blur wherever a compositor ties blur to surface alpha), else a
+per-pixel tint ramp over a constant blur. These are optional client-protocol
+capability tiers, not external compositor configuration, which keeps the
+rejected-alternatives reasoning below intact.
 
 Callers that must establish readiness use `vigil-lock --wait`. Vigil detaches
 the long-lived locker and returns zero only after compositor confirmation;
@@ -56,8 +79,11 @@ and frame fingerprints without affecting the host session.
 
 - Live desktop changes remain visible beneath frost without a captured frame.
 - Unsupported compositors retain a functional, cancelable tint transition.
-- Portable configuration cannot promise a blur radius or animate blur
-  strength.
+- Portable configuration cannot promise a blur radius. Blur *strength*
+  animates only through the surface-opacity tiers above; the tint ramp is
+  the portable guarantee.
+- `--wait` returns ~400 ms later on manual/before-sleep locks; hypridle's
+  sleep inhibitor covers it.
 - Wallpaper assets must be ready before their fade begins; late assets extend
   the warning instead of producing a blank handoff.
 - Output topology changes before commitment cancel rather than risking partial
