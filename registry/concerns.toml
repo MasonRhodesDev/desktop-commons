@@ -783,6 +783,30 @@ notes = "dials is the one settings window (ADR 0005). Pages are native Slint (Di
 barriers = ["BAR-002", "BAR-005", "BAR-012"]
 
 [[concern]]
+id = "default-editor"
+area = "applications"
+status = "owned"
+priority = "P3"
+owner = "hypr-de"
+internal = ["hypr-de", "linux-multi-theme-toggle"]
+external = ["Neovim"]
+risk = "low"
+notes = "hypr-de installs neovim, sets EDITOR/VISUAL=nvim in the uwsm env, and ships a package-owned /etc/xdg/nvim/sysinit.vim plus a hypr-de-nvim lmtt module that renders a Material You colorscheme to ~/.config/hypr-de/nvim-colors.lua. hypr-de-help resolves a real editor and no longer hard-codes nano. Minimal config, not a distro; ~/.config/nvim overrides. Added 2026-08-23 after a fresh-install QEMU inspection found the Edit-local.lua action failing on missing nano."
+barriers = ["BAR-001"]
+
+[[concern]]
+id = "swaync-style-import-gate"
+area = "shell"
+status = "gap"
+priority = "P3"
+owner = ""
+internal = ["linux-multi-theme-toggle", "hypr-de"]
+external = ["SwayNC"]
+risk = "low"
+notes = "lmtt's built-in swaync module only writes ~/.config/swaync/lmtt-colors.css when a ~/.config/swaync/style.css marks swaync 'configured'. hypr-de launches swaync with --style ~/.config/hypr-de/swaync.css and never creates style.css, so that gate never fired and the imported color file was absent -> control-center transparent. Worked around 2026-08-23 by making hypr-de's swaync template self-contained (colors inline from tokens). Proper fix: lmtt should treat a --style DE sheet as 'configured' so apply() runs, or drop the gate."
+barriers = ["BAR-005"]
+
+[[concern]]
 id = "component-naming"
 area = "architecture"
 status = "owned"

@@ -7,11 +7,11 @@
 | Status | Count |
 |---|---:|
 | external | 22 |
-| gap | 13 |
+| gap | 14 |
 | hybrid | 16 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 35 |
+| owned | 36 |
 | planned | 1 |
 
 ## Gaps and high-risk boundaries
@@ -58,6 +58,7 @@
 | P2 | input-method | input | gap | — | — | medium |
 | P2 | crash-reporting | operations | gap | — | — | medium |
 | P3 | search-indexing | shell | gap | — | — | low |
+| P3 | swaync-style-import-gate | shell | gap | — | SwayNC | low |
 
 ## Complete matrix
 
@@ -71,6 +72,7 @@
 | P2 | theme-application | appearance | owned | linux-multi-theme-toggle | matugen, GTK settings, XDG portal, qt6ct | medium | LMTT is the only palette generator and application-theme fan-out. Qt apps using qt6ct get an owned ~/.config/qt6ct/colors/lmtt.conf plus a merged [Appearance] (Fusion, custom_palette, icon_theme); Fonts and other qt6ct sections stay the user's. A non-qt6ct QT_QPA_PLATFORMTHEME is left alone. |
 | P2 | wallpaper | appearance | hybrid | hypr-de | matugen, swaybg | medium | hypr-DE owns user-facing selection while LMTT derives palettes and an external backend renders the image. |
 | P2 | default-applications | applications | external | — | XDG MIME applications, xdg-utils | medium | Browser, editor, media, and file defaults need an explicit package/config source of truth. |
+| P3 | default-editor | applications | owned | hypr-de | Neovim | low | hypr-de installs neovim, sets EDITOR/VISUAL=nvim in the uwsm env, and ships a package-owned /etc/xdg/nvim/sysinit.vim plus a hypr-de-nvim lmtt module that renders a Material You colorscheme to ~/.config/hypr-de/nvim-colors.lua. hypr-de-help resolves a real editor and no longer hard-codes nano. Minimal config, not a distro; ~/.config/nvim overrides. Added 2026-08-23 after a fresh-install QEMU inspection found the Edit-local.lua action failing on missing nano. |
 | P3 | file-manager | applications | external | — | Nautilus | low | Nautilus is the packaged file-manager surface (GTK4/libadwaita, follows LMTT portal color-scheme and accent); udiskie independently owns automount. |
 | P3 | terminal | applications | external | — | Kitty, WezTerm in the personal dotfiles overlay | low | hypr-DE selects Kitty while the personal dotfiles overlay also configures WezTerm; neither implementation is ecosystem-owned. |
 | P2 | component-naming | architecture | owned | desktop-commons | — | low | Principle 13: a hypr/hyprland name is reserved for components that only work with Hyprland (hypr-ipc, hyprstate, hypr-de, hypr-de-extras, waybar-workspace-buttons). Everything that targets Wayland, D-Bus, logind, or XDG carries a neutral name. Applied 2026-08-22 (ADR 0005): hyprstate-gui→dials, hypr-paths→xdg-paths, hypr-logind→logind-session, hypr-slint-runtime→slint-idle-runtime, hypr-singleton→singleton-guard, hypr-commons→desktop-commons, hyprland-voice-dictation→wayland-voice-dictation. No compatibility aliases; the old crates.io names stay at 0.1.0 and are not updated. |
@@ -149,6 +151,7 @@
 | P2 | notifications | shell | hybrid | hypr-de | Sway Notification Center, org.freedesktop.Notifications | medium | SwayNC is the active daemon while hypr-DE owns recovery proxy, configuration, and styling; hyprnotice is archived and must not claim the bus. |
 | P2 | on-screen-display | shell | owned | hypr-de | brightnessctl, WirePlumber wpctl, playerctl, libnotify | medium | Package-owned scripts implement volume, brightness, and media OSD workflows using narrow external mechanisms. |
 | P3 | search-indexing | shell | gap | — | — | low | Application launch exists, but file/content search and indexing are not covered. |
+| P3 | swaync-style-import-gate | shell | gap | — | SwayNC | low | lmtt's built-in swaync module only writes ~/.config/swaync/lmtt-colors.css when a ~/.config/swaync/style.css marks swaync 'configured'. hypr-de launches swaync with --style ~/.config/hypr-de/swaync.css and never creates style.css, so that gate never fired and the imported color file was absent -> control-center transparent. Worked around 2026-08-23 by making hypr-de's swaync template self-contained (colors inline from tokens). Proper fix: lmtt should treat a --style DE sheet as 'configured' so apply() runs, or drop the gate. |
 | P3 | tray-host | shell | external | — | Waybar tray module | low | Waybar displays items but must not own the watcher name. |
 | P2 | tray-registry | shell | owned | sni-watcher | StatusNotifierItem protocol | medium | sni-watcher owns the registry so item lifetime is independent from Waybar. |
 | P2 | workspace-navigation | shell | owned | waybar-workspace-buttons | Hyprland, Waybar | medium | The packaged CFFI module owns waybar workspace buttons. workspace-zones is a separate hyprpm plugin (ABI-locked, not in the RPM/PKGBUILD); SUPER+ALT+S / hyper+S / SUPER+CTRL+ALT+S call it. man workspace-zones is the reference. Named scratchpad SUPER+S / SUPER+0 is built-in special:magic. |
