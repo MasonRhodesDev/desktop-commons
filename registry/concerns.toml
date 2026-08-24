@@ -826,7 +826,7 @@ owner = "hypr-de"
 internal = ["hypr-de", "dotfiles"]
 external = ["chezmoi"]
 risk = "medium"
-notes = "hypr-DE owns system defaults while chezmoi owns personal overrides and machine variance."
+notes = "hypr-DE owns system defaults while chezmoi owns personal overrides and machine variance. Upgrade path is covered by tests/qemu-fresh/run.sh upgrade (rolls back one release, autologins, upgrades under a live session); hypr-de ships a PostTransaction hook that reloads live Hyprland sessions so replacing a watched config file cannot latch a config-error banner."
 barriers = ["BAR-001", "BAR-013"]
 
 [[concern]]
