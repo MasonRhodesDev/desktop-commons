@@ -11,6 +11,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | agent-pet-skin-v1 | provisional | Version changes row layout; required animation tracks and fallbacks need a published schema. |
 | appearance-profile-v1 | provisional | Fields resolve independently through packaged, system, user, and runtime layers. |
 | copr-repository-trust-v1 | provisional | Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1. |
+| declared-units-v1 | provisional | A dependency that must contribute a user unit lists it under that section's units key. The gate requires every declared unit to be in 90-hypr-de.preset and validated by hypr-de-setup, so adding a service-bearing dependency forces declaring and enabling its unit. |
 | desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. A third input now suppresses blanking entirely: while $XDG_RUNTIME_DIR/hypr-de-lock-failed exists a lock attempt has failed and the outputs must stay lit. |
 | game-mode-approval-v1 | provisional | Approval requests and status replies are newline-delimited JSON; passkey verification is the authority. |
 | game-mode-armed-v1 | provisional | The armed flag is consumed once and expires after 60 seconds. |
@@ -56,6 +57,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | agent-pet-skin-v1 | agent-pet | external:community-skins | agent-pet | pet.json plus PNG or WebP spritesheet | spriteVersionNumber 1 or 2 | provisional |
 | appearance-profile-v1 | appearance-profiles | appearance-profiles, linux-multi-theme-toggle | linux-multi-theme-toggle, vigil | TOML plus copied assets | 1 | provisional |
 | copr-repository-trust-v1 | hypr-de | external:copr | hypr-de | COPR project signing keys verified by fingerprint before dnf copr enable | 1 | provisional |
+| declared-units-v1 | hypr-de | hypr-de | hypr-de | deps.toml `units` key per dependency section | 1 | provisional |
 | desktop-dpms-arbitration-v0 | hyprstate | hyprstate, external:hypridle | external:hyprland | Hyprland DPMS dispatch from independent idle domains | unversioned | provisional |
 | game-mode-approval-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | permission-locked Unix socket, WebAuthn, Web Push, and Tailscale HTTPS | 1 | provisional |
 | game-mode-armed-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | one-shot runtime flag consumed by greetd dispatch | 1 | provisional |
@@ -130,6 +132,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1.
 - Failure behavior: A fingerprint mismatch refuses to enable the repository at all rather than granting root package trust, and signature failures during install are never retried.
 - Barriers: BAR-007, BAR-022, BAR-024
+
+## declared-units-v1
+
+- Location: `hypr-DE/deps.toml, gated by packaging/check-units.sh`
+- Compatibility: A dependency that must contribute a user unit lists it under that section's units key. The gate requires every declared unit to be in 90-hypr-de.preset and validated by hypr-de-setup, so adding a service-bearing dependency forces declaring and enabling its unit.
+- Failure behavior: Undeclared units are not covered; the gate cannot see a unit nobody names.
+- Barriers: BAR-009, BAR-018
 
 ## desktop-dpms-arbitration-v0
 

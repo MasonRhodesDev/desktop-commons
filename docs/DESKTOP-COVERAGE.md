@@ -7,11 +7,11 @@
 | Status | Count |
 |---|---:|
 | external | 22 |
-| gap | 14 |
+| gap | 13 |
 | hybrid | 16 |
 | legacy | 1 |
 | non-goal | 1 |
-| owned | 36 |
+| owned | 37 |
 | planned | 1 |
 
 ## Gaps and high-risk boundaries
@@ -51,7 +51,6 @@
 | P1 | compositor | session | external | — | Hyprland | high |
 | P1 | operator-policy-preservation | session | gap | — | PAM, pacman, RPM | high |
 | P1 | privilege-minimization | session | owned | greetd-game-mode | systemd, udev, sudo | high |
-| P1 | service-activation-completeness | session | gap | — | systemd | high |
 | P2 | color-management | appearance | gap | — | — | medium |
 | P2 | clipboard-history | desktop-integration | gap | — | — | medium |
 | P2 | remote-desktop | desktop-integration | gap | — | — | medium |
@@ -139,7 +138,7 @@
 | P1 | compositor | session | external | — | Hyprland | high | hypr-DE requires Hyprland 0.55 or newer (Lua config). hyprland-git satisfies that when it Provides hyprland>=0.55. |
 | P1 | operator-policy-preservation | session | gap | — | PAM, pacman, RPM | high | Arch Vigil packaging does not preserve the documented operator-edited vigil-lock PAM policy. The hypr-DE half is now closed: its %post rewrite of /etc/pam.d/greetd validates the result and backs the original up before replacing it, and leaves the operator file untouched on any anomaly (assertion greetd-pam-rewrite-is-recoverable, surface greeter-pam-keyring-v1). The Vigil packaging side remains the gap. |
 | P1 | privilege-minimization | session | owned | greetd-game-mode | systemd, udev, sudo | high | Game mode receives only udev-classified joystick nodes through a dedicated group. Its obsolete fgconsole grant was removed; the remaining exact systemctl and runfile-removal grants have active call sites. |
-| P1 | service-activation-completeness | session | gap | — | systemd | high | Required services are inconsistently depended upon, preset, or bound to graphical-session lifetime; setup paths can report success without post-validation. |
+| P1 | service-activation-completeness | session | owned | hypr-de | systemd | medium | deps.toml declares, per dependency, which user units that package must contribute (a `units` key), and packaging/check-units.sh gates four properties offline in PKGBUILD check(), the RPM %check, and CI: every shipped unit is preset or activated by a preset .path/.timer companion; every preset unit we do not ship comes from a declared dependency; every WantedBy=graphical-session.target unit is also PartOf= it; and every declared-required unit is both preset and verified by hypr-de-setup. That last rule is the one with teeth -- logind-idle-control-tray.service shipped unpreset for months and the idle indicator silently never appeared, and rules over hypr-DE's own units structurally cannot see a dependency's unit. hypr-de-setup still preset_and_checks at runtime. Residual risk: the gate only covers units named in deps.toml, so a dependency that starts shipping a unit nobody declares is still invisible. |
 | P3 | service-supervision | session | external | — | systemd | low | User and system units own startup, ordering, restart, watchdog, and journald integration. |
 | P2 | session-launch | session | external | — | UWSM, systemd user manager | medium | Stock Hyprland (uwsm) session entries start the graphical session. Vigil enables greetd as the display manager when none is set. hypr-DE does not add a greeter session; it supplies config and user units for Hyprland (uwsm). |
 | P2 | unified-settings | settings | hybrid | dials | XDG desktop entries, pavucontrol, Overskride, nm-connection-editor | medium | dials is the one settings window (ADR 0005). Pages are native Slint (Displays, Power, Help), schema-generated from a daemon's schema-tui schema (planned: Appearance, Voice, Idle), or external launch: any XDG desktop entry with Categories=Settings; or X-Dials-Section= is listed and launched in its own window. No plugin ABI and no foreign hub. Audio, network, and Bluetooth stay hybrid: their owners' tools are launched, not re-implemented. |
