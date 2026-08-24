@@ -446,13 +446,13 @@ barriers = ["BAR-001", "BAR-004", "BAR-013", "BAR-018", "BAR-019"]
 id = "vigil-lock-protocol-v1"
 owner = "vigil"
 producers = ["vigil"]
-consumers = ["external:hyprland", "hyprstate"]
+consumers = ["external:hyprland", "hyprstate", "hypr-de"]
 transport = "ext-session-lock-v1, PAM, and logind LockedHint"
 location = "vigil-lock and /etc/pam.d/vigil-lock"
 version = "Wayland ext-session-lock-v1"
 maturity = "provisional"
-compatibility = "Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths."
-failure = "A lock-client crash intentionally leaves the compositor locked; no packaged restart owner currently guarantees recovery."
+compatibility = "Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths. hypr-DE's lock_cmd wrapper depends on vigil-lock exit codes: 0 means the session lock was granted, 3 means an idle lock was cancelled by user activity, and any other status is a launch or lock failure the wrapper escalates. Changing those codes changes whether sessions get terminated, so they are part of this contract."
+failure = "A lock-client crash intentionally leaves the compositor locked; no packaged restart owner currently guarantees recovery. A locker that never starts is now handled: hypr-DE retries unscoped, tries other installed lockers, and terminates the session rather than returning an unlocked desktop."
 barriers = ["BAR-001", "BAR-007", "BAR-016", "BAR-018", "BAR-019", "BAR-020"]
 
 [[surface]]
@@ -555,8 +555,8 @@ transport = "Hyprland DPMS dispatch from independent idle domains"
 location = "hyprstate locked/inhibited timer and hypridle listeners"
 version = "unversioned"
 maturity = "provisional"
-compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight."
-failure = "Competing writes can wake, blank, or reblank displays contrary to the latest user/session state."
+compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. A third input now suppresses blanking entirely: while $XDG_RUNTIME_DIR/hypr-de-lock-failed exists a lock attempt has failed and the outputs must stay lit."
+failure = "Competing writes can wake, blank, or reblank displays contrary to the latest user/session state. Blanking after a failed lock is the dangerous case: dark outputs are indistinguishable from a locked screen over a live session."
 barriers = ["BAR-001", "BAR-007", "BAR-012", "BAR-014", "BAR-025"]
 
 [[surface]]
@@ -576,11 +576,76 @@ barriers = ["BAR-004", "BAR-009", "BAR-019", "BAR-021"]
 id = "singleton-guard-v1"
 owner = "desktop-commons"
 producers = ["desktop-commons"]
-consumers = ["vigil"]
+consumers = ["vigil", "hypr-de"]
 transport = "flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/singleton-guard"
 location = "crates/singleton-guard"
 version = "0.1.0"
 maturity = "provisional"
-compatibility = "Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime."
+compatibility = "Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime. Shell consumers (hypr-DE's config-reload listener and share-picker) implement the same rule directly with flock on an fd held open for the process lifetime; a pid written into a file and trusted is not a conforming guard."
 failure = "Bypassing the guard (or unlinking the lock file) allows concurrent instances - for vigil-lock, stacked lockers (vigil#50)."
 barriers = []
+
+[[surface]]
+id = "lock-failsafe-policy-v1"
+owner = "hypr-de"
+producers = ["external:operator"]
+consumers = ["hypr-de"]
+transport = "root-owned key=value policy file, parsed not sourced"
+location = "/etc/hypr-de/lock.conf"
+version = "1"
+maturity = "provisional"
+compatibility = "Honoured only when root owns the file and nobody else can write it; otherwise ignored with a warning. Keys: failsafe (terminate|warn|none), fallbacks, verify_tries. The environment is deliberately not consulted - an env knob or user-writable config would let the protected principal disable the failsafe durably through ~/.config/environment.d."
+failure = "A missing or rejected file means the built-in defaults apply, and those are the strict ones: terminate the session when nothing can lock it."
+barriers = ["BAR-016", "BAR-017", "BAR-019"]
+
+[[surface]]
+id = "screencast-consent-scope-v1"
+owner = "hypr-de"
+producers = ["external:xdg-desktop-portal", "external:xdg-desktop-portal-hyprland"]
+consumers = ["hypr-de"]
+transport = "xdph custom_picker_binary stdout protocol, plus portal frontend session object paths on the session bus"
+location = "share-picker-cached, /org/freedesktop/portal/desktop/session/<client>/<token>"
+version = "xdph [SELECTION] protocol; portal session path layout unversioned"
+maturity = "provisional"
+compatibility = "xdph passes the picker no caller identity, so the requesting client is read from the portal frontend's exported session object paths. A selection is replayed only while no client outside the set present at consent time has appeared. If upstream changes that path layout the identity becomes unreadable, which must fail closed."
+failure = "An unreadable client set means every session prompts: extra dialogs, never a silent capture inheriting someone else's consent."
+barriers = ["BAR-005", "BAR-012", "BAR-017"]
+
+[[surface]]
+id = "copr-repository-trust-v1"
+owner = "hypr-de"
+producers = ["external:copr"]
+consumers = ["hypr-de"]
+transport = "COPR project signing keys verified by fingerprint before dnf copr enable"
+location = "get-hypr-de.sh COPR_KEYS, /etc/pki/rpm-gpg/RPM-GPG-KEY-copr-<owner>-<project>"
+version = "1"
+maturity = "provisional"
+compatibility = "Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1."
+failure = "A fingerprint mismatch refuses to enable the repository at all rather than granting root package trust, and signature failures during install are never retried."
+barriers = ["BAR-007", "BAR-022", "BAR-024"]
+
+[[surface]]
+id = "greeter-pam-keyring-v1"
+owner = "hypr-de"
+producers = ["hypr-de", "external:operator"]
+consumers = ["external:greetd", "external:gnome-keyring"]
+transport = "package scriptlet edit of the greetd PAM stack"
+location = "/etc/pam.d/greetd"
+version = "PAM stack"
+maturity = "provisional"
+compatibility = "hypr-de inserts pam_gnome_keyring lines next to 'include system-local-login' from %post. The rewrite is validated before it replaces the live file - non-empty, actually inserted, every original line still present, auth and session lines intact - and the original is backed up first. A stack with no insertion point (Fedora's) is reported unwired rather than rewritten."
+failure = "Any anomaly leaves the operator's file untouched and reports it, and the scriptlet never fails the transaction. A truncated PAM stack is a login lockout, so the failure mode is deliberately 'no keyring', never 'no auth'."
+barriers = ["BAR-004", "BAR-009", "BAR-019"]
+
+[[surface]]
+id = "steam-launch-options-v1"
+owner = "hypr-de"
+producers = ["hypr-de"]
+consumers = ["external:steam"]
+transport = "LaunchOptions value in Steam's localconfig.vdf, executed by Steam as ENV=v wrapper %command%"
+location = "userdata/<id>/config/localconfig.vdf"
+version = "VDF LaunchOptions"
+maturity = "provisional"
+compatibility = "hypr-de mutates a foreign config it does not own, and the value is executed on every game launch. Candidate strings come from a model prompted with ProtonDB and Steam store text, so they are untrusted input: every token must match an allowlist (%command% exactly once, known wrappers, flags, graphics environment assignments that cannot load code or run a command) before it can be offered or written."
+failure = "A string that fails validation is shown as refused and cannot be selected, and the writer re-validates so a refused value never reaches the file. If nothing passes, nothing is offered."
+barriers = ["BAR-005", "BAR-011", "BAR-012"]

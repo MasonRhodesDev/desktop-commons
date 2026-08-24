@@ -10,12 +10,14 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 |---|---|---|
 | agent-pet-skin-v1 | provisional | Version changes row layout; required animation tracks and fallbacks need a published schema. |
 | appearance-profile-v1 | provisional | Fields resolve independently through packaged, system, user, and runtime layers. |
-| desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. |
+| copr-repository-trust-v1 | provisional | Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1. |
+| desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. A third input now suppresses blanking entirely: while $XDG_RUNTIME_DIR/hypr-de-lock-failed exists a lock attempt has failed and the outputs must stay lit. |
 | game-mode-approval-v1 | provisional | Approval requests and status replies are newline-delimited JSON; passkey verification is the authority. |
 | game-mode-armed-v1 | provisional | The armed flag is consumed once and expires after 60 seconds. |
 | game-mode-home-mask-v0 | provisional | The bind policy is the security boundary for game-session home access. |
 | graphical-session-lifecycle-v0 | provisional | Services must bind startup and teardown to the graphical session and explicitly pull required audio, tray, and compositor dependencies. |
 | greetd-static-config-v1 | legacy | greetd-game-mode is the current owner; greetd-config remains a conflicting functional predecessor. |
+| greeter-pam-keyring-v1 | provisional | hypr-de inserts pam_gnome_keyring lines next to 'include system-local-login' from %post. The rewrite is validated before it replaces the live file - non-empty, actually inserted, every original line still present, auth and session lines intact - and the original is backed up first. A stack with no insertion point (Fedora's) is reported unwired rather than rewritten. |
 | hypr-de-help-v0 | provisional | SUPER+/ opens the window. Binds are loaded from hyprctl binds -j. First login is marker-gated via hypr-de-welcome. |
 | hypr-ipc-v0 | provisional | HIS if .socket2.sock exists, else lockfile rescan with /proc/<pid>/comm == Hyprland. No /run/user/<uid> fallback. Mutating hyprctl success is stdout exactly ok. |
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
@@ -26,19 +28,22 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | lmtt-qt6ct-v0 | provisional | LMTT owns the colors file. Appearance keys color_scheme_path, custom_palette, style, and icon_theme are merged. Fonts and other sections stay user-owned. A non-qt6ct QT_QPA_PLATFORMTHEME skips the conf merge. |
 | lmtt-slint-token-v0 | legacy | Superseded by lmtt-tokens-v1. Do not add consumers. |
 | lmtt-tokens-v1 | provisional | Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract. |
+| lock-failsafe-policy-v1 | provisional | Honoured only when root owns the file and nobody else can write it; otherwise ignored with a warning. Keys: failsafe (terminate|warn|none), fallbacks, verify_tries. The environment is deliberately not consulted - an env knob or user-writable config would let the protected principal disable the failsafe durably through ~/.config/environment.d. |
 | lock-pam-policy-v1 | provisional | The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution. |
 | logind-inhibitor-identity-v1 | provisional | The inhibitor who field is the canonical executable/service identity. |
 | logind-locked-hint-v1 | provisional | LockedHint is the authoritative cross-component lock state; process-name detection is not compatible. |
 | logind-session-v0 | provisional | GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path. |
 | monitor-profile-v0 | provisional | Unknown fields are rejected; malformed profiles are skipped; user profiles override same-named system profiles. Add an explicit version and golden cross-consumer fixtures before extending the schema. |
 | schema-tui-schema-v1 | provisional | Schema version is parsed but not enforced; consumers use an unpinned Git dependency. |
+| screencast-consent-scope-v1 | provisional | xdph passes the picker no caller identity, so the requesting client is read from the portal frontend's exported session object paths. A selection is replayed only while no client outside the set present at consent time has appeared. If upstream changes that path layout the identity becomes unreadable, which must fail closed. |
 | secure-suspend-v0 | provisional | Locker readiness and suspend policy need one written positive-acknowledgement contract. |
 | settings-entry-v1 | provisional | Categories=Settings; is the freedesktop convention and also lists the entry in LXQt and Xfce settings managers. X-Dials-Section only picks the group. NoDisplay, Hidden, OnlyShowIn/NotShowIn, and a missing TryExec hide an entry. Exec field codes are dropped. |
-| singleton-guard-v1 | provisional | Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime. |
+| singleton-guard-v1 | provisional | Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime. Shell consumers (hypr-DE's config-reload listener and share-picker) implement the same rule directly with flock on an fd held open for the process lifetime; a pid written into a file and trusted is not a conforming guard. |
 | slint-idle-runtime-v0 | provisional | All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely. |
 | slint-kit-api-0.2 | provisional | Compile-time failures catch source drift, but there are no tagged releases or API snapshot tests. |
+| steam-launch-options-v1 | provisional | hypr-de mutates a foreign config it does not own, and the value is executed on every game launch. Candidate strings come from a model prompted with ProtonDB and Steam store text, so they are untrusted input: every token must match an allowlist (%command% exactly once, known wrappers, flags, graphics environment assignments that cannot load code or run a command) before it can be offered or written. |
 | vigil-banner-v1 | provisional | Banner and cancellation state must remain presentation-only; game-mode owns approval and dispatch. |
-| vigil-lock-protocol-v1 | provisional | Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths. |
+| vigil-lock-protocol-v1 | provisional | Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths. hypr-DE's lock_cmd wrapper depends on vigil-lock exit codes: 0 means the session lock was granted, 3 means an idle lock was cancelled by user activity, and any other status is a launch or lock failure the wrapper escalates. Changing those codes changes whether sessions get terminated, so they are part of this contract. |
 | voice-dictation-dbus-v1 | legacy | The CLI wraps an unversioned com.voicedictation.Control interface. D-Bus Status should become authoritative before removing legacy side channels. |
 | waybar-cffi-v2 | provisional | Waybar ABI and Hyprland commit compatibility must be encoded in package metadata and load-tested. |
 | xdg-paths-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
@@ -50,6 +55,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | agent-pet-event-v1 | agent-pet | agent-pet, external:agent-harnesses | agent-pet | D-Bus Emit carrying JSON event envelopes | 1 | stable |
 | agent-pet-skin-v1 | agent-pet | external:community-skins | agent-pet | pet.json plus PNG or WebP spritesheet | spriteVersionNumber 1 or 2 | provisional |
 | appearance-profile-v1 | appearance-profiles | appearance-profiles, linux-multi-theme-toggle | linux-multi-theme-toggle, vigil | TOML plus copied assets | 1 | provisional |
+| copr-repository-trust-v1 | hypr-de | external:copr | hypr-de | COPR project signing keys verified by fingerprint before dnf copr enable | 1 | provisional |
 | desktop-dpms-arbitration-v0 | hyprstate | hyprstate, external:hypridle | external:hyprland | Hyprland DPMS dispatch from independent idle domains | unversioned | provisional |
 | game-mode-approval-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | permission-locked Unix socket, WebAuthn, Web Push, and Tailscale HTTPS | 1 | provisional |
 | game-mode-armed-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | one-shot runtime flag consumed by greetd dispatch | 1 | provisional |
@@ -57,6 +63,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | graphical-session-lifecycle-v0 | hypr-de | external:uwsm, hypr-de | hyprstate, sni-watcher, logind-idle-control, wayland-voice-dictation, agent-pet | systemd user targets, wants, parts, and ordering | unversioned | provisional |
 | greetd-greeter-v1 | external:greetd | external:greetd | vigil, greetd-game-mode, greetd-config | greetd IPC and PAM | greetd protocol | external |
 | greetd-static-config-v1 | greetd-game-mode | greetd-game-mode, greetd-config | external:greetd | package/setup-managed greetd configuration | 1 current path plus legacy alternative | legacy |
+| greeter-pam-keyring-v1 | hypr-de | hypr-de, external:operator | external:greetd, external:gnome-keyring | package scriptlet edit of the greetd PAM stack | PAM stack | provisional |
 | hypr-de-help-v0 | hypr-de | hypr-de | hypr-de | GTK4/libadwaita window plus man pages | unversioned | provisional |
 | hypr-de-theme-v1 | hypr-de | hypr-de | linux-multi-theme-toggle | theme.toml, palette assets, and LMTT module fragments | 1 | stable |
 | hypr-ipc-v0 | hypr-ipc | hypr-ipc | hyprstate, wayland-voice-dictation | Rust library API | 0.1 | provisional |
@@ -70,6 +77,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | lmtt-qt6ct-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle | external:qt6ct | qt6ct color scheme file plus merged INI Appearance | unversioned | provisional |
 | lmtt-slint-token-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | JSON file plus filesystem watch | unversioned | legacy |
 | lmtt-tokens-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, dials, vigil, waybar-workspace-buttons | lmtt-core library API and `lmtt tokens` CLI | 1 | provisional |
+| lock-failsafe-policy-v1 | hypr-de | external:operator | hypr-de | root-owned key=value policy file, parsed not sourced | 1 | provisional |
 | lock-pam-policy-v1 | vigil | external:operator, vigil | vigil | PAM service policy | PAM stack | provisional |
 | logind-inhibitor-identity-v1 | hyprstate | hyprstate, logind-idle-control, wayland-voice-dictation | hyprstate | systemd-logind inhibitor rows | 1 | provisional |
 | logind-locked-hint-v1 | vigil | vigil | hyprstate, logind-idle-control | systemd-logind session LockedHint and lock/unlock signals | logind API | provisional |
@@ -80,15 +88,17 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | precompositor-gpu-selection-v1 | hyprstate | hyprstate | hypr-de | pre-session CLI output and runtime intent file | 1 | stable |
 | release-package-v1 | packaging-workflows | hyprstate, dials, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, wayland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
 | schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, wayland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
+| screencast-consent-scope-v1 | hypr-de | external:xdg-desktop-portal, external:xdg-desktop-portal-hyprland | hypr-de | xdph custom_picker_binary stdout protocol, plus portal frontend session object paths on the session bus | xdph [SELECTION] protocol; portal session path layout unversioned | provisional |
 | secure-suspend-v0 | hyprstate | vigil, hyprstate | external:systemd-logind | lock request, LockedHint readiness, then logind suspend | unversioned | provisional |
 | settings-entry-v1 | dials | dials, linux-multi-theme-toggle | dials | XDG desktop entries | 1 | provisional |
-| singleton-guard-v1 | desktop-commons | desktop-commons | vigil | flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/singleton-guard | 0.1.0 | provisional |
+| singleton-guard-v1 | desktop-commons | desktop-commons | vigil, hypr-de | flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/singleton-guard | 0.1.0 | provisional |
 | slint-idle-runtime-v0 | slint-idle-runtime | slint-idle-runtime | vigil, wayland-voice-dictation | Rust library API | 0.1 | provisional |
 | slint-kit-api-0.2 | slint-kit | slint-kit | dials, vigil | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
 | sni-waybar-ordering-v1 | sni-watcher | sni-watcher | hypr-de | systemd user-unit ordering and D-Bus ownership | 1 | stable |
 | status-notifier-v1 | sni-watcher | sni-watcher | logind-idle-control, wayland-voice-dictation, agent-pet, hypr-de | StatusNotifier D-Bus protocol | freedesktop/KDE SNI | stable |
+| steam-launch-options-v1 | hypr-de | hypr-de | external:steam | LaunchOptions value in Steam's localconfig.vdf, executed by Steam as ENV=v wrapper %command% | VDF LaunchOptions | provisional |
 | vigil-banner-v1 | vigil | greetd-game-mode | vigil | greeter banner/countdown state | 1 | provisional |
-| vigil-lock-protocol-v1 | vigil | vigil | external:hyprland, hyprstate | ext-session-lock-v1, PAM, and logind LockedHint | Wayland ext-session-lock-v1 | provisional |
+| vigil-lock-protocol-v1 | vigil | vigil | external:hyprland, hyprstate, hypr-de | ext-session-lock-v1, PAM, and logind LockedHint | Wayland ext-session-lock-v1 | provisional |
 | voice-dictation-dbus-v1 | wayland-voice-dictation | wayland-voice-dictation | hypr-de | session D-Bus, CLI, and live Unix stream | 1 | legacy |
 | waybar-cffi-v2 | waybar-workspace-buttons | waybar-workspace-buttons | external:waybar, external:hyprland | Waybar CFFI module and Hyprland plugin ABI | wbcffi 2 plus exact Hyprland build hash | provisional |
 | xdg-paths-v0 | xdg-paths | xdg-paths | hyprstate, dials, logind-idle-control, vigil, linux-multi-theme-toggle, wayland-voice-dictation | Rust library API | 0.1 | provisional |
@@ -114,11 +124,18 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Unreadable layers are skipped with diagnostics; application fallback remains available.
 - Barriers: BAR-003, BAR-004, BAR-007
 
+## copr-repository-trust-v1
+
+- Location: `get-hypr-de.sh COPR_KEYS, /etc/pki/rpm-gpg/RPM-GPG-KEY-copr-<owner>-<project>`
+- Compatibility: Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1.
+- Failure behavior: A fingerprint mismatch refuses to enable the repository at all rather than granting root package trust, and signature failures during install are never retried.
+- Barriers: BAR-007, BAR-022, BAR-024
+
 ## desktop-dpms-arbitration-v0
 
 - Location: `hyprstate locked/inhibited timer and hypridle listeners`
-- Compatibility: Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight.
-- Failure behavior: Competing writes can wake, blank, or reblank displays contrary to the latest user/session state.
+- Compatibility: Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. A third input now suppresses blanking entirely: while $XDG_RUNTIME_DIR/hypr-de-lock-failed exists a lock attempt has failed and the outputs must stay lit.
+- Failure behavior: Competing writes can wake, blank, or reblank displays contrary to the latest user/session state. Blanking after a failed lock is the dangerous case: dark outputs are indistinguishable from a locked screen over a live session.
 - Barriers: BAR-001, BAR-007, BAR-012, BAR-014, BAR-025
 
 ## game-mode-approval-v1
@@ -162,6 +179,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: greetd-game-mode is the current owner; greetd-config remains a conflicting functional predecessor.
 - Failure behavior: Running both setup paths rewrites or symlinks the same tree and can leave the login path incoherent.
 - Barriers: BAR-001, BAR-004, BAR-013, BAR-018, BAR-019
+
+## greeter-pam-keyring-v1
+
+- Location: `/etc/pam.d/greetd`
+- Compatibility: hypr-de inserts pam_gnome_keyring lines next to 'include system-local-login' from %post. The rewrite is validated before it replaces the live file - non-empty, actually inserted, every original line still present, auth and session lines intact - and the original is backed up first. A stack with no insertion point (Fedora's) is reported unwired rather than rewritten.
+- Failure behavior: Any anomaly leaves the operator's file untouched and reports it, and the scriptlet never fails the transaction. A truncated PAM stack is a login lockout, so the failure mode is deliberately 'no keyring', never 'no auth'.
+- Barriers: BAR-004, BAR-009, BAR-019
 
 ## hypr-de-help-v0
 
@@ -254,6 +278,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Missing user tokens fall through to /etc/lmtt, /usr/share/lmtt, then the embedded palette.
 - Barriers: BAR-005, BAR-007, BAR-010, BAR-025
 
+## lock-failsafe-policy-v1
+
+- Location: `/etc/hypr-de/lock.conf`
+- Compatibility: Honoured only when root owns the file and nobody else can write it; otherwise ignored with a warning. Keys: failsafe (terminate|warn|none), fallbacks, verify_tries. The environment is deliberately not consulted - an env knob or user-writable config would let the protected principal disable the failsafe durably through ~/.config/environment.d.
+- Failure behavior: A missing or rejected file means the built-in defaults apply, and those are the strict ones: terminate the session when nothing can lock it.
+- Barriers: BAR-016, BAR-017, BAR-019
+
 ## lock-pam-policy-v1
 
 - Location: `/etc/pam.d/vigil-lock`
@@ -324,6 +355,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Validation is not invoked by the builder and saves can drop unknown TOML sections, keys, and comments.
 - Barriers: BAR-002, BAR-005, BAR-007, BAR-025
 
+## screencast-consent-scope-v1
+
+- Location: `share-picker-cached, /org/freedesktop/portal/desktop/session/<client>/<token>`
+- Compatibility: xdph passes the picker no caller identity, so the requesting client is read from the portal frontend's exported session object paths. A selection is replayed only while no client outside the set present at consent time has appeared. If upstream changes that path layout the identity becomes unreadable, which must fail closed.
+- Failure behavior: An unreadable client set means every session prompts: extra dialogs, never a silent capture inheriting someone else's consent.
+- Barriers: BAR-005, BAR-012, BAR-017
+
 ## secure-suspend-v0
 
 - Location: `hyprstate lid FSM and org.freedesktop.login1`
@@ -341,7 +379,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## singleton-guard-v1
 
 - Location: `crates/singleton-guard`
-- Compatibility: Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime.
+- Compatibility: Ownership is kernel-scoped to process lifetime; the lock file is never unlinked so a path race cannot mint two owners. Consumers must hold the guard for their full lifetime. Shell consumers (hypr-DE's config-reload listener and share-picker) implement the same rule directly with flock on an fd held open for the process lifetime; a pid written into a file and trusted is not a conforming guard.
 - Failure behavior: Bypassing the guard (or unlinking the lock file) allows concurrent instances - for vigil-lock, stacked lockers (vigil#50).
 - Barriers: 
 
@@ -373,6 +411,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Tray items wait for a watcher and remain functional through their non-tray interfaces.
 - Barriers: BAR-005, BAR-010, BAR-014
 
+## steam-launch-options-v1
+
+- Location: `userdata/<id>/config/localconfig.vdf`
+- Compatibility: hypr-de mutates a foreign config it does not own, and the value is executed on every game launch. Candidate strings come from a model prompted with ProtonDB and Steam store text, so they are untrusted input: every token must match an allowlist (%command% exactly once, known wrappers, flags, graphics environment assignments that cannot load code or run a command) before it can be offered or written.
+- Failure behavior: A string that fails validation is shown as refused and cannot be selected, and the writer re-validates so a refused value never reaches the file. If nothing passes, nothing is offered.
+- Barriers: BAR-005, BAR-011, BAR-012
+
 ## vigil-banner-v1
 
 - Location: `Vigil game-mode banner seam`
@@ -383,8 +428,8 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## vigil-lock-protocol-v1
 
 - Location: `vigil-lock and /etc/pam.d/vigil-lock`
-- Compatibility: Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths.
-- Failure behavior: A lock-client crash intentionally leaves the compositor locked; no packaged restart owner currently guarantees recovery.
+- Compatibility: Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths. hypr-DE's lock_cmd wrapper depends on vigil-lock exit codes: 0 means the session lock was granted, 3 means an idle lock was cancelled by user activity, and any other status is a launch or lock failure the wrapper escalates. Changing those codes changes whether sessions get terminated, so they are part of this contract.
+- Failure behavior: A lock-client crash intentionally leaves the compositor locked; no packaged restart owner currently guarantees recovery. A locker that never starts is now handled: hypr-DE retries unscoped, tries other installed lockers, and terminates the session rather than returning an unlocked desktop.
 - Barriers: BAR-001, BAR-007, BAR-016, BAR-018, BAR-019, BAR-020
 
 ## voice-dictation-dbus-v1

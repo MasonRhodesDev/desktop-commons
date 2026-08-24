@@ -437,3 +437,113 @@ barriers = ["BAR-005", "BAR-012"]
 concerns = ["workspace-navigation"]
 severity = "error"
 message = "workspace-zones must ship a man page."
+
+[[assertion]]
+id = "lock-request-never-fails-open"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/libexec/lock-cmd.sh"
+pattern = "(?s)fail_closed\\(\\).*?terminate-session"
+barriers = ["BAR-016"]
+concerns = ["screen-lock"]
+severity = "error"
+message = "A lock request that no locker satisfies must take the session down, not return an unlocked desktop."
+
+[[assertion]]
+id = "lock-failsafe-not-session-tunable"
+kind = "file_not_contains"
+repository = "hypr-de"
+path = "dist/libexec/lock-cmd.sh"
+pattern = "HYPR_DE_LOCK_(FAILSAFE|FALLBACKS)"
+barriers = ["BAR-017"]
+concerns = ["screen-lock", "privilege-minimization"]
+severity = "error"
+message = "The lock failsafe must come from the root-owned policy file, not from an environment value the session can set."
+
+[[assertion]]
+id = "failed-lock-is-not-blanked"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/libexec/dpms-off-if-unlocked.sh"
+pattern = "hypr-de-lock-failed"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["screen-lock", "idle-timeouts"]
+severity = "error"
+message = "Outputs must stay lit after a failed lock; a dark screen over a live session passes for a locked one."
+
+[[assertion]]
+id = "idle-driver-is-not-path-resolved"
+kind = "file_not_contains"
+repository = "hypr-de"
+path = "dist/systemd/user/hypridle.service.d/hypr-de.conf"
+pattern = "(?m)^Exec[A-Za-z]*=.*(command -v|which )"
+barriers = ["BAR-017"]
+concerns = ["package-user-overlay-shadowing", "idle-timeouts"]
+severity = "error"
+message = "hypridle must be named absolutely; the user manager's PATH includes ~/.local/bin, so a PATH lookup lets the session neuter auto-lock."
+
+[[assertion]]
+id = "installer-refuses-bad-signatures"
+kind = "file_contains"
+repository = "hypr-de"
+path = "get-hypr-de.sh"
+pattern = "UNTRUSTED_RE"
+barriers = ["BAR-022"]
+concerns = ["package-integrity"]
+severity = "error"
+message = "Signature failures must fail immediately and loudly, never be retried as transient repo metadata."
+
+[[assertion]]
+id = "copr-keys-are-pinned"
+kind = "file_contains"
+repository = "hypr-de"
+path = "get-hypr-de.sh"
+pattern = "(?s)COPR_KEYS=\\(.*?copr_pin_key"
+barriers = ["BAR-022"]
+concerns = ["package-integrity", "dependency-pinning"]
+severity = "error"
+message = "Every COPR the installer enables must be pinned to a fingerprint before it is granted root package trust."
+
+[[assertion]]
+id = "greetd-pam-rewrite-is-recoverable"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/libexec/hypr-de-sys-setup"
+pattern = "(?s)hypr-de-backup.*?cat \"\\$tmp\" > \"\\$pam\""
+barriers = ["BAR-019"]
+concerns = ["operator-policy-preservation", "authentication"]
+severity = "error"
+message = "The greetd PAM stack must be backed up and the rewrite validated before it replaces the live file."
+
+[[assertion]]
+id = "recorder-state-is-not-world-writable"
+kind = "file_not_contains"
+repository = "hypr-de"
+path = "dist/libexec/screen-recorder/modules/base.sh"
+pattern = "(STATE_FILE|PIDFILE)=\"/tmp"
+barriers = ["BAR-010"]
+concerns = ["screen-recording", "runtime-path-resolution"]
+severity = "error"
+message = "Recorder state belongs in the per-user runtime dir; a predictable /tmp path is a symlink and pid-poisoning primitive."
+
+[[assertion]]
+id = "screenshare-consent-is-client-scoped"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/libexec/share-picker-cached"
+pattern = "(?s)portal_clients\\(\\).*?no_new_client"
+barriers = ["BAR-017"]
+concerns = ["screen-sharing", "desktop-portals"]
+severity = "error"
+message = "Screen-share consent may only be replayed to the client that gave it, never to whoever asks next within the TTL."
+
+[[assertion]]
+id = "steam-launch-options-are-allowlisted"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/gaming/steam-set-launch-options"
+pattern = "(?s)validate_launch_options\\(\\).*?refused token"
+barriers = ["BAR-011"]
+concerns = ["alternate-game-session"]
+severity = "error"
+message = "Model-proposed launch options are untrusted input and must pass a token allowlist before Steam can execute them."

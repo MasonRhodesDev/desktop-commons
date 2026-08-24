@@ -14,6 +14,7 @@ them.
 | [0003](0003-suite-package-boundaries.md) | accepted | Hypr-DE installs only the core session; suite applications remain independently installable |
 | [0004](0004-capture-free-lock-warning.md) | accepted | Vigil warnings use compositor background effects and never capture the desktop |
 | [0005](0005-settings-window-and-naming.md) | accepted | `dials` is the one settings window (native, schema-generated, or launched pages); `hypr` names only for Hyprland-only components |
+| [0006](0006-fail-closed-lock-and-session-owned-policy.md) | accepted | A lock request that no locker satisfies terminates the session, and its failsafe is settable only from a root-owned file |
 
 ## When an ADR is required
 

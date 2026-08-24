@@ -147,10 +147,10 @@ area = "session"
 status = "gap"
 priority = "P1"
 owner = ""
-internal = ["vigil", "greetd-game-mode"]
+internal = ["vigil", "greetd-game-mode", "hypr-de"]
 external = ["PAM", "pacman", "RPM"]
 risk = "high"
-notes = "Arch Vigil packaging does not preserve the documented operator-edited vigil-lock PAM policy."
+notes = "Arch Vigil packaging does not preserve the documented operator-edited vigil-lock PAM policy. The hypr-DE half is now closed: its %post rewrite of /etc/pam.d/greetd validates the result and backs the original up before replacing it, and leaves the operator file untouched on any anomaly (assertion greetd-pam-rewrite-is-recoverable, surface greeter-pam-keyring-v1). The Vigil packaging side remains the gap."
 barriers = ["BAR-009", "BAR-019"]
 
 [[concern]]
@@ -194,7 +194,7 @@ owner = "vigil"
 internal = ["vigil", "hyprstate"]
 external = ["ext-session-lock-v1", "PAM", "systemd-logind"]
 risk = "high"
-notes = "Vigil owns login and lock. hypr-DE invokes vigil-lock and lists vigil as a runtime dependency. Crash recovery still lacks a service owner."
+notes = "Vigil owns login and lock. hypr-DE invokes vigil-lock and lists vigil as a runtime dependency. Crash recovery still lacks a service owner, but launch failure now has one: hypr-DE's lock_cmd retries unscoped, tries other installed lockers, and terminates the session rather than returning an unlocked desktop, with the failsafe settable only from a root-owned policy file (ADR 0005)."
 barriers = ["BAR-001", "BAR-007", "BAR-013", "BAR-016", "BAR-018", "BAR-020"]
 
 [[concern]]
@@ -634,7 +634,7 @@ owner = "hypr-de"
 internal = ["hypr-de"]
 external = ["gpu-screen-recorder", "PipeWire"]
 risk = "medium"
-notes = "hypr-DE owns recording workflow and Waybar integration; gpu-screen-recorder is the selected capture engine but remains a Fedora packaging gate."
+notes = "hypr-DE owns recording workflow and Waybar integration; gpu-screen-recorder is the selected capture engine but remains a Fedora packaging gate. Recorder state moved out of predictable /tmp paths into the per-user runtime dir, and the stop path confirms the pid is still the recorder before signalling it."
 barriers = ["BAR-005", "BAR-012"]
 
 [[concern]]
@@ -656,7 +656,7 @@ owner = ""
 internal = ["hypr-de"]
 external = ["PipeWire", "xdg-desktop-portal-hyprland"]
 risk = "high"
-notes = "External portals provide capture consent and stream negotiation; no suite-level doctor currently verifies the path."
+notes = "External portals provide capture consent and stream negotiation; no suite-level doctor currently verifies the path. hypr-DE's picker wrapper deduplicates the several portal sessions one share spawns, and that replay is scoped to the requesting client (read from the portal frontend's session object paths) so a second consumer cannot inherit consent (surface screencast-consent-scope-v1)."
 barriers = ["BAR-012", "BAR-014"]
 
 [[concern]]
@@ -838,7 +838,7 @@ owner = ""
 internal = ["hypr-de", "dotfiles", "greetd-config"]
 external = ["systemd user units", "chezmoi"]
 risk = "high"
-notes = "Legacy dotfile units and documentation can shadow package-owned gaming/session services or reference payloads no longer present."
+notes = "Legacy dotfile units and documentation can shadow package-owned gaming/session services or reference payloads no longer present. The security case of this class is closed for hypr-DE units: hypridle was resolved through $PATH, so a file named hypridle in ~/.local/bin durably disabled auto-lock while the unit still reported active. Exec lines now name absolute paths and check-units.sh rejects any unit that resolves an executable through PATH (assertion idle-driver-is-not-path-resolved)."
 barriers = ["BAR-001", "BAR-009", "BAR-013", "BAR-018"]
 
 [[concern]]
