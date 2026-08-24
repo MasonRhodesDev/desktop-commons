@@ -1,7 +1,7 @@
 # ADR 0004: Capture-free, interruptible lock warning
 
 - Status: accepted (amended 2026-08-23: manual-lock transition, reveal,
-  frost opacity lever — vigil #52)
+  frost opacity lever — vigil #52; bounded wallpaper hold — vigil #56)
 - Date: 2026-08-20
 
 ## Context
@@ -85,7 +85,12 @@ and frame fingerprints without affecting the host session.
 - `--wait` returns ~400 ms later on manual/before-sleep locks; hypridle's
   sleep inhibitor covers it.
 - Wallpaper assets must be ready before their fade begins; late assets extend
-  the warning instead of producing a blank handoff.
+  the warning instead of producing a blank handoff — but only up to
+  `lock.warning.wallpaper_hold_max_ms` (default 5 s, clamped to 30 s). Past
+  that the lock commits with the scene as-is and journals that it did: an
+  asset pipeline that never finishes must not leave the machine unlocked,
+  and a lock over a plain background beats an unlocked screen. Setting the
+  key to 0 restores the unbounded wait.
 - Output topology changes before commitment cancel the warning rather than
   risk partial coverage; the non-cancelable transition commits instead, and
   the new output gets a lock surface like any hotplug-while-locked.
