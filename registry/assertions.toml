@@ -55,11 +55,11 @@ repository = "hypr-de"
 when_path = "dist/hypr/hypridle.conf"
 when_pattern = "\\bvigil-lock\\b"
 path = "deps.toml"
-pattern = "(?m)^(fedora|arch)\\s*=.*\"vigil\""
+pattern = "(?m)^(fedora|arch)\\s*=.*\"vigil\\s*>="
 barriers = ["BAR-013", "BAR-018"]
 concerns = ["screen-lock", "service-activation-completeness"]
 severity = "error"
-message = "If hypr-DE invokes vigil-lock, Vigil must be a generated runtime dependency."
+message = "If hypr-DE invokes vigil-lock, Vigil must be a generated runtime dependency with a version floor."
 
 [[assertion]]
 id = "desktop-bluetooth-ui-is-packaged"
