@@ -121,13 +121,13 @@ barriers = ["BAR-009", "BAR-012", "BAR-014"]
 [[concern]]
 id = "service-activation-completeness"
 area = "session"
-status = "gap"
+status = "owned"
 priority = "P1"
-owner = ""
+owner = "hypr-de"
 internal = ["hypr-de", "hyprstate", "sni-watcher", "wayland-voice-dictation", "vigil", "greetd-game-mode"]
 external = ["systemd"]
-risk = "high"
-notes = "Required services are inconsistently depended upon, preset, or bound to graphical-session lifetime; setup paths can report success without post-validation."
+risk = "medium"
+notes = "deps.toml declares, per dependency, which user units that package must contribute (a `units` key), and packaging/check-units.sh gates four properties offline in PKGBUILD check(), the RPM %check, and CI: every shipped unit is preset or activated by a preset .path/.timer companion; every preset unit we do not ship comes from a declared dependency; every WantedBy=graphical-session.target unit is also PartOf= it; and every declared-required unit is both preset and verified by hypr-de-setup. That last rule is the one with teeth -- logind-idle-control-tray.service shipped unpreset for months and the idle indicator silently never appeared, and rules over hypr-DE's own units structurally cannot see a dependency's unit. hypr-de-setup still preset_and_checks at runtime. Residual risk: the gate only covers units named in deps.toml, so a dependency that starts shipping a unit nobody declares is still invisible."
 barriers = ["BAR-009", "BAR-014", "BAR-018", "BAR-025"]
 
 [[concern]]

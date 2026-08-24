@@ -313,6 +313,19 @@ failure = "Unsupported daemons display independent notifications."
 barriers = ["BAR-005", "BAR-007", "BAR-012"]
 
 [[surface]]
+id = "declared-units-v1"
+owner = "hypr-de"
+producers = ["hypr-de"]
+consumers = ["hypr-de"]
+transport = "deps.toml `units` key per dependency section"
+location = "hypr-DE/deps.toml, gated by packaging/check-units.sh"
+version = "1"
+maturity = "provisional"
+compatibility = "A dependency that must contribute a user unit lists it under that section's units key. The gate requires every declared unit to be in 90-hypr-de.preset and validated by hypr-de-setup, so adding a service-bearing dependency forces declaring and enabling its unit."
+failure = "Undeclared units are not covered; the gate cannot see a unit nobody names."
+barriers = ["BAR-009", "BAR-018"]
+
+[[surface]]
 id = "release-package-v1"
 owner = "packaging-workflows"
 producers = ["hyprstate", "dials", "hypr-de", "hypr-de-extras", "linux-multi-theme-toggle", "logind-idle-control", "sni-watcher", "waybar-workspace-buttons", "wayland-voice-dictation", "vigil", "greetd-game-mode", "couchcord", "deck-tenant"]
