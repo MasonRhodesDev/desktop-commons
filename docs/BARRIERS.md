@@ -36,7 +36,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 
 | Barrier | Assertions |
 |---|---:|
-| BAR-001 | 4 |
+| BAR-001 | 5 |
 | BAR-002 | 1 |
 | BAR-003 | 0 |
 | BAR-004 | 0 |
@@ -60,7 +60,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-022 | 8 |
 | BAR-023 | 7 |
 | BAR-024 | 1 |
-| BAR-025 | 8 |
+| BAR-025 | 9 |
 
 Assertions with zero counts remain review-only barriers until an executable check is added.
 
@@ -69,6 +69,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | Assertion | Kind | Repository | Barriers | Concerns | Waiver expires |
 |---|---|---|---|---|---|
 | arch-packages-pin-source-checksums | file_not_contains | hyprstate, dials, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, wayland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | BAR-022, BAR-023 | package-integrity | — |
+| blanking-requires-the-compositor-lock | file_contains | hypr-de | BAR-016, BAR-025 | screen-lock, idle-timeouts | — |
 | copr-keys-are-pinned | file_contains | hypr-de | BAR-022 | package-integrity, dependency-pinning | — |
 | desktop-bluetooth-daemon-is-enabled | file_contains | hypr-de | BAR-012, BAR-018 | bluetooth | — |
 | desktop-bluetooth-ui-is-packaged | conditional_contains | hypr-de | BAR-012, BAR-018 | bluetooth | — |
@@ -87,7 +88,6 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | dotfiles-secret-import-helper-exists | path_exists | dotfiles | BAR-018, BAR-025 | secrets-keyring | — |
 | extras-has-no-laptop-copr-setup | path_absent | hypr-de-extras | BAR-009 | fedora-package-closure | — |
 | extras-release-is-ci-owned | path_exists | hypr-de-extras | BAR-009, BAR-023 | fedora-package-closure | — |
-| failed-lock-is-not-blanked | file_contains | hypr-de | BAR-016, BAR-025 | screen-lock, idle-timeouts | — |
 | game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | — |
 | game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | 2026-10-01 |
 | game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
@@ -101,6 +101,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | lmtt-qt6ct-writes-owned-palette | file_contains | linux-multi-theme-toggle | BAR-005, BAR-012 | theme-application | — |
 | lock-failsafe-not-session-tunable | file_not_contains | hypr-de | BAR-017 | screen-lock, privilege-minimization | — |
 | lock-request-never-fails-open | file_contains | hypr-de | BAR-016 | screen-lock | — |
+| one-blanker-in-the-session | path_absent | hypr-de | BAR-001, BAR-025 | screen-lock, idle-timeouts | — |
 | packaging-containers-are-digest-pinned | file_contains | packaging-workflows | BAR-022 | dependency-pinning | — |
 | packaging-workflow-references-are-immutable | workflow_references_pinned | desktop-commons, dotfiles, hyprstate, dials, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, wayland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant, packaging-workflows, arch-repo, xdg-paths, logind-session, hypr-ipc, slint-idle-runtime | BAR-022, BAR-023 | dependency-pinning, release-gating | — |
 | pacman-repository-does-not-disable-verification | file_not_contains | arch-repo | BAR-022 | package-integrity | — |

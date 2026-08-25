@@ -568,7 +568,7 @@ transport = "Hyprland DPMS dispatch from independent idle domains"
 location = "hyprstate locked/inhibited timer and hypridle listeners"
 version = "unversioned"
 maturity = "provisional"
-compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. A third input now suppresses blanking entirely: while $XDG_RUNTIME_DIR/hypr-de-lock-failed exists a lock attempt has failed and the outputs must stay lit."
+compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven."
 failure = "Competing writes can wake, blank, or reblank displays contrary to the latest user/session state. Blanking after a failed lock is the dangerous case: dark outputs are indistinguishable from a locked screen over a live session."
 barriers = ["BAR-001", "BAR-007", "BAR-012", "BAR-014", "BAR-025"]
 

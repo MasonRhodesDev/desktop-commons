@@ -461,15 +461,25 @@ severity = "error"
 message = "The lock failsafe must come from the root-owned policy file, not from an environment value the session can set."
 
 [[assertion]]
-id = "failed-lock-is-not-blanked"
+id = "blanking-requires-the-compositor-lock"
 kind = "file_contains"
 repository = "hypr-de"
-path = "dist/libexec/dpms-off-if-unlocked.sh"
-pattern = "hypr-de-lock-failed"
+path = "dist/libexec/dpms-off-if-locked.sh"
+pattern = "(?s)hyprctl locked.*?exit 0.*?dpms"
 barriers = ["BAR-016", "BAR-025"]
 concerns = ["screen-lock", "idle-timeouts"]
 severity = "error"
-message = "Outputs must stay lit after a failed lock; a dark screen over a live session passes for a locked one."
+message = "A DPMS-off must re-check the compositor lock itself, so blanking can never land on an unlocked desktop."
+
+[[assertion]]
+id = "one-blanker-in-the-session"
+kind = "path_absent"
+repository = "hypr-de"
+path = "dist/libexec/dpms-off-if-unlocked.sh"
+barriers = ["BAR-001", "BAR-025"]
+concerns = ["screen-lock", "idle-timeouts"]
+severity = "error"
+message = "One blanking authority, gated on the lock. A second listener that blanks while unlocked reintroduces the dark-but-unlocked screen."
 
 [[assertion]]
 id = "idle-driver-is-not-path-resolved"
