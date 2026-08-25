@@ -348,7 +348,7 @@ owner = ""
 internal = ["hyprstate", "logind-idle-control"]
 external = ["hypridle"]
 risk = "high"
-notes = "hypridle owns ordinary idle timers; hyprstate observes inhibitor state and owns lid-specific grace."
+notes = "hypridle, configured by hypr-DE, owns every idle timer and the single DPMS-off, which fires only while the compositor holds the lock; hyprstate observes inhibitor state, owns lid-specific grace, and repairs stuck DPMS (on only). A held idle inhibitor keeps the screen lit whether or not the session is locked, and an intentional lock releases it."
 barriers = ["BAR-001", "BAR-012"]
 
 [[concern]]

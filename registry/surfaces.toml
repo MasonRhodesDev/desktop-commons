@@ -85,9 +85,9 @@ producers = ["hyprstate"]
 consumers = ["dials"]
 transport = "newline-delimited JSON over Unix stream socket"
 location = "$XDG_RUNTIME_DIR/hyprstate-telemetry.sock"
-version = "0"
+version = "2"
 maturity = "provisional"
-compatibility = "NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it."
+compatibility = "NDJSON frames carry an explicit version field; each version is additive JSON (unknown fields ignored). v2 (hyprstate 2.5.0) dropped the screen field with the screen-DPMS sub-FSM. Consumers must read version and skip frames they do not understand. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it."
 failure = "Producer silently drops frames without a listener; GUI skips malformed frames."
 barriers = ["BAR-002", "BAR-007", "BAR-010", "BAR-025"]
 
@@ -561,14 +561,14 @@ barriers = ["BAR-002", "BAR-007", "BAR-016"]
 
 [[surface]]
 id = "desktop-dpms-arbitration-v0"
-owner = "hyprstate"
-producers = ["hyprstate", "external:hypridle"]
+owner = "hypr-de"
+producers = ["external:hypridle", "hyprstate"]
 consumers = ["external:hyprland"]
 transport = "Hyprland DPMS dispatch from independent idle domains"
-location = "hyprstate locked/inhibited timer and hypridle listeners"
+location = "hypr-DE hypridle.conf: one blanking listener (condition_cmd=session-locked.sh, on-timeout=dpms-off-if-locked.sh) plus hyprstate reconciler stuck-DPMS repair"
 version = "unversioned"
 maturity = "provisional"
-compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven."
+compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. hyprstate is an ON-only producer (hyprstate >= 2.5.0): it relights an enabled output found DPMS-off only when the blank is provably unowned - the session is unlocked, or it is locked and the cursor moved between reconcile passes - and it has no constructible DPMS-off argv at all. Session scripts spawned from hypridle user services must resolve the logind session by $XDG_SESSION_ID (or auto), never loginctl self, which cannot resolve from app.slice and silently reports an empty hint."
 failure = "Competing writes can wake, blank, or reblank displays contrary to the latest user/session state. Blanking after a failed lock is the dangerous case: dark outputs are indistinguishable from a locked screen over a live session."
 barriers = ["BAR-001", "BAR-007", "BAR-012", "BAR-014", "BAR-025"]
 
