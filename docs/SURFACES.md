@@ -12,7 +12,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | appearance-profile-v1 | provisional | Fields resolve independently through packaged, system, user, and runtime layers. |
 | copr-repository-trust-v1 | provisional | Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1. |
 | declared-units-v1 | provisional | A dependency that must contribute a user unit lists it under that section's units key. The gate requires every declared unit to be in 90-hypr-de.preset and validated by hypr-de-setup, so adding a service-bearing dependency forces declaring and enabling its unit. |
-| desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. A third input now suppresses blanking entirely: while $XDG_RUNTIME_DIR/hypr-de-lock-failed exists a lock attempt has failed and the outputs must stay lit. |
+| desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. |
 | game-mode-approval-v1 | provisional | Approval requests and status replies are newline-delimited JSON; passkey verification is the authority. |
 | game-mode-armed-v1 | provisional | The armed flag is consumed once and expires after 60 seconds. |
 | game-mode-home-mask-v0 | provisional | The bind policy is the security boundary for game-session home access. |
@@ -143,7 +143,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## desktop-dpms-arbitration-v0
 
 - Location: `hyprstate locked/inhibited timer and hypridle listeners`
-- Compatibility: Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. A third input now suppresses blanking entirely: while $XDG_RUNTIME_DIR/hypr-de-lock-failed exists a lock attempt has failed and the outputs must stay lit.
+- Compatibility: Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven.
 - Failure behavior: Competing writes can wake, blank, or reblank displays contrary to the latest user/session state. Blanking after a failed lock is the dangerous case: dark outputs are indistinguishable from a locked screen over a live session.
 - Barriers: BAR-001, BAR-007, BAR-012, BAR-014, BAR-025
 
