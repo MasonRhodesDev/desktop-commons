@@ -10,11 +10,12 @@ them.
 | ADR | Status | Decision |
 |---|---|---|
 | [0001](0001-architecture-registry.md) | accepted | `desktop-commons` owns the federated architecture registry and review barriers |
-| [0002](0002-event-driven-slint-runtime.md) | accepted | Long-lived Slint applications freeze their render clock when no work is due |
+| [0002](0002-event-driven-slint-runtime.md) | accepted (mechanism superseded by [0007](0007-probe-before-acquiring-a-buffer.md)) | Long-lived Slint applications freeze their render clock when no work is due |
 | [0003](0003-suite-package-boundaries.md) | accepted | Hypr-DE installs only the core session; suite applications remain independently installable |
 | [0004](0004-capture-free-lock-warning.md) | accepted | Vigil warnings use compositor background effects and never capture the desktop |
 | [0005](0005-settings-window-and-naming.md) | accepted | `dials` is the one settings window (native, schema-generated, or launched pages); `hypr` names only for Hyprland-only components |
 | [0006](0006-fail-closed-lock-and-session-owned-policy.md) | accepted | A lock request that no locker satisfies terminates the session, and its failsafe is settable only from a root-owned file |
+| [0007](0007-probe-before-acquiring-a-buffer.md) | accepted | Presenters ask whether an output owes a present before acquiring a buffer; acquiring one speculatively is protocol traffic that wakes the loop that acquired it |
 
 ## When an ADR is required
 
