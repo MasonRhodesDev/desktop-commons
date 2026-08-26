@@ -62,7 +62,7 @@ location = "slint_idle_runtime::{WakeHandle, DirtySet, IdleScheduler, Metrics}"
 version = "0.1"
 maturity = "provisional"
 compatibility = "All consumers use exactly Slint 1.17.1. A visible animation selects frame cadence, a real timer selects its deadline, and otherwise the UI loop blocks indefinitely."
-failure = "Presenters remain application-owned. They must acquire buffers only for outputs returned by DirtySet::take_all and expose idle counters during soak testing."
+failure = "Presenters remain application-owned. They must ask whether an output owes a present BEFORE acquiring a buffer (ADR 0007): DirtySet cannot see Slint's redraw requests and so cannot be the gate, and a buffer acquired then dropped un-attached is protocol traffic - a compositor that answers wl_buffer.destroy with an eager delete_id wakes the loop that acquired it, which acquires another (vigil#65: 24k iterations/s, no frames drawn). They must expose idle counters during soak testing. Soak tests under wlroots cannot observe this class of bug; verification is protocol-level or against a compositor that replies eagerly."
 barriers = ["BAR-005", "BAR-007", "BAR-008", "BAR-025"]
 
 [[surface]]
