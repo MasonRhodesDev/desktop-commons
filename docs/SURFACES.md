@@ -12,7 +12,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | appearance-profile-v1 | provisional | Fields resolve independently through packaged, system, user, and runtime layers. |
 | copr-repository-trust-v1 | provisional | Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1. |
 | declared-units-v1 | provisional | A dependency that must contribute a user unit lists it under that section's units key. The gate requires every declared unit to be in 90-hypr-de.preset and validated by hypr-de-setup, so adding a service-bearing dependency forces declaring and enabling its unit. |
-| desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. |
+| desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. hyprstate is an ON-only producer (hyprstate >= 2.5.0): it relights an enabled output found DPMS-off only when the blank is provably unowned - the session is unlocked, or it is locked and the cursor moved between reconcile passes - and it has no constructible DPMS-off argv at all. Session scripts spawned from hypridle user services must resolve the logind session by $XDG_SESSION_ID (or auto), never loginctl self, which cannot resolve from app.slice and silently reports an empty hint. |
 | game-mode-approval-v1 | provisional | Approval requests and status replies are newline-delimited JSON; passkey verification is the authority. |
 | game-mode-armed-v1 | provisional | The armed flag is consumed once and expires after 60 seconds. |
 | game-mode-home-mask-v0 | provisional | The bind policy is the security boundary for game-session home access. |
@@ -22,7 +22,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hypr-de-help-v0 | provisional | SUPER+/ opens the window. Binds are loaded from hyprctl binds -j. First login is marker-gated via hypr-de-welcome. |
 | hypr-ipc-v0 | provisional | HIS if .socket2.sock exists, else lockfile rescan with /proc/<pid>/comm == Hyprland. No /run/user/<uid> fallback. Mutating hyprctl success is stdout exactly ok. |
 | hyprstate-control-v0 | provisional | Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status. |
-| hyprstate-help-telemetry-v0 | provisional | NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it. |
+| hyprstate-help-telemetry-v0 | provisional | NDJSON frames carry an explicit version field; each version is additive JSON (unknown fields ignored). v2 (hyprstate 2.5.0) dropped the screen field with the screen-DPMS sub-FSM. Consumers must read version and skip frames they do not understand. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it. |
 | idle-control-dbus-v1 | legacy | Destination-less signals use a session-scoped path, but no service owns the documented com.logind.IdleControl name. Replace with an owned versioned methods/properties interface. |
 | lmtt-color-css-v0 | legacy | Superseded by lmtt-tokens-v1 for suite apps. Remaining writes are GTK/Waybar fan-out only. |
 | lmtt-portal-appearance-v1 | provisional | LMTT writes host gsettings; the real portal emits SettingChanged. Do not emit a fake portal signal. Suite palette tokens are not carried here. |
@@ -58,7 +58,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | appearance-profile-v1 | appearance-profiles | appearance-profiles, linux-multi-theme-toggle | linux-multi-theme-toggle, vigil | TOML plus copied assets | 1 | provisional |
 | copr-repository-trust-v1 | hypr-de | external:copr | hypr-de | COPR project signing keys verified by fingerprint before dnf copr enable | 1 | provisional |
 | declared-units-v1 | hypr-de | hypr-de | hypr-de | deps.toml `units` key per dependency section | 1 | provisional |
-| desktop-dpms-arbitration-v0 | hyprstate | hyprstate, external:hypridle | external:hyprland | Hyprland DPMS dispatch from independent idle domains | unversioned | provisional |
+| desktop-dpms-arbitration-v0 | hypr-de | external:hypridle, hyprstate | external:hyprland | Hyprland DPMS dispatch from independent idle domains | unversioned | provisional |
 | game-mode-approval-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | permission-locked Unix socket, WebAuthn, Web Push, and Tailscale HTTPS | 1 | provisional |
 | game-mode-armed-v1 | greetd-game-mode | greetd-game-mode | greetd-game-mode | one-shot runtime flag consumed by greetd dispatch | 1 | provisional |
 | game-mode-home-mask-v0 | greetd-game-mode | greetd-game-mode | external:bubblewrap | bubblewrap bind policy and override flag | unversioned | provisional |
@@ -71,7 +71,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hypr-ipc-v0 | hypr-ipc | hypr-ipc | hyprstate, wayland-voice-dictation | Rust library API | 0.1 | provisional |
 | hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, dials, waybar-workspace-buttons, wayland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
 | hyprstate-control-v0 | hyprstate | dials | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
-| hyprstate-help-telemetry-v0 | hyprstate | hyprstate | dials | newline-delimited JSON over Unix stream socket | 0 | provisional |
+| hyprstate-help-telemetry-v0 | hyprstate | hyprstate | dials | newline-delimited JSON over Unix stream socket | 2 | provisional |
 | hyprstate-power1 | hyprstate | hyprstate | hyprstate, dials | system D-Bus | 1 | stable |
 | idle-control-dbus-v1 | logind-idle-control | logind-idle-control | logind-idle-control, hypr-de | session D-Bus plus runtime state file | 1 | legacy |
 | lmtt-color-css-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | CSS color definitions | unversioned | legacy |
@@ -142,8 +142,8 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 
 ## desktop-dpms-arbitration-v0
 
-- Location: `hyprstate locked/inhibited timer and hypridle listeners`
-- Compatibility: Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven.
+- Location: `hypr-DE hypridle.conf: one blanking listener (condition_cmd=session-locked.sh, on-timeout=dpms-off-if-locked.sh) plus hyprstate reconciler stuck-DPMS repair`
+- Compatibility: Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. hyprstate is an ON-only producer (hyprstate >= 2.5.0): it relights an enabled output found DPMS-off only when the blank is provably unowned - the session is unlocked, or it is locked and the cursor moved between reconcile passes - and it has no constructible DPMS-off argv at all. Session scripts spawned from hypridle user services must resolve the logind session by $XDG_SESSION_ID (or auto), never loginctl self, which cannot resolve from app.slice and silently reports an empty hint.
 - Failure behavior: Competing writes can wake, blank, or reblank displays contrary to the latest user/session state. Blanking after a failed lock is the dangerous case: dark outputs are indistinguishable from a locked screen over a live session.
 - Barriers: BAR-001, BAR-007, BAR-012, BAR-014, BAR-025
 
@@ -234,7 +234,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## hyprstate-help-telemetry-v0
 
 - Location: `$XDG_RUNTIME_DIR/hyprstate-telemetry.sock`
-- Compatibility: NDJSON frames carry an explicit version field. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it.
+- Compatibility: NDJSON frames carry an explicit version field; each version is additive JSON (unknown fields ignored). v2 (hyprstate 2.5.0) dropped the screen field with the screen-DPMS sub-FSM. Consumers must read version and skip frames they do not understand. The GUI is a client of $XDG_RUNTIME_DIR/hyprstate-telemetry.sock and must not bind it.
 - Failure behavior: Producer silently drops frames without a listener; GUI skips malformed frames.
 - Barriers: BAR-002, BAR-007, BAR-010, BAR-025
 

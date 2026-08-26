@@ -36,7 +36,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 
 | Barrier | Assertions |
 |---|---:|
-| BAR-001 | 5 |
+| BAR-001 | 6 |
 | BAR-002 | 1 |
 | BAR-003 | 0 |
 | BAR-004 | 0 |
@@ -60,7 +60,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-022 | 8 |
 | BAR-023 | 7 |
 | BAR-024 | 1 |
-| BAR-025 | 9 |
+| BAR-025 | 10 |
 
 Assertions with zero counts remain review-only barriers until an executable check is added.
 
@@ -93,6 +93,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
 | greetd-pam-rewrite-is-recoverable | file_contains | hypr-de | BAR-019 | operator-policy-preservation, authentication | — |
 | gui-does-not-own-telemetry-socket | file_not_contains | dials | BAR-002, BAR-010 | display-settings | — |
+| hyprstate-never-blanks | file_not_contains | hyprstate | BAR-001, BAR-025 | idle-timeouts | — |
 | hyprstate-rpm-rewrites-git-sources | file_contains | hyprstate | BAR-022, BAR-023 | fedora-package-closure | — |
 | idle-control-cli-requires-daemon-ack | file_not_contains | logind-idle-control | BAR-025 | manual-idle-inhibition | — |
 | idle-driver-is-not-path-resolved | file_not_contains | hypr-de | BAR-017 | package-user-overlay-shadowing, idle-timeouts | — |

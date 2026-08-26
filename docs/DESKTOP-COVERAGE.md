@@ -130,7 +130,7 @@
 | P3 | battery-status | power | external | — | UPower, Waybar | low | hyprstate consumes battery state for policy while Waybar presents status. |
 | P2 | brightness-control | power | hybrid | hypr-de | brightnessctl, Linux backlight sysfs | medium | hypr-DE owns keybind and OSD workflow while brightnessctl performs the hardware write. |
 | P1 | gpu-policy | power | owned | hyprstate | UWSM, Linux DRM/sysfs | high | hyprstate selects render intent and reconciles runtime GPU state. |
-| P1 | idle-timeouts | power | external | — | hypridle | high | hypridle owns ordinary idle timers; hyprstate observes inhibitor state and owns lid-specific grace. |
+| P1 | idle-timeouts | power | external | — | hypridle | high | hypridle, configured by hypr-DE, owns every idle timer and the single DPMS-off, which fires only while the compositor holds the lock; hyprstate observes inhibitor state, owns lid-specific grace, and repairs stuck DPMS (on only). A held idle inhibitor keeps the screen lit whether or not the session is locked, and an intentional lock releases it. |
 | P2 | manual-idle-inhibition | power | owned | logind-idle-control | systemd-logind | medium | Per-session user intent is represented by a native logind inhibitor. |
 | P1 | power-policy | power | owned | hyprstate | UPower, systemd-logind, Linux sysfs | high | hyprstate powerd is the exclusive platform-profile and hardware-knob writer. |
 | P1 | suspend-policy | power | hybrid | hyprstate | systemd-logind, systemd suspend targets | high | hyprstate owns lid grace, lock-before-suspend, and cancellation; logind performs suspension. |

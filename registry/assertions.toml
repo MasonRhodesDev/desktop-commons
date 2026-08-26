@@ -472,6 +472,17 @@ severity = "error"
 message = "A DPMS-off must re-check the compositor lock itself, so blanking can never land on an unlocked desktop."
 
 [[assertion]]
+id = "hyprstate-never-blanks"
+kind = "file_not_contains"
+repository = "hyprstate"
+path = "crates/hyprstate-fsm/src/profiles.rs"
+pattern = 'action = "off"'
+barriers = ["BAR-001", "BAR-025"]
+concerns = ["idle-timeouts"]
+severity = "error"
+message = "hyprstate is an ON-only DPMS producer; a constructible DPMS-off argv makes it a second blanker."
+
+[[assertion]]
 id = "one-blanker-in-the-session"
 kind = "path_absent"
 repository = "hypr-de"
