@@ -258,7 +258,10 @@ fn id_from(seed: u64, counter: u64, bytes: usize) -> String {
 /// broken. The fallback seed makes it reachable in practice: a stopped
 /// clock and an unlucky pid arrive here.
 fn nonzero(mut id: String) -> String {
-    if id.bytes().all(|b| b == b'0') {
+    // `all` is vacuously true for an empty string, so without the emptiness
+    // check a zero-width id came back one character long - a width contract
+    // broken by the very guard meant to protect the value.
+    if !id.is_empty() && id.bytes().all(|b| b == b'0') {
         id.pop();
         id.push('1');
     }
@@ -1072,12 +1075,30 @@ mod tests {
             "00000000000000000000000000000001"
         );
         assert_eq!(nonzero("00000000000000ab".into()), "00000000000000ab");
+        assert_eq!(
+            nonzero(String::new()),
+            "",
+            "a zero-width id must stay empty"
+        );
 
         assert!(
             parse_traceparent(&format!("00-{}-{}-01", id_from(0, 0, 16), id_from(0, 0, 8)))
                 .is_some(),
             "our own minted ids must survive our own parser"
         );
+    }
+
+    #[test]
+    fn an_id_is_exactly_the_width_asked_for() {
+        // Only 8 and 16 are used today. The others are here because
+        // `id_from` is advertised as pure and adversarially testable, and
+        // a width that is not a multiple of eight is what distinguishes
+        // rounding up from truncating down.
+        for bytes in [0, 1, 4, 8, 12, 16, 20] {
+            let id = id_from(0xfeed, 7, bytes);
+            assert_eq!(id.len(), bytes * 2, "wrong width for {bytes} bytes: {id:?}");
+            assert!(id.bytes().all(|b| b.is_ascii_hexdigit()));
+        }
     }
 
     #[test]
