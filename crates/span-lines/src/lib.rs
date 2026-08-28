@@ -815,25 +815,34 @@ pub trait AtExit: Send + Sync + 'static {
     fn flush(&self);
 }
 
-static AT_EXIT: Mutex<Vec<Box<dyn AtExit>>> = Mutex::new(Vec::new());
+static AT_EXIT: Mutex<Vec<std::sync::Arc<dyn AtExit>>> = Mutex::new(Vec::new());
 
 /// Register something to flush before [`exit`].
+///
+/// There is no way to unregister. The registry is process-global and grows
+/// with each call, which is fine for the intended one-per-process
+/// installation and worth knowing if something registers per iteration.
 pub fn at_exit(hook: impl AtExit) {
     if let Ok(mut hooks) = AT_EXIT.lock() {
-        hooks.push(Box::new(hook));
+        hooks.push(std::sync::Arc::new(hook));
     }
 }
 
 /// Run every registered hook, most recently registered first.
 ///
 /// Separate from [`exit`] so a consumer that ends some other way - a signal
-/// handler setting a flag, a test - can flush without terminating.
+/// handler setting a flag, a test - can flush without terminating. Calling
+/// it repeatedly is safe and required to be: a hook must be idempotent,
+/// because the whole point is that `exit` can still flush after someone
+/// else already did.
 pub fn flush() {
-    // Take the hooks out rather than holding the lock across `flush`: a hook
-    // that registers another one would otherwise deadlock, and hooks run
-    // once by construction.
+    // Clone the handles out rather than running under the lock: a hook that
+    // registers another one would otherwise deadlock. Cloning rather than
+    // *taking* them is what keeps a later `exit` able to flush - draining
+    // here meant an independent `flush()` silently disarmed the exit path,
+    // losing exactly the spans the registry exists to save.
     let hooks = match AT_EXIT.lock() {
-        Ok(mut hooks) => std::mem::take(&mut *hooks),
+        Ok(hooks) => hooks.clone(),
         Err(_) => return,
     };
     for hook in hooks.iter().rev() {
@@ -1329,10 +1338,13 @@ mod tests {
     }
 
     #[test]
-    fn flush_runs_hooks_in_reverse_and_only_once() {
+    fn flush_runs_hooks_in_reverse_and_stays_armed() {
         // Reverse, because a hook registered later may depend on one
-        // registered earlier still being usable. Once, because `exit`
-        // cannot un-terminate if a hook is re-entered.
+        // registered earlier still being usable. Still armed afterwards,
+        // because draining meant a consumer's own flush() - a signal
+        // handler, a test - silently disarmed the exit path, so the next
+        // `exit` lost every open span. That is the failure the registry
+        // exists to prevent, reintroduced by the registry.
         #[derive(Clone)]
         struct Note(&'static str, std::sync::Arc<Mutex<Vec<&'static str>>>);
         impl AtExit for Note {
@@ -1346,9 +1358,14 @@ mod tests {
         flush();
         assert_eq!(*seen.lock().unwrap(), ["second", "first"]);
 
-        // A second flush must not re-run them.
+        // A second flush runs them again: hooks are idempotent, and the
+        // alternative is an exit path that quietly stopped working.
         flush();
-        assert_eq!(*seen.lock().unwrap(), ["second", "first"]);
+        assert_eq!(
+            *seen.lock().unwrap(),
+            ["second", "first", "second", "first"],
+            "flush must stay armed for a later exit()"
+        );
     }
 
     #[test]
