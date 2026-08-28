@@ -555,7 +555,10 @@ impl Span {
     /// root `lock.session` span left to `Drop` there would emit nothing on
     /// exactly the outcomes worth recording.
     pub fn end(mut self) {
-        self.finish(None);
+        // Same status rule as Drop. A caller can reach end() from a
+        // wrapping type's own Drop while that thread is unwinding, and a
+        // span ending in a panic should say so however it was ended.
+        self.finish(drop_status(std::thread::panicking()));
     }
 
     /// Emit once. Returns the record written, for tests; `None` if the span
@@ -670,7 +673,27 @@ fn frame(line: &str) -> Vec<u8> {
     out
 }
 
+// Records emitted on this thread, for tests only.
+//
+// Tests used to assert against `render_span()` directly, which does not
+// mark the span emitted - so the span then emitted a *second* time when it
+// dropped, with a different `seq` and a longer `dur_us`. The suite was
+// violating the two invariants this crate had just introduced. Capturing
+// what `emit` actually wrote lets tests exercise the real path (Drop or
+// end(), through finish()) instead of a stand-in for it.
+//
+// Thread-local so tests running in parallel cannot see each other's
+// records.
+#[cfg(test)]
+thread_local! {
+    static EMITTED: std::cell::RefCell<Vec<String>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
 fn emit(line: &str) {
+    #[cfg(test)]
+    EMITTED.with(|recorded| recorded.borrow_mut().push(line.to_string()));
+
     // stderr, because journald already stamps it with a monotonic timestamp
     // and the unit, and because a locker must not depend on a socket being
     // there.
@@ -858,6 +881,52 @@ mod tests {
         assert!(Detail::Session < Detail::Frames);
     }
 
+    /// Whether a span would write anything, without rendering it.
+    ///
+    /// Rendering to find out consumed a `seq` for a record that was never
+    /// emitted, leaving gaps in the counter the tests then asserted on.
+    fn emits(span: &Span) -> bool {
+        span.enabled()
+    }
+
+    /// Take everything emitted on this thread since the last call.
+    fn drain() -> Vec<String> {
+        EMITTED.with(|recorded| std::mem::take(&mut *recorded.borrow_mut()))
+    }
+
+    /// Emit an event through the real path and return the record it wrote.
+    fn event_of(span: &Span, name: &'static str, attrs: &[(&'static str, &str)]) -> String {
+        drain();
+        span.event(name, attrs);
+        let mut written = drain();
+        assert_eq!(written.len(), 1, "expected exactly one event: {written:?}");
+        written.pop().unwrap()
+    }
+
+    /// End a span through the real path and return the one record it wrote.
+    ///
+    /// Asserts exactly one record, which is the guard against a span
+    /// emitting twice - the failure the old `render_span()`-in-tests habit
+    /// produced silently.
+    fn record(span: Span) -> String {
+        drain();
+        drop(span);
+        let mut written = drain();
+        assert_eq!(written.len(), 1, "expected exactly one record: {written:?}");
+        written.pop().unwrap()
+    }
+
+    /// Assert a span writes nothing at all, through the real path.
+    fn silent(span: Span) {
+        drain();
+        drop(span);
+        assert_eq!(
+            drain(),
+            Vec::<String>::new(),
+            "span was expected to be silent"
+        );
+    }
+
     /// Strip the two random ids so a record's *shape* can be asserted
     /// exactly. Their format is covered by `ids_are_w3c_shaped`.
     fn skeleton(line: &str) -> String {
@@ -876,10 +945,7 @@ mod tests {
     #[test]
     fn a_root_span_renders_the_documented_shape() {
         let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
-        let s = t.span("lock.session").attr("outcome", "Unlocked");
-        let line = s
-            .render_span()
-            .expect("session detail must emit a session span");
+        let line = record(t.span("lock.session").attr("outcome", "Unlocked"));
         assert_eq!(
             skeleton(&line),
             "span=lock.session trace=4bf92f3577b34da6a3ce929d0e0e4736 id=<id> parent=- seq=<n> t_us=<n> dur_us=<n> outcome=Unlocked"
@@ -891,24 +957,26 @@ mod tests {
         let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let root = t.span("lock.session");
         let child = root.child("flow.phase").attr("phase", "PreLock");
-        let line = child.render_span().unwrap();
+        let child_id = child.id().to_string();
+        assert_ne!(child_id, root.id(), "ids must be distinct");
+
+        drain();
+        child.event(
+            "flow.transition",
+            &[("from", "Committing"), ("to", "Locked")],
+        );
+        let event = drain().pop().expect("event must be emitted");
+        assert_eq!(
+            skeleton(&event),
+            "event=flow.transition trace=4bf92f3577b34da6a3ce929d0e0e4736 parent=<id> seq=<n> t_us=<n> from=Committing to=Locked"
+        );
+
+        let line = record(child);
         assert!(
             line.contains(&format!("parent={}", root.id())),
             "child must point at its parent; got {line}"
         );
         assert!(line.contains("trace=4bf92f3577b34da6a3ce929d0e0e4736"));
-        assert_ne!(child.id(), root.id(), "ids must be distinct");
-
-        let event = child
-            .render_event(
-                "flow.transition",
-                &[("from", "Committing"), ("to", "Locked")],
-            )
-            .unwrap();
-        assert_eq!(
-            skeleton(&event),
-            "event=flow.transition trace=4bf92f3577b34da6a3ce929d0e0e4736 parent=<id> seq=<n> t_us=<n> from=Committing to=Locked"
-        );
     }
 
     #[test]
@@ -917,9 +985,9 @@ mod tests {
         // nothing at all; a leaking span would defeat it.
         let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Off).unwrap();
         let root = t.span("lock.session");
-        assert!(root.render_span().is_none());
-        assert!(root.render_event("flow.transition", &[]).is_none());
-        assert!(root.frame_child("frame.present").render_span().is_none());
+        assert!(!emits(&root));
+        silent(root.frame_child("frame.present"));
+        silent(root);
     }
 
     #[test]
@@ -928,24 +996,15 @@ mod tests {
         // diagnosis, and emitting them by default would make idle noisy.
         let quiet = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let root = quiet.span("lock.session");
-        assert!(root.render_span().is_some(), "session spans still emit");
+        assert!(emits(&root), "session spans still emit");
         let frame = root.frame_child("frame.present");
-        assert!(
-            frame.render_span().is_none(),
-            "frame span leaked at session detail"
-        );
-        assert!(
-            frame.render_event("frame.damage", &[]).is_none(),
-            "an event inherits its span's gate"
-        );
+        assert!(!emits(&frame), "frame span leaked at session detail");
+        assert!(!emits(&frame), "an event inherits its span's gate");
 
         let loud = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames).unwrap();
         let root = loud.span("lock.session");
-        assert!(
-            root.render_span().is_some(),
-            "frames detail keeps session spans"
-        );
-        assert!(root.frame_child("frame.present").render_span().is_some());
+        assert!(emits(&root), "frames detail keeps session spans");
+        assert!(emits(&root.frame_child("frame.present")));
     }
 
     /// The reader the record format promises: split on whitespace, split
@@ -1064,27 +1123,24 @@ mod tests {
         let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let root = t.span("lock.session");
         let frame = root.frame_child("frame.present");
-        assert!(
-            frame.render_span().is_none(),
-            "frame span must be silent here"
-        );
+        assert!(!emits(&frame), "frame span must be silent here");
 
         let orphan = frame.child("frame.subtask");
         assert!(
-            orphan.render_span().is_none(),
+            !emits(&orphan),
             "a child of a silent span must not emit: it would name an absent parent"
         );
-        assert!(orphan.render_event("frame.damage", &[]).is_none());
+        assert!(!emits(&orphan));
 
         // Turn the parent on and the child comes back with it.
         let loud = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames).unwrap();
         let root = loud.span("lock.session");
         let frame = root.frame_child("frame.present");
-        assert!(frame.render_span().is_some());
-        assert!(frame.child("frame.subtask").render_span().is_some());
+        assert!(emits(&frame));
+        assert!(emits(&frame.child("frame.subtask")));
 
         // And an ordinary child of an ordinary span is unaffected.
-        assert!(root.child("flow.phase").render_span().is_some());
+        assert!(emits(&root.child("flow.phase")));
     }
 
     #[test]
@@ -1094,6 +1150,27 @@ mod tests {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<Span>();
         assert_send_sync::<Trace>();
+    }
+
+    #[test]
+    fn a_span_emits_exactly_once_however_it_ends() {
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
+
+        drain();
+        t.span("lock.session").end();
+        assert_eq!(drain().len(), 1, "end() then Drop must write one record");
+
+        drain();
+        drop(t.span("lock.session"));
+        assert_eq!(drain().len(), 1, "Drop alone must write one record");
+
+        drain();
+        {
+            let mut span = t.span("lock.session");
+            span.finish(None);
+            span.finish(None);
+        }
+        assert_eq!(drain().len(), 1, "repeated finish must write one record");
     }
 
     #[test]
@@ -1120,6 +1197,37 @@ mod tests {
             line.contains(" status=panic"),
             "a panicking span must be distinguishable: {line}"
         );
+
+        // end() must reach the same decision as Drop, not a hardcoded None:
+        // a wrapping type's Drop can call end() while the thread unwinds.
+        // end() must reach the same decision as Drop, not a hardcoded
+        // None: a wrapping type's Drop can call end() while unwinding.
+        drain();
+        let panicked = std::panic::catch_unwind(|| {
+            struct EndsOnDrop(Option<Span>);
+            impl Drop for EndsOnDrop {
+                fn drop(&mut self) {
+                    if let Some(span) = self.0.take() {
+                        span.end();
+                    }
+                }
+            }
+            let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
+            let _guard = EndsOnDrop(Some(t.span("lock.session")));
+            std::panic::panic_any("boom");
+        });
+        assert!(panicked.is_err(), "the test's own panic must have fired");
+        let written = drain();
+        assert_eq!(
+            written.len(),
+            1,
+            "the guard's span must emit once: {written:?}"
+        );
+        assert!(
+            written[0].contains(" status=panic"),
+            "end() during unwinding must record the panic: {}",
+            written[0]
+        );
     }
 
     #[test]
@@ -1135,14 +1243,13 @@ mod tests {
         // Overlapping: the transition fires while the frame is in flight.
         let frame = root.frame_child("frame.present").attr("output", "DP-1");
         std::thread::sleep(std::time::Duration::from_millis(2));
-        let event = root
-            .render_event(
-                "flow.transition",
-                &[("from", "Committing"), ("to", "Locked")],
-            )
-            .unwrap();
+        let event = event_of(
+            &root,
+            "flow.transition",
+            &[("from", "Committing"), ("to", "Locked")],
+        );
         std::thread::sleep(std::time::Duration::from_millis(2));
-        let frame = frame.render_span().unwrap();
+        let frame = record(frame);
 
         let (start, end) = interval(&frame);
         let at = field(&event, "t_us");
@@ -1152,9 +1259,9 @@ mod tests {
         );
 
         // Sequential: the frame finishes before the transition fires.
-        let done = root.frame_child("frame.present").render_span().unwrap();
+        let done = record(root.frame_child("frame.present"));
         std::thread::sleep(std::time::Duration::from_millis(2));
-        let after = root.render_event("flow.transition", &[]).unwrap();
+        let after = event_of(&root, "flow.transition", &[]);
         let (_, end) = interval(&done);
         assert!(
             end < field(&after, "t_us"),
@@ -1201,14 +1308,8 @@ mod tests {
         // from the same counter, or the order is only total within a kind.
         let mut seqs = Vec::new();
         for _ in 0..4 {
-            seqs.push(field(
-                &root.render_event("flow.transition", &[]).unwrap(),
-                "seq",
-            ));
-            seqs.push(field(
-                &root.child("flow.phase").render_span().unwrap(),
-                "seq",
-            ));
+            seqs.push(field(&event_of(&root, "flow.transition", &[]), "seq"));
+            seqs.push(field(&record(root.child("flow.phase")), "seq"));
         }
         assert!(
             seqs.windows(2).all(|w| w[0] < w[1]),
@@ -1225,7 +1326,7 @@ mod tests {
         let root = t.span("lock.session");
         let span = root.frame_child("frame.present");
         std::thread::sleep(std::time::Duration::from_micros(400));
-        let line = span.render_span().unwrap();
+        let line = record(span);
         assert!(
             field(&line, "dur_us") >= 300,
             "sub-millisecond work must be measurable: {line}"
@@ -1235,11 +1336,7 @@ mod tests {
     #[test]
     fn a_record_is_one_buffer_and_one_line() {
         let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
-        let line = t
-            .span("lock.session")
-            .attr("phase", "PreLock")
-            .render_span()
-            .unwrap();
+        let line = record(t.span("lock.session").attr("phase", "PreLock"));
         let bytes = frame(&line);
         assert_eq!(bytes.iter().filter(|b| **b == b'\n').count(), 1);
         assert_eq!(*bytes.last().unwrap(), b'\n', "newline must terminate");
@@ -1262,7 +1359,7 @@ mod tests {
         let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let mut span = t.span("lock.session");
         span.set("blob", "x".repeat(8000));
-        let bytes = frame(&span.render_span().unwrap());
+        let bytes = frame(&record(span));
         assert!(
             bytes.len() <= MAX_RECORD + b" trunc=1\n".len(),
             "cap not applied: {}",
@@ -1310,12 +1407,11 @@ mod tests {
             "100% =",
         ] {
             let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
-            let line = t
-                .span("lock.session")
-                .attr("note", hostile)
-                .attr("after", "sentinel")
-                .render_span()
-                .unwrap();
+            let line = record(
+                t.span("lock.session")
+                    .attr("note", hostile)
+                    .attr("after", "sentinel"),
+            );
 
             assert_eq!(line.lines().count(), 1, "record split into two: {line:?}");
             let fields = naive_read(&line);
