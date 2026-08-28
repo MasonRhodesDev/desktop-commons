@@ -46,6 +46,9 @@ use std::time::Instant;
 /// anyway - that is journald's `__MONOTONIC_TIMESTAMP`'s job. What `t_us`
 /// buys is ordering *within* one process at a resolution the journal's
 /// default output does not show.
+/// The W3C `sampled` flag, used for traces this process starts.
+const SAMPLED: &str = "01";
+
 fn origin() -> Instant {
     static ORIGIN: OnceLock<Instant> = OnceLock::new();
     *ORIGIN.get_or_init(Instant::now)
@@ -190,6 +193,15 @@ pub struct Trace {
     detail: Detail,
     /// Span id inherited from a parent process, if any.
     inherited_parent: Option<String>,
+    /// W3C trace flags, propagated verbatim to children.
+    ///
+    /// They are *carried*, not obeyed: whether this process records is
+    /// governed by [`Detail`], because these are local journal records
+    /// rather than sampled telemetry, and a parent's sampling decision has
+    /// no bearing on whether a locker's own journal should be readable.
+    /// Re-flagging a child as sampled when the parent said `00` would be a
+    /// lie to whoever collects downstream, so the value is preserved.
+    flags: String,
 }
 
 impl Trace {
@@ -201,11 +213,12 @@ impl Trace {
     pub fn from_env() -> Self {
         let detail = Detail::from_env();
         if let Ok(tp) = std::env::var("TRACEPARENT") {
-            if let Some((trace, parent)) = parse_traceparent(&tp) {
+            if let Some((trace, parent, flags)) = parse_traceparent(&tp) {
                 return Self {
                     id: trace,
                     detail,
                     inherited_parent: Some(parent),
+                    flags,
                 };
             }
         }
@@ -213,6 +226,7 @@ impl Trace {
             id: hex(16),
             detail,
             inherited_parent: None,
+            flags: SAMPLED.to_string(),
         }
     }
 
@@ -223,6 +237,7 @@ impl Trace {
             id: id.into(),
             detail,
             inherited_parent: None,
+            flags: SAMPLED.to_string(),
         }
     }
 
@@ -246,25 +261,50 @@ impl Trace {
     }
 }
 
-fn parse_traceparent(value: &str) -> Option<(String, String)> {
-    // 00-<32 hex trace>-<16 hex span>-<2 hex flags>
+/// Parse a W3C `traceparent`, returning `(trace id, parent span id, flags)`.
+///
+/// Leniency here is deliberate and bounded. Uppercase hex is accepted and
+/// lowercased, and surrounding whitespace is trimmed, because a sloppy
+/// producer upstream should not cost a session its trace. What is *not*
+/// accepted is anything the spec calls invalid, because honouring those
+/// means adopting a parent that a conforming reader would not:
+///
+/// - version `ff` is reserved as invalid, and is the one value a producer
+///   uses to say "this header is garbage";
+/// - version `00` is exactly four fields, so trailing data means the
+///   header was not written to the version it claims (later versions may
+///   append, and those are still accepted);
+/// - flags must be two hex digits, not merely present.
+fn parse_traceparent(value: &str) -> Option<(String, String, String)> {
     let mut parts = value.trim().split('-');
     let version = parts.next()?;
     let trace = parts.next()?;
     let span = parts.next()?;
-    let _flags = parts.next()?;
-    if version.len() != 2 || trace.len() != 32 || span.len() != 16 {
+    let flags = parts.next()?;
+    let trailing = parts.next().is_some();
+
+    if version.len() != 2 || trace.len() != 32 || span.len() != 16 || flags.len() != 2 {
         return None;
     }
     let hexy = |s: &str| s.bytes().all(|b| b.is_ascii_hexdigit());
-    if !hexy(version) || !hexy(trace) || !hexy(span) {
+    if !hexy(version) || !hexy(trace) || !hexy(span) || !hexy(flags) {
+        return None;
+    }
+    if version.eq_ignore_ascii_case("ff") {
+        return None;
+    }
+    if version == "00" && trailing {
         return None;
     }
     // An all-zero id is "no parent" per the spec, not a parent named zero.
     if trace.bytes().all(|b| b == b'0') || span.bytes().all(|b| b == b'0') {
         return None;
     }
-    Some((trace.to_ascii_lowercase(), span.to_ascii_lowercase()))
+    Some((
+        trace.to_ascii_lowercase(),
+        span.to_ascii_lowercase(),
+        flags.to_ascii_lowercase(),
+    ))
 }
 
 /// An open span. Emits its record when dropped.
@@ -433,7 +473,7 @@ impl Span {
     /// The W3C header to hand to a child process, so its spans join this
     /// trace.
     pub fn traceparent(&self) -> String {
-        format!("00-{}-{}-01", self.trace.id, self.id)
+        format!("00-{}-{}-{}", self.trace.id, self.id, self.trace.flags)
     }
 
     pub fn id(&self) -> &str {
@@ -581,11 +621,69 @@ mod tests {
     }
 
     #[test]
+    fn a_traceparent_the_spec_calls_invalid_is_not_adopted() {
+        // Leniency is a choice about sloppy producers, not about producers
+        // saying "this is garbage". These must all be refused.
+        let t = "4bf92f3577b34da6a3ce929d0e0e4736";
+        let p = "00f067aa0ba902b7";
+        for bad in [
+            // ff is reserved as invalid; it is how a producer signals a
+            // header that must not be trusted.
+            &format!("ff-{t}-{p}-01"),
+            &format!("FF-{t}-{p}-01"),
+            // Version 00 is exactly four fields.
+            &format!("00-{t}-{p}-01-extra"),
+            // Flags must be two hex digits, not merely present.
+            &format!("00-{t}-{p}-zz"),
+            &format!("00-{t}-{p}-1"),
+            &format!("00-{t}-{p}-"),
+            &format!("00-{t}-{p}-0100"),
+        ] {
+            assert!(parse_traceparent(bad).is_none(), "adopted {bad:?}");
+        }
+
+        // A future version may append fields, and the spec says to accept
+        // it and ignore what we do not understand.
+        let (trace, parent, flags) =
+            parse_traceparent(&format!("01-{t}-{p}-01-cc")).expect("future version must parse");
+        assert_eq!(
+            (trace.as_str(), parent.as_str(), flags.as_str()),
+            (t, p, "01")
+        );
+    }
+
+    #[test]
+    fn an_unsampled_parent_stays_unsampled_for_its_children() {
+        // Flags are carried, not obeyed. Re-flagging a child as sampled
+        // when the parent said 00 lies to whoever collects downstream.
+        let t = "4bf92f3577b34da6a3ce929d0e0e4736";
+        let (_, _, flags) = parse_traceparent(&format!("00-{t}-00f067aa0ba902b7-00")).unwrap();
+        assert_eq!(flags, "00");
+
+        let adopted = Trace {
+            id: t.to_string(),
+            detail: Detail::Session,
+            inherited_parent: Some("00f067aa0ba902b7".into()),
+            flags,
+        };
+        let span = adopted.span("lock.session");
+        assert!(
+            span.traceparent().ends_with("-00"),
+            "child header must preserve the parent's flags: {}",
+            span.traceparent()
+        );
+        // ... and a trace we start ourselves is sampled.
+        let mine = Trace::with_id(t, Detail::Session);
+        assert!(mine.span("lock.session").traceparent().ends_with("-01"));
+    }
+
+    #[test]
     fn traceparent_round_trips() {
         let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
         let s = t.span("root");
         let tp = s.traceparent();
-        let (trace, parent) = parse_traceparent(&tp).expect("our own header must parse");
+        let (trace, parent, flags) = parse_traceparent(&tp).expect("our own header must parse");
+        assert_eq!(flags, "01");
         assert_eq!(trace, "4bf92f3577b34da6a3ce929d0e0e4736");
         assert_eq!(parent, s.id());
     }
