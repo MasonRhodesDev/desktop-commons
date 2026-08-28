@@ -3,8 +3,20 @@ name = "span-lines"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "OpenTelemetry-shaped spans and events as journald lines; no exporter, no dependencies"
+description = "OpenTelemetry-shaped spans and events as journald lines; no exporter, no dependencies, optional tracing bridge"
 repository = "https://github.com/MasonRhodesDev/desktop-commons"
 publish = true
 
+[features]
+# The core is std-only on purpose: its first consumer is a screen locker.
+# The tracing bridge is opt-in so a consumer that wants the standard macros
+# pays for them and one that does not, does not.
+default = []
+tracing = ["dep:tracing", "dep:tracing-core", "dep:tracing-subscriber"]
+
 [dependencies]
+tracing = { version = "0.1", default-features = false, features = ["std"], optional = true }
+tracing-core = { version = "0.1", default-features = false, features = ["std"], optional = true }
+# default-features = false keeps regex, ANSI colour and the env-filter stack
+# out of the tree; `registry` is the span store the layer reads from.
+tracing-subscriber = { version = "0.3", default-features = false, features = ["registry", "std"], optional = true }

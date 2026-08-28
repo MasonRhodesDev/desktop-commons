@@ -275,7 +275,10 @@ mod tests {
         let got = dirs(Some("/home/mason"), None, None, Some("/run/user/1000")).unwrap();
         assert_eq!(got.config_home(), Path::new("/home/mason/.config"));
         assert_eq!(got.data_home(), Path::new("/home/mason/.local/share"));
-        assert_eq!(got.data_dir("lmtt"), Path::new("/home/mason/.local/share/lmtt"));
+        assert_eq!(
+            got.data_dir("lmtt"),
+            Path::new("/home/mason/.local/share/lmtt")
+        );
     }
 
     #[test]
@@ -300,7 +303,12 @@ mod tests {
     #[test]
     fn rejects_relative_xdg() {
         assert!(matches!(
-            dirs(Some("/home/mason"), Some("relative"), None, Some("/run/user/1")),
+            dirs(
+                Some("/home/mason"),
+                Some("relative"),
+                None,
+                Some("/run/user/1")
+            ),
             Err(Error::Relative {
                 var: "XDG_CONFIG_HOME",
                 ..
@@ -314,7 +322,12 @@ mod tests {
             })
         ));
         assert!(matches!(
-            dirs(Some("/home/mason"), Some("~/.config"), None, Some("/run/user/1")),
+            dirs(
+                Some("/home/mason"),
+                Some("~/.config"),
+                None,
+                Some("/run/user/1")
+            ),
             Err(Error::Relative {
                 var: "XDG_CONFIG_HOME",
                 ..
@@ -353,12 +366,8 @@ mod tests {
 
     #[test]
     fn config_dirs_do_not_require_runtime() {
-        let got = ConfigDirs::from_os_vars(
-            Some(OsString::from("/home/mason")),
-            None,
-            None,
-        )
-        .unwrap();
+        let got =
+            ConfigDirs::from_os_vars(Some(OsString::from("/home/mason")), None, None).unwrap();
         assert_eq!(got.config_home(), Path::new("/home/mason/.config"));
         assert_eq!(
             got.config_dir("logind-idle-control"),
