@@ -35,7 +35,33 @@
 use std::cell::Cell;
 use std::fmt::Write as _;
 use std::io::Write as _;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::OnceLock;
 use std::time::Instant;
+
+/// The instant every `t_us` is measured from: the first time this process
+/// touches the crate.
+///
+/// Process-global rather than per-trace on purpose. A trace can span
+/// processes, so a per-trace origin would not be comparable across them
+/// anyway - that is journald's `__MONOTONIC_TIMESTAMP`'s job. What `t_us`
+/// buys is ordering *within* one process at a resolution the journal's
+/// default output does not show.
+fn origin() -> Instant {
+    static ORIGIN: OnceLock<Instant> = OnceLock::new();
+    *ORIGIN.get_or_init(Instant::now)
+}
+
+/// A total order over the records this process emits, breaking ties when
+/// two land in the same microsecond.
+fn next_seq() -> u64 {
+    static SEQ: AtomicU64 = AtomicU64::new(0);
+    SEQ.fetch_add(1, Ordering::Relaxed)
+}
+
+fn micros_since_origin(at: Instant) -> u128 {
+    at.saturating_duration_since(origin()).as_micros()
+}
 
 /// How much to emit. Read once from `SPAN_LINES`.
 ///
@@ -191,6 +217,9 @@ pub struct Span {
     id: String,
     parent: Option<String>,
     started: Instant,
+    /// Microseconds from [`origin`] to this span's start. Emitted as
+    /// `t_us`, which is what makes a span an interval rather than a point.
+    start_us: u128,
     attrs: String,
     /// The detail level at which this span is worth emitting.
     needs: Detail,
@@ -205,6 +234,7 @@ impl Span {
             id: hex(8),
             parent,
             started: Instant::now(),
+            start_us: micros_since_origin(Instant::now()),
             attrs: String::new(),
             needs,
             emitted: Cell::new(false),
@@ -273,10 +303,12 @@ impl Span {
             return None;
         }
         let mut line = format!(
-            "event={} trace={} parent={}",
+            "event={} trace={} parent={} seq={} t_us={}",
             encode(name),
             self.trace.id,
-            self.id
+            self.id,
+            next_seq(),
+            micros_since_origin(Instant::now()),
         );
         for (k, v) in attrs {
             let _ = write!(line, " {k}={}", encode(v));
@@ -291,12 +323,14 @@ impl Span {
             return None;
         }
         Some(format!(
-            "span={} trace={} id={} parent={} dur_ms={}{}",
+            "span={} trace={} id={} parent={} seq={} t_us={} dur_us={}{}",
             encode(self.name),
             self.trace.id,
             self.id,
             self.parent.as_deref().unwrap_or("-"),
-            self.started.elapsed().as_millis(),
+            next_seq(),
+            self.start_us,
+            self.started.elapsed().as_micros(),
             self.attrs,
         ))
     }
@@ -503,6 +537,9 @@ mod tests {
         line.split_whitespace()
             .map(|f| match f.split_once('=') {
                 Some((k @ ("id" | "parent"), v)) if v != "-" => format!("{k}=<id>"),
+                // seq and the clock fields are inherently variable; the
+                // tests that care about them read them numerically.
+                Some((k @ ("seq" | "t_us" | "dur_us"), _)) => format!("{k}=<n>"),
                 _ => f.to_string(),
             })
             .collect::<Vec<_>>()
@@ -518,7 +555,7 @@ mod tests {
             .expect("session detail must emit a session span");
         assert_eq!(
             skeleton(&line),
-            "span=lock.session trace=4bf92f3577b34da6a3ce929d0e0e4736 id=<id> parent=- dur_ms=0 outcome=Unlocked"
+            "span=lock.session trace=4bf92f3577b34da6a3ce929d0e0e4736 id=<id> parent=- seq=<n> t_us=<n> dur_us=<n> outcome=Unlocked"
         );
     }
 
@@ -543,7 +580,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             skeleton(&event),
-            "event=flow.transition trace=4bf92f3577b34da6a3ce929d0e0e4736 parent=<id> from=Committing to=Locked"
+            "event=flow.transition trace=4bf92f3577b34da6a3ce929d0e0e4736 parent=<id> seq=<n> t_us=<n> from=Committing to=Locked"
         );
     }
 
@@ -609,6 +646,103 @@ mod tests {
             .filter_map(|tok| tok.split_once('='))
             .map(|(k, v)| (k.to_string(), decode(v)))
             .collect()
+    }
+
+    fn field(line: &str, key: &str) -> u128 {
+        naive_read(line)
+            .into_iter()
+            .find(|(k, _)| k == key)
+            .unwrap_or_else(|| panic!("no {key} in {line}"))
+            .1
+            .parse()
+            .unwrap()
+    }
+
+    /// `[start, end)` in microseconds, read the way a consumer would.
+    fn interval(line: &str) -> (u128, u128) {
+        let t = field(line, "t_us");
+        (t, t + field(line, "dur_us"))
+    }
+
+    #[test]
+    fn a_span_is_an_interval_so_overlap_is_visible() {
+        // This is the whole point of the crate. Spans emit on Drop, so
+        // record order is *end* order; without a start time a reader cannot
+        // tell "the transition happened during this frame" from "the
+        // transition happened after it", which is precisely the question
+        // being asked of vigil-lock.
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames);
+        let root = t.span("lock.session");
+
+        // Overlapping: the transition fires while the frame is in flight.
+        let frame = root.frame_child("frame.present").attr("output", "DP-1");
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        let event = root
+            .render_event(
+                "flow.transition",
+                &[("from", "Committing"), ("to", "Locked")],
+            )
+            .unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        let frame = frame.render_span().unwrap();
+
+        let (start, end) = interval(&frame);
+        let at = field(&event, "t_us");
+        assert!(
+            start < at && at < end,
+            "transition at {at} should fall inside frame [{start}, {end})"
+        );
+
+        // Sequential: the frame finishes before the transition fires.
+        let done = root.frame_child("frame.present").render_span().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        let after = root.render_event("flow.transition", &[]).unwrap();
+        let (_, end) = interval(&done);
+        assert!(
+            end < field(&after, "t_us"),
+            "a transition after the frame must read as after it"
+        );
+    }
+
+    #[test]
+    fn seq_totally_orders_records_within_a_process() {
+        // t_us can tie at microsecond resolution; seq is what keeps the
+        // order total when it does.
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let root = t.span("lock.session");
+        // Interleaved on purpose: a span record and an event record draw
+        // from the same counter, or the order is only total within a kind.
+        let mut seqs = Vec::new();
+        for _ in 0..4 {
+            seqs.push(field(
+                &root.render_event("flow.transition", &[]).unwrap(),
+                "seq",
+            ));
+            seqs.push(field(
+                &root.child("flow.phase").render_span().unwrap(),
+                "seq",
+            ));
+        }
+        assert!(
+            seqs.windows(2).all(|w| w[0] < w[1]),
+            "seq must strictly increase across spans and events alike: {seqs:?}"
+        );
+    }
+
+    #[test]
+    fn frame_work_is_not_reported_as_zero() {
+        // dur_ms rounded every frame to 0: real frame work is well under a
+        // millisecond against a 16 ms budget, so the field recorded a
+        // constant and paid syscalls to do it.
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames);
+        let root = t.span("lock.session");
+        let span = root.frame_child("frame.present");
+        std::thread::sleep(std::time::Duration::from_micros(400));
+        let line = span.render_span().unwrap();
+        assert!(
+            field(&line, "dur_us") >= 300,
+            "sub-millisecond work must be measurable: {line}"
+        );
     }
 
     #[test]
@@ -701,7 +835,7 @@ mod tests {
             let keys: Vec<&str> = fields.iter().map(|(k, _)| k.as_str()).collect();
             assert_eq!(
                 keys,
-                ["span", "trace", "id", "parent", "dur_ms", "note", "after"],
+                ["span", "trace", "id", "parent", "seq", "t_us", "dur_us", "note", "after"],
                 "unexpected fields from {hostile:?}: {line}"
             );
             assert_eq!(
