@@ -272,7 +272,12 @@ impl Span {
         if !self.enabled() {
             return None;
         }
-        let mut line = format!("event={name} trace={} parent={}", self.trace.id, self.id);
+        let mut line = format!(
+            "event={} trace={} parent={}",
+            encode(name),
+            self.trace.id,
+            self.id
+        );
         for (k, v) in attrs {
             let _ = write!(line, " {k}={}", encode(v));
         }
@@ -287,7 +292,7 @@ impl Span {
         }
         Some(format!(
             "span={} trace={} id={} parent={} dur_ms={}{}",
-            self.name,
+            encode(self.name),
             self.trace.id,
             self.id,
             self.parent.as_deref().unwrap_or("-"),
@@ -358,13 +363,50 @@ fn encode(value: &str) -> String {
     out
 }
 
+/// Records longer than this are truncated and flagged.
+///
+/// A single `write` of at most `PIPE_BUF` (4096) is atomic, which is what
+/// keeps a record from interleaving with a foreign writer on fd 2. The cap
+/// sits below that with room for the ` trunc=1` marker and a margin, and
+/// well below journald's default `LineMax` of 48K.
+const MAX_RECORD: usize = 2048;
+
+/// Assemble the bytes of one record, newline included.
+///
+/// Split out from [`emit`] because the two properties that matter - one
+/// physical line, one buffer - are otherwise only observable under strace.
+fn frame(line: &str) -> Vec<u8> {
+    let mut out = Vec::with_capacity(line.len() + 1);
+    if line.len() > MAX_RECORD {
+        // Every byte of a record is ASCII (names are literals, values are
+        // percent-encoded), so a byte index is always a char boundary.
+        out.extend_from_slice(&line.as_bytes()[..MAX_RECORD]);
+        out.extend_from_slice(b" trunc=1");
+    } else {
+        out.extend_from_slice(line.as_bytes());
+    }
+    out.push(b'\n');
+    out
+}
+
 fn emit(line: &str) {
     // stderr, because journald already stamps it with a monotonic timestamp
     // and the unit, and because a locker must not depend on a socket being
-    // there. A failed write is dropped: tracing must never be able to break
-    // the thing it is tracing.
+    // there.
+    //
+    // One `write_all` of one buffer, not `writeln!`. Rust's stderr is
+    // unbuffered, so `writeln!(err, "{line}")` is two syscalls - the record,
+    // then the newline - and `stderr().lock()` only excludes other *Rust*
+    // writers. A C-side writer on the same fd (a PAM module, Mesa,
+    // libwayland) takes no such lock and can land between them, appending
+    // its bytes inside the record's final attribute. A reviewer measured
+    // 12.8% of records spliced that way under load.
+    //
+    // A failed write is dropped. Note this does not make tracing
+    // unconditionally safe: see the module docs on blocking.
+    let record = frame(line);
     let mut err = std::io::stderr().lock();
-    let _ = writeln!(err, "{line}");
+    let _ = err.write_all(&record);
 }
 
 /// Keys and event names must be literals, so attacker-influenced text
@@ -567,6 +609,49 @@ mod tests {
             .filter_map(|tok| tok.split_once('='))
             .map(|(k, v)| (k.to_string(), decode(v)))
             .collect()
+    }
+
+    #[test]
+    fn a_record_is_one_buffer_and_one_line() {
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let line = t
+            .span("lock.session")
+            .attr("phase", "PreLock")
+            .render_span()
+            .unwrap();
+        let bytes = frame(&line);
+        assert_eq!(bytes.iter().filter(|b| **b == b'\n').count(), 1);
+        assert_eq!(*bytes.last().unwrap(), b'\n', "newline must terminate");
+        assert_eq!(
+            &bytes[..bytes.len() - 1],
+            line.as_bytes(),
+            "payload must be intact"
+        );
+        assert!(
+            bytes.is_ascii(),
+            "a non-ASCII byte would break the truncation index"
+        );
+    }
+
+    #[test]
+    fn an_oversized_record_is_capped_and_says_so() {
+        // Without a cap one unbounded attribute pushes a record past
+        // PIPE_BUF, at which point the kernel may split it and a foreign
+        // writer on fd 2 can land in the gap.
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let mut span = t.span("lock.session");
+        span.set("blob", "x".repeat(8000));
+        let bytes = frame(&span.render_span().unwrap());
+        assert!(
+            bytes.len() <= MAX_RECORD + b" trunc=1\n".len(),
+            "cap not applied: {}",
+            bytes.len()
+        );
+        assert!(
+            bytes.ends_with(b" trunc=1\n"),
+            "truncation must be visible to a reader"
+        );
+        assert_eq!(bytes.iter().filter(|b| **b == b'\n').count(), 1);
     }
 
     #[test]
