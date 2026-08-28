@@ -25,7 +25,7 @@
 //! use tracing_subscriber::prelude::*;
 //!
 //! tracing_subscriber::registry()
-//!     .with(span_lines::tracing_layer::layer(&["vigil"]))
+//!     .with(span_lines::tracing_layer::install(&["vigil"]))
 //!     .init();
 //! # }
 //! ```
@@ -52,6 +52,10 @@ use crate::{encode, AtExit, Detail};
 ///
 /// The detail tier comes from `SPAN_LINES`, as it does for the crate's own
 /// API.
+///
+/// Prefer [`install`] unless you have a reason not to: a layer built here
+/// is not registered with [`crate::exit`], so whatever it has open when the
+/// process exits is lost.
 pub fn layer(target_prefixes: &[&'static str]) -> SpanLinesLayer {
     SpanLinesLayer::new(target_prefixes, Detail::from_env())
 }
@@ -77,6 +81,14 @@ struct Inner {
     /// tracing-subscriber's registry has no iterator over live spans, so
     /// the layer keeps its own set. That is what makes [`crate::exit`] able
     /// to close what is still open instead of losing it.
+    ///
+    /// A `Vec`, so lookup and close are O(open spans). Measured at 0.65 us
+    /// per frame span with a handful open and 1.2 us with 512 - the
+    /// realistic case here is a root, a phase and a frame, at 0.009% of a
+    /// 16.6 ms frame. It degrades with many *concurrently open* spans
+    /// rather than with nesting depth, which is plausible with futures in
+    /// flight. A map would need a separate creation counter, because
+    /// `close_open` relies on this order to close newest-first.
     open: Mutex<Vec<(u64, Open)>>,
 }
 

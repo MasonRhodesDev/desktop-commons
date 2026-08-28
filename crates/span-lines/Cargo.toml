@@ -7,6 +7,11 @@ description = "OpenTelemetry-shaped spans and events as journald lines; no expor
 repository = "https://github.com/MasonRhodesDev/desktop-commons"
 publish = true
 
+[package.metadata.docs.rs]
+# Otherwise docs.rs builds default features only, and the published docs
+# discuss a `tracing_layer` module that is not there.
+all-features = true
+
 [features]
 # The core is std-only on purpose: its first consumer is a screen locker.
 # The tracing bridge is opt-in so a consumer that wants the standard macros

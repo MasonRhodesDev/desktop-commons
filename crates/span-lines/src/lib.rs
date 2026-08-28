@@ -76,19 +76,30 @@
 //!
 //! This module's API ([`Trace`], [`Span`]) has no dependencies and is what
 //! a consumer with a strict supply chain should use. With the `tracing`
-//! feature, [`tracing_layer`] accepts the standard `tracing` macros and
-//! emits the identical record format, so a reader cannot tell which wrote a
-//! record. Pick per consumer; they interoperate in one journal.
+//! feature, the `tracing_layer` module accepts the standard `tracing`
+//! macros and emits the identical record format, so a reader cannot tell
+//! which wrote a record. They share one trace id, one sequence and one
+//! clock origin per process, so a consumer can use both and a reader can
+//! still join what they wrote.
 //!
 //! # Pluggable pieces
 //!
 //! [`Sink`] is where records go - stderr by default. [`AtExit`] is a
 //! registry of things to finish before the process ends, and [`exit`] runs
-//! them and then terminates. Use [`exit`] anywhere a traced program would
-//! call `std::process::exit`: destructors do not run there, so a root span
-//! left to `Drop` is lost on precisely the outcomes worth recording, and
-//! the journal then cannot distinguish "never started" from "still
-//! running" from "died".
+//! them and then terminates.
+//!
+//! Use [`exit`] anywhere a traced program would call
+//! `std::process::exit`: destructors do not run there, so a span left to
+//! `Drop` is lost on precisely the outcomes worth recording, and the
+//! journal then cannot distinguish "never started" from "still running"
+//! from "died".
+//!
+//! Note what [`exit`] does and does not rescue. It runs the registered
+//! hooks, and the `tracing` layer registers one, so *its* open spans are
+//! closed and marked `status=exit`. A [`Span`] from this module's own API
+//! is an owned value the crate has no handle on, so [`exit`] cannot reach
+//! it: call [`Span::end`] first. That asymmetry is the reason the bridge
+//! can offer a blanket rescue and the direct API cannot.
 //!
 //! # Propagation
 //!
@@ -792,9 +803,12 @@ static SINK: OnceLock<Box<dyn Sink>> = OnceLock::new();
 
 /// Install the process-wide sink. First call wins.
 ///
-/// Returns `false` if a sink was already installed, so a caller can tell
-/// "I configured this" from "someone else did" rather than silently
-/// believing it owns the destination.
+/// Returns `false` if a sink was already in place, so a caller can tell "I
+/// configured this" from "records are going somewhere else". Note the
+/// default counts: the first record emitted installs [`StderrSink`]
+/// lazily, so calling this after anything has been traced also returns
+/// `false`. Install it before opening the first span.
+#[must_use = "a losing set_sink means records are going somewhere else"]
 pub fn set_sink(sink: impl Sink) -> bool {
     SINK.set(Box::new(sink)).is_ok()
 }
@@ -853,12 +867,17 @@ pub fn flush() {
 /// [`flush`], then `std::process::exit`.
 ///
 /// Use this anywhere a traced program would call `std::process::exit`.
-/// Destructors do not run there, so a root span left to `Drop` is lost on
+/// Destructors do not run there, so a span left to `Drop` is lost on
 /// precisely the outcomes worth recording - and because nothing is emitted,
 /// the journal cannot distinguish "never started" from "still running" from
 /// "died". Being a named function also makes the rule greppable: a bare
 /// `std::process::exit` in an instrumented binary is a bug you can search
 /// for.
+///
+/// This rescues what the registered hooks know about. The `tracing` layer
+/// registers one, so its open spans are closed and marked `status=exit`. A
+/// [`Span`] from this crate's own API is not reachable from here - end it
+/// with [`Span::end`] before calling this.
 pub fn exit(code: i32) -> ! {
     flush();
     std::process::exit(code)
