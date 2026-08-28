@@ -168,6 +168,23 @@ impl SpanLinesLayer {
     }
 }
 
+/// The name to record for an event.
+///
+/// `tracing` synthesises a name from the source location for a plain
+/// `info!("...")` - literally `event src/adv.rs:104`. Recording that would
+/// put the source path in the journal and change the `event=` key whenever
+/// anyone edits a line above the call, so a synthesised name becomes `log`
+/// and the text stays in the `message` field where it belongs.
+///
+/// An event that wants a stable name says so: `event!(name: "flow.transition", ...)`.
+fn event_name(name: &'static str) -> &'static str {
+    if name.starts_with("event ") {
+        "log"
+    } else {
+        name
+    }
+}
+
 /// Render tracing field values into span-lines attributes.
 struct Attrs(String);
 
@@ -277,7 +294,7 @@ where
         event.record(&mut fields);
         crate::emit(&format!(
             "event={} trace={} parent={} seq={} t_us={}{}",
-            encode(meta.name()),
+            encode(event_name(meta.name())),
             crate::process_trace().id(),
             parent.as_deref().unwrap_or("-"),
             crate::next_seq(),
@@ -632,6 +649,24 @@ mod tests {
         assert_eq!(field(event, "to"), "Locked");
         let span = written.iter().find(|r| r.starts_with("span=")).unwrap();
         assert_eq!(field(event, "parent"), field(span, "id"));
+    }
+
+    #[test]
+    fn a_plain_log_macro_does_not_put_a_source_path_in_the_record() {
+        // tracing names a bare `info!("...")` after its call site, so the
+        // key would change whenever someone edits a line above it, and the
+        // source path would land in a journal readable by adm.
+        assert_eq!(event_name("event src/adv.rs:104"), "log");
+        assert_eq!(event_name("flow.transition"), "flow.transition");
+
+        let written = records(Detail::Session, || {
+            tracing::info!(target: "admitted", peer = "org.freedesktop.login1", "connected");
+        });
+        let event = written.iter().find(|r| r.starts_with("event=")).unwrap();
+        assert_eq!(field(event, "event"), "log");
+        assert!(!event.contains(".rs"), "source path leaked: {event}");
+        assert_eq!(field(event, "message"), "connected");
+        assert_eq!(field(event, "peer"), "org.freedesktop.login1");
     }
 
     #[test]
