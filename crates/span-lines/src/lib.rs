@@ -427,13 +427,18 @@ pub struct Span {
 
 impl Span {
     fn new(trace: Trace, name: &'static str, parent: Option<String>, needs: Detail) -> Self {
+        // One clock read, not two. `dur_us` is derived from `started` while
+        // `t_us` is published from `start_us`, so reading the clock twice
+        // made the published interval end later than the measured one by
+        // the gap between the calls.
+        let started = Instant::now();
         Self {
             trace,
             name,
             id: hex(8),
             parent,
-            started: Instant::now(),
-            start_us: micros_since_origin(Instant::now()),
+            started,
+            start_us: micros_since_origin(started),
             attrs: String::new(),
             needs,
             emitted: false,
@@ -1154,6 +1159,35 @@ mod tests {
         assert!(
             end < field(&after, "t_us"),
             "a transition after the frame must read as after it"
+        );
+    }
+
+    #[test]
+    fn a_span_reads_the_clock_once() {
+        // Two Instant::now() calls put a scheduler-jitter gap between the
+        // duration's origin and the published t_us, so `t_us + dur_us`
+        // overstated the real endpoint on every span. A reviewer measured
+        // 1.8% of consecutive pairs straddling a microsecond and a worst
+        // case of 32 us - small, but this crate exists to decide sub-
+        // millisecond overlap, so it is exactly the wrong place to be
+        // sloppy.
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
+        let before = micros_since_origin(Instant::now());
+        let mut span = t.span("lock.session");
+        let after = micros_since_origin(Instant::now());
+        let line = span.finish(None).unwrap();
+
+        let start = field(&line, "t_us");
+        assert!(
+            (before..=after).contains(&start),
+            "t_us {start} outside [{before}, {after}]"
+        );
+        // The published interval must not claim to end after the moment we
+        // stopped measuring it.
+        let end = start + field(&line, "dur_us");
+        assert!(
+            end <= micros_since_origin(Instant::now()),
+            "interval ends in the future: {line}"
         );
     }
 
