@@ -659,10 +659,15 @@ fn encode(value: &str) -> String {
 
 /// Records longer than this are truncated and flagged.
 ///
-/// A single `write` of at most `PIPE_BUF` (4096) is atomic, which is what
-/// keeps a record from interleaving with a foreign writer on fd 2. The cap
-/// sits below that with room for the ` trunc=1` marker and a margin, and
-/// well below journald's default `LineMax` of 48K.
+/// One `write` per record narrows the window in which a foreign writer on
+/// fd 2 can interleave, and keeping a record small keeps it narrow. Note
+/// what is *not* claimed: POSIX guarantees an atomic write only up to
+/// `PIPE_BUF` (4096) and only for pipes and FIFOs, while journald's stdout
+/// stream is an `AF_UNIX` `SOCK_STREAM` socket, which carries no such
+/// guarantee. So this is a large reduction in the splice window rather
+/// than a proof there is none. The cap sits below `PIPE_BUF` with room for
+/// the ` trunc=1` marker, and well below journald's default `LineMax` of
+/// 48K.
 const MAX_RECORD: usize = 2048;
 
 /// Assemble the bytes of one record, newline included.
@@ -714,7 +719,9 @@ fn emit(line: &str) {
     // writers. A C-side writer on the same fd (a PAM module, Mesa,
     // libwayland) takes no such lock and can land between them, appending
     // its bytes inside the record's final attribute. A reviewer measured
-    // 12.8% of records spliced that way under load.
+    // 12.8% of records spliced that way under load. One write closes the
+    // gap between the two; see MAX_RECORD for what that does and does not
+    // guarantee.
     //
     // A failed write is dropped. Note this does not make tracing
     // unconditionally safe: see the module docs on blocking.
