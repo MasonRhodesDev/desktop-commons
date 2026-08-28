@@ -95,33 +95,91 @@ impl Detail {
     }
 }
 
-fn hex(bytes: usize) -> String {
-    // Ids need to be unique, not unguessable: they correlate lines in one
-    // user's journal. /dev/urandom keeps that true across a fork without
-    // pulling in a PRNG crate; the clock fallback keeps it working if
-    // /dev/urandom is unavailable, at the cost of collisions in the same
-    // nanosecond, which would mean two traces in one process anyway.
-    let mut out = String::with_capacity(bytes * 2);
-    if let Ok(mut f) = std::fs::File::open("/dev/urandom") {
-        let mut raw = vec![0_u8; bytes];
-        if std::io::Read::read_exact(&mut f, &mut raw).is_ok() {
-            for b in raw {
-                let _ = write!(out, "{b:02x}");
+/// A per-process random base for ids, read once.
+///
+/// Once, not per span: `Span::new` used to open, read and close
+/// `/dev/urandom` for every span it constructed - including spans the
+/// detail level would silence, so `SPAN_LINES=off` cost the same three
+/// syscalls per span as full tracing, and a frame span cost them every
+/// frame.
+fn seed() -> u64 {
+    static SEED: OnceLock<u64> = OnceLock::new();
+    *SEED.get_or_init(|| {
+        // Ids need to be unique, not unguessable: they correlate lines in
+        // one user's journal.
+        let mut raw = [0_u8; 8];
+        if let Ok(mut f) = std::fs::File::open("/dev/urandom") {
+            if std::io::Read::read_exact(&mut f, &mut raw).is_ok() {
+                return u64::from_le_bytes(raw);
             }
-            return out;
         }
+        // Fallback for a process that cannot open /dev/urandom. The pid is
+        // mixed into the low bits as well as the high ones, because the
+        // previous version shifted it to bits 64..96 where an 8-byte span
+        // id never reached it - two processes forking in the same
+        // nanosecond minted identical span ids.
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+        let pid = u64::from(std::process::id());
+        nanos ^ pid.rotate_left(32) ^ pid
+    })
+}
+
+/// Counter feeding [`id_from`]; distinct from `next_seq` so record order
+/// and id derivation cannot be inferred from one another.
+fn next_id_counter() -> u64 {
+    static IDS: AtomicU64 = AtomicU64::new(0);
+    IDS.fetch_add(1, Ordering::Relaxed)
+}
+
+/// SplitMix64. A counter alone would make ids sequential and visibly
+/// correlated; this scatters them for the cost of a few instructions.
+fn splitmix(mut x: u64) -> u64 {
+    x = x.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    let mut z = x;
+    z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    z ^ (z >> 31)
+}
+
+/// `bytes * 2` lowercase hex characters, never all zero.
+///
+/// Pure, so the properties below can be asserted against adversarial
+/// inputs rather than against whatever the machine happened to produce.
+/// All-zero matters because W3C reads an all-zero id as "no parent": the
+/// old clock fallback could mint one, `traceparent()` would hand it to a
+/// child, and the child's own parser would reject it and silently start a
+/// new trace - breaking exactly the continuity the crate advertises.
+fn id_from(seed: u64, counter: u64, bytes: usize) -> String {
+    let mut out = String::with_capacity(bytes * 2);
+    let mut acc = seed ^ splitmix(counter);
+    for round in 0..bytes.div_ceil(8) {
+        acc = splitmix(acc ^ (round as u64).wrapping_add(1));
+        let _ = write!(out, "{acc:016x}");
     }
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let pid = std::process::id() as u128;
-    let mut mixed = nanos ^ (pid << 64);
-    for _ in 0..bytes {
-        let _ = write!(out, "{:02x}", (mixed & 0xff) as u8);
-        mixed = mixed.rotate_right(8);
+    out.truncate(bytes * 2);
+    nonzero(out)
+}
+
+/// Force an id away from all-zero.
+///
+/// Split out because it is unreachable from a real seed - splitmix is a
+/// bijection, so exactly one input per width lands there - and an
+/// unreachable guard that no test exercises is a guard nobody knows is
+/// broken. The fallback seed makes it reachable in practice: a stopped
+/// clock and an unlucky pid arrive here.
+fn nonzero(mut id: String) -> String {
+    if id.bytes().all(|b| b == b'0') {
+        id.pop();
+        id.push('1');
     }
-    out
+    id
+}
+
+fn hex(bytes: usize) -> String {
+    id_from(seed(), next_id_counter(), bytes)
 }
 
 /// A trace: an id shared by every span in one causal chain, and the detail
@@ -702,6 +760,72 @@ mod tests {
     fn interval(line: &str) -> (u128, u128) {
         let t = field(line, "t_us");
         (t, t + field(line, "dur_us"))
+    }
+
+    #[test]
+    fn an_id_is_never_all_zero() {
+        // W3C reads an all-zero id as "no parent", so minting one would
+        // make traceparent() hand a child a header the child rejects.
+        for (seed, counter) in [(0, 0), (u64::MAX, u64::MAX), (0, 1), (1, 0)] {
+            for bytes in [8, 16] {
+                let id = id_from(seed, counter, bytes);
+                assert_eq!(id.len(), bytes * 2);
+                assert!(id.bytes().all(|b| b.is_ascii_hexdigit()));
+                assert!(
+                    id.bytes().any(|b| b != b'0'),
+                    "all-zero id from seed={seed} counter={counter} bytes={bytes}"
+                );
+            }
+        }
+        // The guard itself, reached directly.
+        assert_eq!(nonzero("0000000000000000".into()), "0000000000000001");
+        assert_eq!(
+            nonzero("00000000000000000000000000000000".into()),
+            "00000000000000000000000000000001"
+        );
+        assert_eq!(nonzero("00000000000000ab".into()), "00000000000000ab");
+
+        assert!(
+            parse_traceparent(&format!("00-{}-{}-01", id_from(0, 0, 16), id_from(0, 0, 8)))
+                .is_some(),
+            "our own minted ids must survive our own parser"
+        );
+    }
+
+    #[test]
+    fn the_seed_reaches_a_span_id() {
+        // The old fallback put the pid at bits 64..96 and then emitted the
+        // low 8 bytes, so an 8-byte span id was identical across processes
+        // that started in the same nanosecond.
+        assert_ne!(
+            id_from(1, 0, 8),
+            id_from(2, 0, 8),
+            "seed must reach a span id"
+        );
+        assert_ne!(id_from(1, 0, 16), id_from(2, 0, 16));
+    }
+
+    #[test]
+    fn ids_do_not_repeat_or_run_in_sequence() {
+        let ids: Vec<String> = (0..2048).map(|c| id_from(0xfeed, c, 8)).collect();
+        let unique: std::collections::HashSet<&String> = ids.iter().collect();
+        assert_eq!(unique.len(), ids.len(), "id collision within one process");
+        // Avalanche. Consecutive counters must not yield ids differing in
+        // only a few bits; any additive or lightly-mixed scheme fails this,
+        // while "differs by exactly one" does not catch them.
+        let mean: f64 = ids
+            .windows(2)
+            .map(|w| {
+                let a = u64::from_str_radix(&w[0], 16).unwrap();
+                let b = u64::from_str_radix(&w[1], 16).unwrap();
+                f64::from((a ^ b).count_ones())
+            })
+            .sum::<f64>()
+            / (ids.len() - 1) as f64;
+        assert!(
+            (28.0..36.0).contains(&mean),
+            "consecutive ids differ in {mean:.1} of 64 bits; expected about half"
+        );
     }
 
     #[test]
