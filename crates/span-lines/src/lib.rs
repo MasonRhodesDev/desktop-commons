@@ -240,13 +240,20 @@ impl Span {
         }
     }
 
-    /// A child span, emitted at `Detail::Session`.
+    /// A child span.
+    ///
+    /// Emitted at `Detail::Session`, or at whatever its parent requires if
+    /// that is louder. A child cannot be chattier than its parent: a
+    /// session-level child of a silent frame span would print
+    /// `parent=<id>` naming a span that appears nowhere in the journal, and
+    /// a reader reconstructing the tree would hit a dangling edge - which
+    /// defeats the one property the record format exists to provide.
     pub fn child(&self, name: &'static str) -> Span {
         Span::new(
             self.trace.clone(),
             name,
             Some(self.id.clone()),
-            Detail::Session,
+            self.needs.max(Detail::Session),
         )
     }
 
@@ -695,6 +702,36 @@ mod tests {
     fn interval(line: &str) -> (u128, u128) {
         let t = field(line, "t_us");
         (t, t + field(line, "dur_us"))
+    }
+
+    #[test]
+    fn no_record_names_a_parent_that_was_never_printed() {
+        // At session detail a frame span is silent. A child of it must be
+        // silent too, or it emits `parent=<id>` pointing at nothing.
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let root = t.span("lock.session");
+        let frame = root.frame_child("frame.present");
+        assert!(
+            frame.render_span().is_none(),
+            "frame span must be silent here"
+        );
+
+        let orphan = frame.child("frame.subtask");
+        assert!(
+            orphan.render_span().is_none(),
+            "a child of a silent span must not emit: it would name an absent parent"
+        );
+        assert!(orphan.render_event("frame.damage", &[]).is_none());
+
+        // Turn the parent on and the child comes back with it.
+        let loud = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames);
+        let root = loud.span("lock.session");
+        let frame = root.frame_child("frame.present");
+        assert!(frame.render_span().is_some());
+        assert!(frame.child("frame.subtask").render_span().is_some());
+
+        // And an ordinary child of an ordinary span is unaffected.
+        assert!(root.child("flow.phase").render_span().is_some());
     }
 
     #[test]
