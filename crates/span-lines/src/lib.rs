@@ -17,26 +17,113 @@
 //! # Shape
 //!
 //! ```text
-//! span=lock.session   trace=<32hex> id=<16hex> parent=- dur_ms=2413 outcome=Unlocked
-//! span=flow.phase     trace=<32hex> id=<16hex> parent=<16hex> dur_ms=560 phase=PreLock
-//! event=flow.transition trace=<32hex> parent=<16hex> from=Committing to=Locked
+//! span=lock.session trace=<32hex> id=<16hex> parent=-       seq=0 t_us=0      dur_us=2413918 outcome=Unlocked
+//! span=flow.phase   trace=<32hex> id=<16hex> parent=<16hex> seq=1 t_us=1204   dur_us=560310  phase=PreLock
+//! event=flow.transition trace=<32hex> parent=<16hex>        seq=2 t_us=561514 from=Committing to=Locked
 //! ```
 //!
+//! Read it by splitting on whitespace, then each token on its first `=`,
+//! then percent-decoding the value. That rule is exact, not approximate:
+//! keys and names are `&'static str` and values are encoded, so no field
+//! can contain whitespace or `=`.
+//!
 //! A span emits when it is dropped, so it cannot be left unended and its
-//! duration cannot be forgotten. Ordering is read from `parent` plus
-//! journald's timestamps.
+//! duration cannot be forgotten - but `Drop` does not run on
+//! [`std::process::exit`], so call [`Span::end`] before any path that does
+//! not unwind.
+//!
+//! # Ordering
+//!
+//! A span is the half-open interval `[t_us, t_us + dur_us)` and an event is
+//! the point `t_us`, both measured in microseconds from this process's
+//! first use of the crate. So "did the transition land inside that frame"
+//! is an intersection test, and a transition that *overlaps* a frame is
+//! distinguishable from one that merely follows it - which record order
+//! alone cannot tell you, because spans emit at their end. `seq` totally
+//! orders this process's records when two land in the same microsecond.
+//!
+//! Across processes, use journald's `__MONOTONIC_TIMESTAMP`
+//! (`journalctl -o short-precise`, or `-o json`); `t_us` is per-process and
+//! is not comparable between them.
+//!
+//! # Where to emit from
+//!
+//! Emit from the adapter, not from a pure controller. A pure crate that
+//! forbids host effects cannot construct a [`Span`] - this crate writes to
+//! stderr - so a state machine should report transitions through whatever
+//! seam it already has for journaling, and the adapter executing that seam
+//! opens and closes the spans:
+//!
+//! ```ignore
+//! // in the executor, not in the controller
+//! match cmd {
+//!     FlowCmd::Journal(note) => self.phase.event("flow.transition", &[("note", &note.to_string())]),
+//!     // ...
+//! }
+//! ```
+//!
+//! # Volume
+//!
+//! [`Detail::Session`] is the default and is quiet: a handful of records
+//! per lock. [`Detail::Frames`] is a diagnostic mode, not something to
+//! leave on. At 60 Hz with several outputs it exceeds journald's default
+//! rate limit (`RateLimitBurst=10000` per `RateLimitIntervalSec=30s`, so
+//! about 333 messages/s), and journald drops indiscriminately once over -
+//! which would silence the session records interleaved with the frame
+//! noise, the opposite of what turning it up was for.
 //!
 //! # Propagation
 //!
 //! [`Trace::from_env`] adopts a W3C `TRACEPARENT` if the parent process set
 //! one, so a lock that begins in a shell script and ends in a locker is one
 //! trace. [`Span::traceparent`] produces the value to hand to a child.
+//! Trace flags are carried verbatim but do not gate local emission: see
+//! [`Trace`].
+//!
+//! # Security
+//!
+//! The first consumer is the login screen, so two rules are not optional.
+//!
+//! **Nothing secret becomes an attribute.** There is no redaction here and
+//! no way to mark a value sensitive. journald is readable by the user and
+//! commonly by `adm`/`wheel`, and a locker has passwords, PAM prompts,
+//! usernames and monitor serials within one line of an `attr` call. Note
+//! that a duration is a disclosure too: a `dur_us` on an authentication
+//! span is a keystroke-timing side channel.
+//!
+//! **Attacker-influenced text goes in a value, never a key or a name.**
+//! Keys and event names are written without encoding, so they are
+//! `&'static str` and the unsafe call does not compile. Values are
+//! percent-encoded and cannot forge a field or split a record.
+//!
+//! `SPAN_LINES` is read from the environment, which the user owns. `off`
+//! is therefore a convenience, not a security control - a durable
+//! `environment.d` line can silence these records, and anything that needs
+//! a guaranteed audit trail must not rely on them. Prefer setting the
+//! variable per unit rather than exporting it into a shell, since it is a
+//! single global level with no per-target scoping: an exported
+//! `SPAN_LINES=frames` turns up every instrumented tool run from that
+//! shell.
+//!
+//! # Blocking
+//!
+//! A failed write is dropped, but a *blocked* one is not: `emit` writes to
+//! stderr synchronously, and if the reader stalls - journald stopped, or a
+//! wrapper piping stderr with nobody draining it - the calling thread parks
+//! in `write(2)`. For a locker that means the UI stops repainting while the
+//! screen stays locked. The exposure is bounded by volume, which is why
+//! `session` is the default and `frames` is diagnostic, and it is the same
+//! mechanism any `eprintln!` in the consumer already has. It is not fixed
+//! here; a bounded non-blocking emitter is tracked separately.
 
 use std::fmt::Write as _;
 use std::io::Write as _;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
 use std::time::Instant;
+
+/// The W3C `sampled` flag, used for traces this process starts.
+const SAMPLED: &str = "01";
 
 /// The instant every `t_us` is measured from: the first time this process
 /// touches the crate.
@@ -46,9 +133,6 @@ use std::time::Instant;
 /// anyway - that is journald's `__MONOTONIC_TIMESTAMP`'s job. What `t_us`
 /// buys is ordering *within* one process at a resolution the journal's
 /// default output does not show.
-/// The W3C `sampled` flag, used for traces this process starts.
-const SAMPLED: &str = "01";
-
 fn origin() -> Instant {
     static ORIGIN: OnceLock<Instant> = OnceLock::new();
     *ORIGIN.get_or_init(Instant::now)
@@ -485,7 +569,9 @@ impl Span {
     }
 
     fn enabled(&self) -> bool {
-        self.trace.detail != Detail::Off && self.trace.detail >= self.needs
+        // `needs` is only ever Session or Frames, both above Off, so the
+        // comparison already excludes Off; testing it separately was dead.
+        self.trace.detail >= self.needs
     }
 
     /// The W3C header to hand to a child process, so its spans join this
