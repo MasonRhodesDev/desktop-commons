@@ -32,7 +32,6 @@
 //! one, so a lock that begins in a shell script and ends in a locker is one
 //! trace. [`Span::traceparent`] produces the value to hand to a child.
 
-use std::cell::Cell;
 use std::fmt::Write as _;
 use std::io::Write as _;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -223,7 +222,7 @@ pub struct Span {
     attrs: String,
     /// The detail level at which this span is worth emitting.
     needs: Detail,
-    emitted: Cell<bool>,
+    emitted: bool,
 }
 
 impl Span {
@@ -237,7 +236,7 @@ impl Span {
             start_us: micros_since_origin(Instant::now()),
             attrs: String::new(),
             needs,
-            emitted: Cell::new(false),
+            emitted: false,
         }
     }
 
@@ -335,6 +334,33 @@ impl Span {
         ))
     }
 
+    /// Emit this span now and consume it.
+    ///
+    /// Required before any path that does not unwind. `Drop` is the normal
+    /// ending and covers ordinary returns, but `std::process::exit` runs no
+    /// destructors, and the first consumer ends *every* terminal path that
+    /// way - vigil-lock calls it at twelve sites, one per lock outcome. A
+    /// root `lock.session` span left to `Drop` there would emit nothing on
+    /// exactly the outcomes worth recording.
+    pub fn end(mut self) {
+        self.finish(None);
+    }
+
+    /// Emit once. Returns the record written, for tests; `None` if the span
+    /// was already ended or the detail level silences it.
+    fn finish(&mut self, status: Option<&'static str>) -> Option<String> {
+        if self.emitted {
+            return None;
+        }
+        self.emitted = true;
+        if let Some(status) = status {
+            self.push_attr("status", status);
+        }
+        let line = self.render_span()?;
+        emit(&line);
+        Some(line)
+    }
+
     fn enabled(&self) -> bool {
         self.trace.detail != Detail::Off && self.trace.detail >= self.needs
     }
@@ -354,14 +380,21 @@ impl Span {
     }
 }
 
+/// What a span's outcome field should say given how it is ending.
+///
+/// A span dropped during unwinding used to be byte-identical to one that
+/// completed, so a crashed lock and a clean lock read the same.
+fn drop_status(panicking: bool) -> Option<&'static str> {
+    if panicking {
+        Some("panic")
+    } else {
+        None
+    }
+}
+
 impl Drop for Span {
     fn drop(&mut self) {
-        if self.emitted.replace(true) {
-            return;
-        }
-        if let Some(line) = self.render_span() {
-            emit(&line);
-        }
+        self.finish(drop_status(std::thread::panicking()));
     }
 }
 
@@ -662,6 +695,41 @@ mod tests {
     fn interval(line: &str) -> (u128, u128) {
         let t = field(line, "t_us");
         (t, t + field(line, "dur_us"))
+    }
+
+    #[test]
+    fn a_span_can_be_stored_and_shared() {
+        // `Cell<bool>` made Span !Sync, so a session span held in shared
+        // state would not compile. The guard it provided is a plain bool.
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<Span>();
+        assert_send_sync::<Trace>();
+    }
+
+    #[test]
+    fn end_emits_once_and_drop_does_not_repeat_it() {
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let mut span = t.span("lock.session");
+        let first = span.finish(None).expect("first end must emit");
+        assert!(first.starts_with("span=lock.session"));
+        assert!(
+            span.finish(None).is_none(),
+            "a span must not emit twice; Drop runs after end()"
+        );
+    }
+
+    #[test]
+    fn a_span_unwound_by_a_panic_says_so() {
+        assert_eq!(drop_status(true), Some("panic"));
+        assert_eq!(drop_status(false), None);
+
+        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let mut span = t.span("lock.session").attr("outcome", "Unlocked");
+        let line = span.finish(drop_status(true)).unwrap();
+        assert!(
+            line.contains(" status=panic"),
+            "a panicking span must be distinguishable: {line}"
+        );
     }
 
     #[test]
