@@ -230,15 +230,33 @@ impl Trace {
         }
     }
 
-    /// A trace with a known id, for tests and for callers that carry the id
-    /// themselves.
-    pub fn with_id(id: impl Into<String>, detail: Detail) -> Self {
-        Self {
-            id: id.into(),
+    /// Adopt a trace id this caller already carries, rather than minting
+    /// one.
+    ///
+    /// `None` if the id is not 32 lowercase-able hex digits, or is all
+    /// zero. Validated rather than trusted for two reasons: the id is
+    /// written into every `trace=` field, where an unchecked string is the
+    /// same record-forgery primitive that keys and names were; and this
+    /// crate is published, so callers outside this workspace will exist.
+    ///
+    /// Note what validation cannot catch. Passing a *fixed* id from real
+    /// code is well-formed and still wrong - every session collapses onto
+    /// one trace and correlation stops meaning anything. This is for a
+    /// caller propagating an id it received, not for inventing one.
+    pub fn adopt(id: &str, detail: Detail) -> Option<Self> {
+        let id = id.trim();
+        if id.len() != 32
+            || !id.bytes().all(|b| b.is_ascii_hexdigit())
+            || id.bytes().all(|b| b == b'0')
+        {
+            return None;
+        }
+        Some(Self {
+            id: id.to_ascii_lowercase(),
             detail,
             inherited_parent: None,
             flags: SAMPLED.to_string(),
-        }
+        })
     }
 
     pub fn id(&self) -> &str {
@@ -585,14 +603,14 @@ fn emit(line: &str) {
 /// cannot reach a position that is written unescaped.
 ///
 /// ```compile_fail
-/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let t = span_lines::Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session).unwrap();
 /// let s = t.span("lock.session");
 /// let untrusted = String::from("pam.msg\nevent=auth.success");
 /// s.event(&untrusted, &[]);
 /// ```
 ///
 /// ```compile_fail
-/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let t = span_lines::Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session).unwrap();
 /// let untrusted = String::from("k outcome");
 /// let _ = t.span("lock.session").attr(&untrusted, "Unlocked");
 /// ```
@@ -600,7 +618,7 @@ fn emit(line: &str) {
 /// A literal key with an untrusted *value* is the supported shape:
 ///
 /// ```
-/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let t = span_lines::Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session).unwrap();
 /// let untrusted = String::from("whatever the compositor said");
 /// let _ = t.span("lock.session").attr("output", untrusted);
 /// ```
@@ -612,12 +630,34 @@ mod tests {
 
     #[test]
     fn ids_are_w3c_shaped() {
-        let t = Trace::with_id(hex(16), Detail::Session);
+        let t = Trace::adopt(&hex(16), Detail::Session).unwrap();
         assert_eq!(t.id().len(), 32, "trace id must be 32 hex chars");
         let s = t.span("x");
         assert_eq!(s.id().len(), 16, "span id must be 16 hex chars");
         assert!(t.id().bytes().all(|b| b.is_ascii_hexdigit()));
         assert!(s.id().bytes().all(|b| b.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn a_malformed_trace_id_is_refused_rather_than_written_into_a_record() {
+        // The id lands unencoded in every `trace=` field, so an unchecked
+        // string is the same forgery primitive keys and names were.
+        for bad in [
+            "",
+            "zz zz\nspan=whatever",
+            "4bf92f3577b34da6a3ce929d0e0e473",   // 31
+            "4bf92f3577b34da6a3ce929d0e0e47366", // 33
+            "4bf92f3577b34da6a3ce929d0e0e473g",
+            "00000000000000000000000000000000",
+        ] {
+            assert!(
+                Trace::adopt(bad, Detail::Session).is_none(),
+                "adopted {bad:?}"
+            );
+        }
+        // Uppercase is normalised, not refused.
+        let t = Trace::adopt("4BF92F3577B34DA6A3CE929D0E0E4736", Detail::Session).unwrap();
+        assert_eq!(t.id(), "4bf92f3577b34da6a3ce929d0e0e4736");
     }
 
     #[test]
@@ -673,13 +713,13 @@ mod tests {
             span.traceparent()
         );
         // ... and a trace we start ourselves is sampled.
-        let mine = Trace::with_id(t, Detail::Session);
+        let mine = Trace::adopt(t, Detail::Session).unwrap();
         assert!(mine.span("lock.session").traceparent().ends_with("-01"));
     }
 
     #[test]
     fn traceparent_round_trips() {
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let s = t.span("root");
         let tp = s.traceparent();
         let (trace, parent, flags) = parse_traceparent(&tp).expect("our own header must parse");
@@ -744,7 +784,7 @@ mod tests {
 
     #[test]
     fn a_root_span_renders_the_documented_shape() {
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let s = t.span("lock.session").attr("outcome", "Unlocked");
         let line = s
             .render_span()
@@ -757,7 +797,7 @@ mod tests {
 
     #[test]
     fn a_child_span_names_its_parent_and_shares_the_trace() {
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let root = t.span("lock.session");
         let child = root.child("flow.phase").attr("phase", "PreLock");
         let line = child.render_span().unwrap();
@@ -784,7 +824,7 @@ mod tests {
     fn off_silences_every_record() {
         // The whole point of `off` is that a locker can be told to say
         // nothing at all; a leaking span would defeat it.
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Off);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Off).unwrap();
         let root = t.span("lock.session");
         assert!(root.render_span().is_none());
         assert!(root.render_event("flow.transition", &[]).is_none());
@@ -795,7 +835,7 @@ mod tests {
     fn frame_spans_are_silent_until_frames_is_asked_for() {
         // A settled session must be silent: per-frame records are for
         // diagnosis, and emitting them by default would make idle noisy.
-        let quiet = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let quiet = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let root = quiet.span("lock.session");
         assert!(root.render_span().is_some(), "session spans still emit");
         let frame = root.frame_child("frame.present");
@@ -808,7 +848,7 @@ mod tests {
             "an event inherits its span's gate"
         );
 
-        let loud = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames);
+        let loud = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames).unwrap();
         let root = loud.span("lock.session");
         assert!(
             root.render_span().is_some(),
@@ -930,7 +970,7 @@ mod tests {
     fn no_record_names_a_parent_that_was_never_printed() {
         // At session detail a frame span is silent. A child of it must be
         // silent too, or it emits `parent=<id>` pointing at nothing.
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let root = t.span("lock.session");
         let frame = root.frame_child("frame.present");
         assert!(
@@ -946,7 +986,7 @@ mod tests {
         assert!(orphan.render_event("frame.damage", &[]).is_none());
 
         // Turn the parent on and the child comes back with it.
-        let loud = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames);
+        let loud = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames).unwrap();
         let root = loud.span("lock.session");
         let frame = root.frame_child("frame.present");
         assert!(frame.render_span().is_some());
@@ -967,7 +1007,7 @@ mod tests {
 
     #[test]
     fn end_emits_once_and_drop_does_not_repeat_it() {
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let mut span = t.span("lock.session");
         let first = span.finish(None).expect("first end must emit");
         assert!(first.starts_with("span=lock.session"));
@@ -982,7 +1022,7 @@ mod tests {
         assert_eq!(drop_status(true), Some("panic"));
         assert_eq!(drop_status(false), None);
 
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let mut span = t.span("lock.session").attr("outcome", "Unlocked");
         let line = span.finish(drop_status(true)).unwrap();
         assert!(
@@ -998,7 +1038,7 @@ mod tests {
         // tell "the transition happened during this frame" from "the
         // transition happened after it", which is precisely the question
         // being asked of vigil-lock.
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames).unwrap();
         let root = t.span("lock.session");
 
         // Overlapping: the transition fires while the frame is in flight.
@@ -1035,7 +1075,7 @@ mod tests {
     fn seq_totally_orders_records_within_a_process() {
         // t_us can tie at microsecond resolution; seq is what keeps the
         // order total when it does.
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let root = t.span("lock.session");
         // Interleaved on purpose: a span record and an event record draw
         // from the same counter, or the order is only total within a kind.
@@ -1061,7 +1101,7 @@ mod tests {
         // dur_ms rounded every frame to 0: real frame work is well under a
         // millisecond against a 16 ms budget, so the field recorded a
         // constant and paid syscalls to do it.
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Frames).unwrap();
         let root = t.span("lock.session");
         let span = root.frame_child("frame.present");
         std::thread::sleep(std::time::Duration::from_micros(400));
@@ -1074,7 +1114,7 @@ mod tests {
 
     #[test]
     fn a_record_is_one_buffer_and_one_line() {
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let line = t
             .span("lock.session")
             .attr("phase", "PreLock")
@@ -1099,7 +1139,7 @@ mod tests {
         // Without a cap one unbounded attribute pushes a record past
         // PIPE_BUF, at which point the kernel may split it and a foreign
         // writer on fd 2 can land in the gap.
-        let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
         let mut span = t.span("lock.session");
         span.set("blob", "x".repeat(8000));
         let bytes = frame(&span.render_span().unwrap());
@@ -1149,7 +1189,7 @@ mod tests {
             "\"quoted\"",
             "100% =",
         ] {
-            let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+            let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
             let line = t
                 .span("lock.session")
                 .attr("note", hostile)
