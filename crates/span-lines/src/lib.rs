@@ -167,7 +167,7 @@ fn origin() -> Instant {
 /// starts in a shell wrapper is still one trace whichever API writes it.
 pub fn process_trace() -> &'static Trace {
     static TRACE: OnceLock<Trace> = OnceLock::new();
-    TRACE.get_or_init(Trace::from_env)
+    TRACE.get_or_init(Trace::read_env)
 }
 
 /// A total order over the records this process emits, breaking ties when
@@ -329,7 +329,20 @@ impl Trace {
     ///
     /// A malformed value is ignored rather than rejected: a broken header
     /// from some other tool must not stop a session tracing itself.
+    ///
+    /// One trace per process: repeated calls return the same id, and it is
+    /// the id the `tracing` bridge uses too. Minting a fresh one per call
+    /// would mean a consumer mixing the two APIs wrote records a reader
+    /// cannot join - and would do so only when no `TRACEPARENT` was set,
+    /// which is the normal case for a locker started by a compositor
+    /// rather than a shell wrapper. Use [`Trace::adopt`] for a deliberately
+    /// separate trace.
     pub fn from_env() -> Self {
+        process_trace().clone()
+    }
+
+    /// The uncached construction behind [`Trace::from_env`].
+    fn read_env() -> Self {
         let detail = Detail::from_env();
         if let Ok(tp) = std::env::var("TRACEPARENT") {
             if let Some((trace, parent, flags)) = parse_traceparent(&tp) {

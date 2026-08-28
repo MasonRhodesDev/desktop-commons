@@ -353,6 +353,49 @@ mod tests {
     }
 
     #[test]
+    fn both_apis_write_records_a_reader_can_join() {
+        // The claim this bridge rests on. It is not about field order - it
+        // is that a consumer mixing the two APIs produces one trace. The
+        // failure mode is silent and environment-dependent: with a
+        // TRACEPARENT set both adopt the same id and it looks fine; with
+        // none set - a locker started by a compositor rather than a shell
+        // wrapper - they would mint separate ids and nothing joins.
+        crate::test_drain();
+        let layer = SpanLinesLayer::with_detail(&["admitted"], Detail::Session);
+        let subscriber = tracing_subscriber::registry().with(layer);
+        tracing::subscriber::with_default(subscriber, || {
+            let _viaLayer = tracing::info_span!(target: "admitted", "lock.session").entered();
+        });
+        let via_layer = crate::test_drain().pop().expect("layer record");
+
+        let direct = crate::Trace::from_env().span("lock.session");
+        drop(direct);
+        let via_direct = crate::test_drain().pop().expect("direct record");
+
+        assert_eq!(
+            field(&via_layer, "trace"),
+            field(&via_direct, "trace"),
+            "both APIs must write one trace:\n  {via_layer}\n  {via_direct}"
+        );
+        let keys = |line: &str| -> Vec<String> {
+            line.split_whitespace()
+                .filter_map(|t| t.split_once('='))
+                .map(|(k, _)| k.to_string())
+                .collect()
+        };
+        assert_eq!(keys(&via_layer), keys(&via_direct), "field sets must match");
+        assert_ne!(
+            field(&via_layer, "id"),
+            field(&via_direct, "id"),
+            "distinct spans must still have distinct ids"
+        );
+        // One sequence, or a reader cannot order records across the APIs.
+        let a: u64 = field(&via_layer, "seq").parse().unwrap();
+        let b: u64 = field(&via_direct, "seq").parse().unwrap();
+        assert!(a < b, "seq must be one shared counter: {a} then {b}");
+    }
+
+    #[test]
     fn a_target_outside_the_allowlist_is_never_recorded() {
         // Installing a subscriber makes a process collect everything in its
         // tree - zbus, calloop, slint. On a login screen that is a
