@@ -599,6 +599,19 @@ failure = "Bypassing the guard (or unlinking the lock file) allows concurrent in
 barriers = []
 
 [[surface]]
+id = "span-lines-v0"
+owner = "desktop-commons"
+producers = ["desktop-commons"]
+consumers = []
+transport = "stderr text records collected by journald, via crates/span-lines"
+location = "crates/span-lines"
+version = "0.1.0"
+maturity = "experimental"
+compatibility = "OpenTelemetry's data model, not its wire protocol: `span=`/`event=` records carry a 32-hex trace id, a 16-hex span id and a parent id, so nesting and ordering are properties of the data rather than of the order lines happen to be flushed. Readers split on whitespace then on the first `=`; values containing a space, `=` or `\"` are quoted, so a naive splitter cannot be fooled by an attribute value. Timestamps are deliberately absent - journald stamps `__MONOTONIC_TIMESTAMP`, `_BOOT_ID` and `_SYSTEMD_UNIT`, and duplicating them invites disagreement. Detail is one of off|session|frames; anything unrecognised, including unset, means session, so a typo cannot silence a consumer. Producers propagate W3C `TRACEPARENT` to children, so a trace that starts in a shell wrapper continues in the process it execs. Consumers list is empty until vigil lands the first adoption."
+failure = "No exporter and no socket: a producer that cannot write its records loses observability and nothing else. The crate depends on std alone, which is what lets the binary that IS the login screen adopt it."
+barriers = []
+
+[[surface]]
 id = "lock-failsafe-policy-v1"
 owner = "hypr-de"
 producers = ["external:operator"]

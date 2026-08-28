@@ -1,0 +1,10 @@
+[package]
+name = "span-lines"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "OpenTelemetry-shaped spans and events as journald lines; no exporter, no dependencies"
+repository = "https://github.com/MasonRhodesDev/desktop-commons"
+publish = true
+
+[dependencies]

@@ -6,6 +6,7 @@ members = [
     "crates/hypr-ipc",
     "crates/slint-idle-runtime",
     "crates/singleton-guard",
+    "crates/span-lines",
 ]
 
 # Workspace builds use the local copy; git consumers of singleton-guard resolve

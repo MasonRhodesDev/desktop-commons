@@ -97,6 +97,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | slint-idle-runtime-v0 | slint-idle-runtime | slint-idle-runtime | vigil, wayland-voice-dictation | Rust library API | 0.1 | provisional |
 | slint-kit-api-0.2 | slint-kit | slint-kit | dials, vigil | Rust API, Slint imports, semantic properties, and controls | 0.2 commit-pinned API | provisional |
 | sni-waybar-ordering-v1 | sni-watcher | sni-watcher | hypr-de | systemd user-unit ordering and D-Bus ownership | 1 | stable |
+| span-lines-v0 | desktop-commons | desktop-commons |  | stderr text records collected by journald, via crates/span-lines | 0.1.0 | experimental |
 | status-notifier-v1 | sni-watcher | sni-watcher | logind-idle-control, wayland-voice-dictation, agent-pet, hypr-de | StatusNotifier D-Bus protocol | freedesktop/KDE SNI | stable |
 | steam-launch-options-v1 | hypr-de | hypr-de | external:steam | LaunchOptions value in Steam's localconfig.vdf, executed by Steam as ENV=v wrapper %command% | VDF LaunchOptions | provisional |
 | vigil-banner-v1 | vigil | greetd-game-mode | vigil | greeter banner/countdown state | 1 | provisional |
@@ -412,6 +413,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: sni-watcher owns the watcher name before Waybar starts as a host.
 - Failure behavior: Waybar may create a temporary watcher; diagnostics must expose the wrong owner.
 - Barriers: BAR-001, BAR-007, BAR-010, BAR-014
+
+## span-lines-v0
+
+- Location: `crates/span-lines`
+- Compatibility: OpenTelemetry's data model, not its wire protocol: `span=`/`event=` records carry a 32-hex trace id, a 16-hex span id and a parent id, so nesting and ordering are properties of the data rather than of the order lines happen to be flushed. Readers split on whitespace then on the first `=`; values containing a space, `=` or `"` are quoted, so a naive splitter cannot be fooled by an attribute value. Timestamps are deliberately absent - journald stamps `__MONOTONIC_TIMESTAMP`, `_BOOT_ID` and `_SYSTEMD_UNIT`, and duplicating them invites disagreement. Detail is one of off|session|frames; anything unrecognised, including unset, means session, so a typo cannot silence a consumer. Producers propagate W3C `TRACEPARENT` to children, so a trace that starts in a shell wrapper continues in the process it execs. Consumers list is empty until vigil lands the first adoption.
+- Failure behavior: No exporter and no socket: a producer that cannot write its records loses observability and nothing else. The crate depends on std alone, which is what lets the binary that IS the login screen adopt it.
+- Barriers: 
 
 ## status-notifier-v1
 
