@@ -233,25 +233,33 @@ impl Span {
         )
     }
 
-    /// Attach an attribute. Values containing a space or `=` are quoted so a
-    /// reader can always split on whitespace then on the first `=`.
-    pub fn attr(mut self, key: &str, value: impl std::fmt::Display) -> Self {
+    /// Attach an attribute.
+    ///
+    /// The key is `&'static str` on purpose. Keys and event names are
+    /// written into the record without escaping, so a runtime key is a
+    /// record-forgery primitive: a key of `"a outcome"` splits into two
+    /// fields, and one containing a newline mints a second, perfectly
+    /// well-formed record carrying this process's real `_PID` and
+    /// `_SYSTEMD_UNIT`. Requiring a literal makes that uncompilable rather
+    /// than merely discouraged. Attacker-influenced text belongs in the
+    /// *value*, which is encoded.
+    pub fn attr(mut self, key: &'static str, value: impl std::fmt::Display) -> Self {
         self.push_attr(key, value);
         self
     }
 
     /// As [`Span::attr`], for a span already bound to a variable.
-    pub fn set(&mut self, key: &str, value: impl std::fmt::Display) {
+    pub fn set(&mut self, key: &'static str, value: impl std::fmt::Display) {
         self.push_attr(key, value);
     }
 
-    fn push_attr(&mut self, key: &str, value: impl std::fmt::Display) {
+    fn push_attr(&mut self, key: &'static str, value: impl std::fmt::Display) {
         let rendered = value.to_string();
         let _ = write!(self.attrs, " {key}={}", quote(&rendered));
     }
 
     /// Record something instantaneous inside this span.
-    pub fn event(&self, name: &str, attrs: &[(&str, &str)]) {
+    pub fn event(&self, name: &'static str, attrs: &[(&'static str, &str)]) {
         if let Some(line) = self.render_event(name, attrs) {
             emit(&line);
         }
@@ -260,7 +268,7 @@ impl Span {
     /// The record `event` would write, or `None` if the detail level silences
     /// it. Split out so the shape and the gating are testable without
     /// capturing stderr.
-    fn render_event(&self, name: &str, attrs: &[(&str, &str)]) -> Option<String> {
+    fn render_event(&self, name: &'static str, attrs: &[(&'static str, &str)]) -> Option<String> {
         if !self.enabled() {
             return None;
         }
@@ -496,3 +504,28 @@ mod tests {
         assert_eq!(quote(""), "\"\"");
     }
 }
+
+/// Keys and event names must be literals, so attacker-influenced text
+/// cannot reach a position that is written unescaped.
+///
+/// ```compile_fail
+/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let s = t.span("lock.session");
+/// let untrusted = String::from("pam.msg\nevent=auth.success");
+/// s.event(&untrusted, &[]);
+/// ```
+///
+/// ```compile_fail
+/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let untrusted = String::from("k outcome");
+/// let _ = t.span("lock.session").attr(&untrusted, "Unlocked");
+/// ```
+///
+/// A literal key with an untrusted *value* is the supported shape:
+///
+/// ```
+/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let untrusted = String::from("whatever the compositor said");
+/// let _ = t.span("lock.session").attr("output", untrusted);
+/// ```
+fn _keys_and_names_are_literals() {}
