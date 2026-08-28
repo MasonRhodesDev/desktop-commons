@@ -30,7 +30,7 @@
 //! A span emits when it is dropped, so it cannot be left unended and its
 //! duration cannot be forgotten - but `Drop` does not run on
 //! [`std::process::exit`], so call [`Span::end`] before any path that does
-//! not unwind.
+//! not unwind, or [`exit`] instead of `std::process::exit`.
 //!
 //! # Ordering
 //!
@@ -71,6 +71,35 @@
 //! about 333 messages/s), and journald drops indiscriminately once over -
 //! which would silence the session records interleaved with the frame
 //! noise, the opposite of what turning it up was for.
+//!
+//! # Two ways to write instrumentation
+//!
+//! This module's API ([`Trace`], [`Span`]) has no dependencies and is what
+//! a consumer with a strict supply chain should use. With the `tracing`
+//! feature, the `tracing_layer` module accepts the standard `tracing`
+//! macros and emits the identical record format, so a reader cannot tell
+//! which wrote a record. They share one trace id, one sequence and one
+//! clock origin per process, so a consumer can use both and a reader can
+//! still join what they wrote.
+//!
+//! # Pluggable pieces
+//!
+//! [`Sink`] is where records go - stderr by default. [`AtExit`] is a
+//! registry of things to finish before the process ends, and [`exit`] runs
+//! them and then terminates.
+//!
+//! Use [`exit`] anywhere a traced program would call
+//! `std::process::exit`: destructors do not run there, so a span left to
+//! `Drop` is lost on precisely the outcomes worth recording, and the
+//! journal then cannot distinguish "never started" from "still running"
+//! from "died".
+//!
+//! Note what [`exit`] does and does not rescue. It runs the registered
+//! hooks, and the `tracing` layer registers one, so *its* open spans are
+//! closed and marked `status=exit`. A [`Span`] from this module's own API
+//! is an owned value the crate has no handle on, so [`exit`] cannot reach
+//! it: call [`Span::end`] first. That asymmetry is the reason the bridge
+//! can offer a blanket rescue and the direct API cannot.
 //!
 //! # Propagation
 //!
@@ -116,10 +145,13 @@
 //! mechanism any `eprintln!` in the consumer already has. It is not fixed
 //! here; a bounded non-blocking emitter is tracked separately.
 
+#[cfg(feature = "tracing")]
+pub mod tracing_layer;
+
 use std::fmt::Write as _;
 use std::io::Write as _;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
 /// The W3C `sampled` flag, used for traces this process starts.
@@ -136,6 +168,17 @@ const SAMPLED: &str = "01";
 fn origin() -> Instant {
     static ORIGIN: OnceLock<Instant> = OnceLock::new();
     *ORIGIN.get_or_init(Instant::now)
+}
+
+/// The trace this process's records belong to when no caller supplies one
+/// per record - notably every record the tracing layer writes, since
+/// `tracing` has no place to carry a trace id.
+///
+/// Adopts `TRACEPARENT` exactly as [`Trace::from_env`] does, so a lock that
+/// starts in a shell wrapper is still one trace whichever API writes it.
+pub fn process_trace() -> &'static Trace {
+    static TRACE: OnceLock<Trace> = OnceLock::new();
+    TRACE.get_or_init(Trace::read_env)
 }
 
 /// A total order over the records this process emits, breaking ties when
@@ -297,7 +340,20 @@ impl Trace {
     ///
     /// A malformed value is ignored rather than rejected: a broken header
     /// from some other tool must not stop a session tracing itself.
+    ///
+    /// One trace per process: repeated calls return the same id, and it is
+    /// the id the `tracing` bridge uses too. Minting a fresh one per call
+    /// would mean a consumer mixing the two APIs wrote records a reader
+    /// cannot join - and would do so only when no `TRACEPARENT` was set,
+    /// which is the normal case for a locker started by a compositor
+    /// rather than a shell wrapper. Use [`Trace::adopt`] for a deliberately
+    /// separate trace.
     pub fn from_env() -> Self {
+        process_trace().clone()
+    }
+
+    /// The uncached construction behind [`Trace::from_env`].
+    fn read_env() -> Self {
         let detail = Detail::from_env();
         if let Ok(tp) = std::env::var("TRACEPARENT") {
             if let Some((trace, parent, flags)) = parse_traceparent(&tp) {
@@ -611,7 +667,7 @@ impl Span {
 ///
 /// A span dropped during unwinding used to be byte-identical to one that
 /// completed, so a crashed lock and a clean lock read the same.
-fn drop_status(panicking: bool) -> Option<&'static str> {
+pub(crate) fn drop_status(panicking: bool) -> Option<&'static str> {
     if panicking {
         Some("panic")
     } else {
@@ -705,29 +761,142 @@ thread_local! {
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
+/// Where records go.
+///
+/// The default writes to stderr for journald to stamp, which is what every
+/// consumer in this suite wants. It is an interface rather than a hardcoded
+/// destination so a consumer with a different destination - a test
+/// collecting records, a tool writing to a file, a harness asserting on
+/// them - can supply one without the crate growing options for each case.
+///
+/// Implementations must not panic and must not block indefinitely: a sink
+/// is called from `Drop`, so a panicking one panics during unwinding and a
+/// blocking one stalls the thread being traced.
+pub trait Sink: Send + Sync + 'static {
+    /// Write one complete record. The bytes end in a single newline and are
+    /// entirely ASCII.
+    fn write(&self, record: &[u8]);
+}
+
+/// The default sink: one `write_all` to stderr.
+pub struct StderrSink;
+
+impl Sink for StderrSink {
+    fn write(&self, record: &[u8]) {
+        // One `write_all` of one buffer, not `writeln!`. Rust's stderr is
+        // unbuffered, so `writeln!(err, "{line}")` is two syscalls - the
+        // record, then the newline - and `stderr().lock()` only excludes
+        // other *Rust* writers. A C-side writer on the same fd (a PAM
+        // module, Mesa, libwayland) takes no such lock and can land between
+        // them, appending its bytes inside the record's final attribute. A
+        // reviewer measured 12.8% of records spliced that way under load.
+        // See MAX_RECORD for what one write does and does not guarantee.
+        //
+        // A failed write is dropped. Note this does not make tracing
+        // unconditionally safe: see the module docs on blocking.
+        let mut err = std::io::stderr().lock();
+        let _ = err.write_all(record);
+    }
+}
+
+static SINK: OnceLock<Box<dyn Sink>> = OnceLock::new();
+
+/// Install the process-wide sink. First call wins.
+///
+/// Returns `false` if a sink was already in place, so a caller can tell "I
+/// configured this" from "records are going somewhere else". Note the
+/// default counts: the first record emitted installs [`StderrSink`]
+/// lazily, so calling this after anything has been traced also returns
+/// `false`. Install it before opening the first span.
+#[must_use = "a losing set_sink means records are going somewhere else"]
+pub fn set_sink(sink: impl Sink) -> bool {
+    SINK.set(Box::new(sink)).is_ok()
+}
+
+fn sink() -> &'static dyn Sink {
+    SINK.get_or_init(|| Box::new(StderrSink)).as_ref()
+}
+
+/// Something to run before the process exits.
+///
+/// The registry exists because `std::process::exit` runs no destructors, so
+/// a span waiting on `Drop` is lost on exactly the paths worth recording.
+/// It is a list rather than a single hook so anything else that needs to
+/// finish writing - a second layer, a consumer's own buffered state - can
+/// join without this crate knowing about it.
+pub trait AtExit: Send + Sync + 'static {
+    /// Finish outstanding work. Called once, on the exiting thread.
+    fn flush(&self);
+}
+
+static AT_EXIT: Mutex<Vec<std::sync::Arc<dyn AtExit>>> = Mutex::new(Vec::new());
+
+/// Register something to flush before [`exit`].
+///
+/// There is no way to unregister. The registry is process-global and grows
+/// with each call, which is fine for the intended one-per-process
+/// installation and worth knowing if something registers per iteration.
+pub fn at_exit(hook: impl AtExit) {
+    if let Ok(mut hooks) = AT_EXIT.lock() {
+        hooks.push(std::sync::Arc::new(hook));
+    }
+}
+
+/// Run every registered hook, most recently registered first.
+///
+/// Separate from [`exit`] so a consumer that ends some other way - a signal
+/// handler setting a flag, a test - can flush without terminating. Calling
+/// it repeatedly is safe and required to be: a hook must be idempotent,
+/// because the whole point is that `exit` can still flush after someone
+/// else already did.
+pub fn flush() {
+    // Clone the handles out rather than running under the lock: a hook that
+    // registers another one would otherwise deadlock. Cloning rather than
+    // *taking* them is what keeps a later `exit` able to flush - draining
+    // here meant an independent `flush()` silently disarmed the exit path,
+    // losing exactly the spans the registry exists to save.
+    let hooks = match AT_EXIT.lock() {
+        Ok(hooks) => hooks.clone(),
+        Err(_) => return,
+    };
+    for hook in hooks.iter().rev() {
+        hook.flush();
+    }
+}
+
+/// [`flush`], then `std::process::exit`.
+///
+/// Use this anywhere a traced program would call `std::process::exit`.
+/// Destructors do not run there, so a span left to `Drop` is lost on
+/// precisely the outcomes worth recording - and because nothing is emitted,
+/// the journal cannot distinguish "never started" from "still running" from
+/// "died". Being a named function also makes the rule greppable: a bare
+/// `std::process::exit` in an instrumented binary is a bug you can search
+/// for.
+///
+/// This rescues what the registered hooks know about. The `tracing` layer
+/// registers one, so its open spans are closed and marked `status=exit`. A
+/// [`Span`] from this crate's own API is not reachable from here - end it
+/// with [`Span::end`] before calling this.
+pub fn exit(code: i32) -> ! {
+    flush();
+    std::process::exit(code)
+}
+
+/// Take everything emitted on this thread since the last call. Tests only.
+#[cfg(test)]
+pub(crate) fn test_drain() -> Vec<String> {
+    EMITTED.with(|recorded| std::mem::take(&mut *recorded.borrow_mut()))
+}
+
 fn emit(line: &str) {
     #[cfg(test)]
     EMITTED.with(|recorded| recorded.borrow_mut().push(line.to_string()));
 
-    // stderr, because journald already stamps it with a monotonic timestamp
-    // and the unit, and because a locker must not depend on a socket being
+    // The destination is the installed Sink - stderr by default, because
+    // journald stamps it and a locker must not depend on a socket being
     // there.
-    //
-    // One `write_all` of one buffer, not `writeln!`. Rust's stderr is
-    // unbuffered, so `writeln!(err, "{line}")` is two syscalls - the record,
-    // then the newline - and `stderr().lock()` only excludes other *Rust*
-    // writers. A C-side writer on the same fd (a PAM module, Mesa,
-    // libwayland) takes no such lock and can land between them, appending
-    // its bytes inside the record's final attribute. A reviewer measured
-    // 12.8% of records spliced that way under load. One write closes the
-    // gap between the two; see MAX_RECORD for what that does and does not
-    // guarantee.
-    //
-    // A failed write is dropped. Note this does not make tracing
-    // unconditionally safe: see the module docs on blocking.
-    let record = frame(line);
-    let mut err = std::io::stderr().lock();
-    let _ = err.write_all(&record);
+    sink().write(&frame(line));
 }
 
 /// Keys and event names must be literals, so attacker-influenced text
@@ -908,7 +1077,7 @@ mod tests {
 
     /// Take everything emitted on this thread since the last call.
     fn drain() -> Vec<String> {
-        EMITTED.with(|recorded| std::mem::take(&mut *recorded.borrow_mut()))
+        super::test_drain()
     }
 
     /// Emit an event through the real path and return the record it wrote.
@@ -1185,6 +1354,58 @@ mod tests {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<Span>();
         assert_send_sync::<Trace>();
+    }
+
+    #[test]
+    fn flush_runs_hooks_in_reverse_and_stays_armed() {
+        // Reverse, because a hook registered later may depend on one
+        // registered earlier still being usable. Still armed afterwards,
+        // because draining meant a consumer's own flush() - a signal
+        // handler, a test - silently disarmed the exit path, so the next
+        // `exit` lost every open span. That is the failure the registry
+        // exists to prevent, reintroduced by the registry.
+        #[derive(Clone)]
+        struct Note(&'static str, std::sync::Arc<Mutex<Vec<&'static str>>>);
+        impl AtExit for Note {
+            fn flush(&self) {
+                self.1.lock().unwrap().push(self.0);
+            }
+        }
+        let seen = std::sync::Arc::new(Mutex::new(Vec::new()));
+        at_exit(Note("first", seen.clone()));
+        at_exit(Note("second", seen.clone()));
+        flush();
+        assert_eq!(*seen.lock().unwrap(), ["second", "first"]);
+
+        // A second flush runs them again: hooks are idempotent, and the
+        // alternative is an exit path that quietly stopped working.
+        flush();
+        assert_eq!(
+            *seen.lock().unwrap(),
+            ["second", "first", "second", "first"],
+            "flush must stay armed for a later exit()"
+        );
+    }
+
+    #[test]
+    fn a_hook_registered_during_flush_does_not_deadlock() {
+        // Holding the registry lock across the hooks would deadlock here,
+        // which is the sort of thing that only ever happens while the
+        // process is trying to exit.
+        struct Reentrant;
+        impl AtExit for Reentrant {
+            fn flush(&self) {
+                struct Inner;
+                impl AtExit for Inner {
+                    fn flush(&self) {}
+                }
+                at_exit(Inner);
+            }
+        }
+        at_exit(Reentrant);
+        flush();
+        // Reaching here at all is the assertion.
+        flush();
     }
 
     #[test]

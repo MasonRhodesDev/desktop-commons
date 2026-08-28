@@ -84,10 +84,7 @@ impl SessionRef {
         &self.path
     }
 
-    pub async fn proxy<'a>(
-        &self,
-        conn: &'a Connection,
-    ) -> Result<LogindSessionProxy<'a>, Error> {
+    pub async fn proxy<'a>(&self, conn: &'a Connection) -> Result<LogindSessionProxy<'a>, Error> {
         Ok(LogindSessionProxy::builder(conn)
             .path(self.path.clone())?
             .build()
@@ -211,9 +208,11 @@ pub async fn resolve_session_with(
         else {
             continue;
         };
-        let (Ok(state), Ok(class), Ok(stype)) =
-            (proxy.state().await, proxy.class().await, proxy.session_type().await)
-        else {
+        let (Ok(state), Ok(class), Ok(stype)) = (
+            proxy.state().await,
+            proxy.class().await,
+            proxy.session_type().await,
+        ) else {
             continue;
         };
         let score = score_session(&class, &stype, &state);
