@@ -255,7 +255,7 @@ impl Span {
 
     fn push_attr(&mut self, key: &'static str, value: impl std::fmt::Display) {
         let rendered = value.to_string();
-        let _ = write!(self.attrs, " {key}={}", quote(&rendered));
+        let _ = write!(self.attrs, " {key}={}", encode(&rendered));
     }
 
     /// Record something instantaneous inside this span.
@@ -274,7 +274,7 @@ impl Span {
         }
         let mut line = format!("event={name} trace={} parent={}", self.trace.id, self.id);
         for (k, v) in attrs {
-            let _ = write!(line, " {k}={}", quote(v));
+            let _ = write!(line, " {k}={}", encode(v));
         }
         Some(line)
     }
@@ -326,15 +326,36 @@ impl Drop for Span {
     }
 }
 
-fn quote(value: &str) -> String {
-    if value.is_empty() {
-        return "\"\"".into();
+/// Percent-encode anything that could be mistaken for record structure.
+///
+/// Quoting was the obvious first answer and it does not work: a quoted
+/// value containing a space cannot survive a whitespace split, and the
+/// halves parse back as *two* fields, so `phase="a b=c"` fabricates an
+/// attribute `b=c` that nobody wrote. Blacklisting bytes does not work
+/// either - the first version triggered on space, `=` and `"` only, so a
+/// value holding a newline silently became two journal entries, and a tab
+/// or U+00A0 defeated `split_whitespace` while looking innocent in a
+/// terminal.
+///
+/// Encoding inverts the rule: everything is escaped unless it is known to
+/// be inert. A value can then never contain whitespace, `=`, a control
+/// character or a non-ASCII byte, which is what makes "split on
+/// whitespace, then on the first `=`, then percent-decode" true as
+/// written rather than true most of the time.
+fn encode(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for b in value.bytes() {
+        // Inert set chosen so the common attributes stay readable without a
+        // decoder: versions, phase names, connectors, paths, durations.
+        if b.is_ascii_alphanumeric()
+            || matches!(b, b'.' | b'_' | b'-' | b':' | b'/' | b'+' | b'@' | b',')
+        {
+            out.push(b as char);
+        } else {
+            let _ = write!(out, "%{b:02X}");
+        }
     }
-    if value.bytes().any(|b| b == b' ' || b == b'=' || b == b'"') {
-        format!("{:?}", value)
-    } else {
-        value.to_string()
-    }
+    out
 }
 
 fn emit(line: &str) {
@@ -496,12 +517,93 @@ mod tests {
         assert!(root.frame_child("frame.present").render_span().is_some());
     }
 
+    /// The reader the record format promises: split on whitespace, split
+    /// each token on its first `=`, percent-decode. Deliberately naive -
+    /// its whole job is to be the dumbest thing a consumer might write.
+    fn naive_read(line: &str) -> Vec<(String, String)> {
+        fn decode(s: &str) -> String {
+            let mut out = Vec::new();
+            let b = s.as_bytes();
+            let mut i = 0;
+            while i < b.len() {
+                if b[i] == b'%' && i + 3 <= b.len() {
+                    if let Ok(byte) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
+                        out.push(byte);
+                        i += 3;
+                        continue;
+                    }
+                }
+                out.push(b[i]);
+                i += 1;
+            }
+            String::from_utf8_lossy(&out).into_owned()
+        }
+        line.split_whitespace()
+            .filter_map(|tok| tok.split_once('='))
+            .map(|(k, v)| (k.to_string(), decode(v)))
+            .collect()
+    }
+
     #[test]
-    fn attributes_that_would_break_parsing_are_quoted() {
-        assert_eq!(quote("PreLock"), "PreLock");
-        assert_eq!(quote("two words"), "\"two words\"");
-        assert_eq!(quote("a=b"), "\"a=b\"");
-        assert_eq!(quote(""), "\"\"");
+    fn structural_bytes_are_encoded_away() {
+        assert_eq!(encode("PreLock"), "PreLock");
+        assert_eq!(encode("0.3.3"), "0.3.3");
+        assert_eq!(encode("DP-1"), "DP-1");
+        assert_eq!(encode(""), "");
+        assert_eq!(encode("two words"), "two%20words");
+        assert_eq!(encode("a=b"), "a%3Db");
+        assert_eq!(encode("a\nb"), "a%0Ab");
+        assert_eq!(encode("a\tb"), "a%09b");
+        assert_eq!(encode("a\rb"), "a%0Db");
+        assert_eq!(encode("a\"b"), "a%22b");
+        // U+00A0 is whitespace to `split_whitespace` but not to a byte
+        // filter looking for b' '. That gap is what encoding closes.
+        assert_eq!(encode("a\u{a0}b"), "a%C2%A0b");
+        assert_eq!(encode("a\u{2028}b"), "a%E2%80%A8b");
+        // The escape character must escape itself or decoding is ambiguous.
+        assert_eq!(encode("100%"), "100%25");
+    }
+
+    #[test]
+    fn a_hostile_value_cannot_forge_or_split_a_record() {
+        // Every one of these defeated the previous quoting scheme: the
+        // newline minted a second journal entry, the space-and-equals pair
+        // fabricated an attribute, and the tab broke the split silently.
+        for hostile in [
+            "boom\nspan=forged trace=0 id=0 parent=- dur_ms=1 outcome=Unlocked",
+            "a b=c",
+            "two words",
+            "x\ty",
+            "a\u{a0}outcome=Unlocked",
+            "\"quoted\"",
+            "100% =",
+        ] {
+            let t = Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session);
+            let line = t
+                .span("lock.session")
+                .attr("note", hostile)
+                .attr("after", "sentinel")
+                .render_span()
+                .unwrap();
+
+            assert_eq!(line.lines().count(), 1, "record split into two: {line:?}");
+            let fields = naive_read(&line);
+            let keys: Vec<&str> = fields.iter().map(|(k, _)| k.as_str()).collect();
+            assert_eq!(
+                keys,
+                ["span", "trace", "id", "parent", "dur_ms", "note", "after"],
+                "unexpected fields from {hostile:?}: {line}"
+            );
+            assert_eq!(
+                fields.iter().find(|(k, _)| k == "note").unwrap().1,
+                hostile,
+                "value did not round-trip"
+            );
+            assert_eq!(
+                fields.iter().find(|(k, _)| k == "after").unwrap().1,
+                "sentinel"
+            );
+        }
     }
 }
 
