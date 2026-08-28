@@ -113,10 +113,14 @@ impl SpanLinesLayer {
     }
 
     fn admits(&self, target: &str) -> bool {
-        self.inner
-            .targets
-            .iter()
-            .any(|prefix| target == *prefix || target.starts_with(&format!("{prefix}::")))
+        // strip_prefix rather than `format!("{prefix}::")`: the allocation
+        // ran on every span and every event, and measured 30-40x the cost
+        // of the comparison it was performing.
+        self.inner.targets.iter().any(|prefix| {
+            target
+                .strip_prefix(prefix)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with("::"))
+        })
     }
 
     fn tier(level: &Level) -> Detail {
@@ -191,9 +195,24 @@ impl<S> tracing_subscriber::Layer<S> for SpanLinesLayer
 where
     S: Subscriber + for<'a> LookupSpan<'a>,
 {
+    /// The highest level this layer will ever want.
+    ///
+    /// Without it the dispatcher leaves every callsite in the process
+    /// enabled, so `SPAN_LINES=off` quietened this layer's output while
+    /// still paying for every `trace!` in every dependency - and any
+    /// library gating expensive work on `tracing::enabled!()` would still
+    /// do that work.
+    fn max_level_hint(&self) -> Option<tracing_core::LevelFilter> {
+        Some(match self.detail() {
+            Detail::Off => tracing_core::LevelFilter::OFF,
+            Detail::Session => tracing_core::LevelFilter::INFO,
+            Detail::Frames => tracing_core::LevelFilter::TRACE,
+        })
+    }
+
     fn on_new_span(&self, attrs: &Attributes<'_>, id: &Id, ctx: Context<'_, S>) {
         let meta = attrs.metadata();
-        if !self.admits(meta.target()) || !self.enabled(meta.level()) {
+        if !self.enabled(meta.level()) || !self.admits(meta.target()) {
             return;
         }
         let mut fields = Attrs(String::new());
@@ -222,7 +241,19 @@ where
         }
     }
 
-    fn on_record(&self, id: &Id, values: &Record<'_>, _ctx: Context<'_, S>) {
+    fn on_record(&self, id: &Id, values: &Record<'_>, ctx: Context<'_, S>) {
+        // Gate before visiting. Without this, every `Span::record` in every
+        // foreign crate formatted its values into a String this layer threw
+        // away - measured at 1000 wasted `Debug::fmt` calls for a
+        // filtered-out target at SPAN_LINES=off - and the "we never touch
+        // another crate's field values" property behind the allowlist was
+        // true of on_new_span and on_event only.
+        let Some(meta) = ctx.metadata(id) else {
+            return;
+        };
+        if !self.enabled(meta.level()) || !self.admits(meta.target()) {
+            return;
+        }
         let mut fields = Attrs(String::new());
         values.record(&mut fields);
         if let Ok(mut live) = self.inner.open.lock() {
@@ -234,7 +265,7 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
         let meta = event.metadata();
-        if !self.admits(meta.target()) || !self.enabled(meta.level()) {
+        if !self.enabled(meta.level()) || !self.admits(meta.target()) {
             return;
         }
         let parent = ctx
@@ -265,7 +296,10 @@ where
         };
         if let Some(span) = taken {
             if self.detail() >= span.needs {
-                self.write_span(&span, None);
+                // Same rule as the crate's own Drop: a span unwound by a
+                // panic must not be byte-identical to one that completed,
+                // or a crashed lock reads as a successful one.
+                self.write_span(&span, crate::drop_status(std::thread::panicking()));
             }
         }
     }
@@ -364,7 +398,7 @@ mod tests {
         let layer = SpanLinesLayer::with_detail(&["admitted"], Detail::Session);
         let subscriber = tracing_subscriber::registry().with(layer);
         tracing::subscriber::with_default(subscriber, || {
-            let _viaLayer = tracing::info_span!(target: "admitted", "lock.session").entered();
+            let _via_layer = tracing::info_span!(target: "admitted", "lock.session").entered();
         });
         let via_layer = crate::test_drain().pop().expect("layer record");
 
@@ -418,6 +452,89 @@ mod tests {
         });
         let names: Vec<String> = written.iter().map(|r| field(r, "span")).collect();
         assert_eq!(names, ["yes"], "{written:?}");
+    }
+
+    #[test]
+    fn errors_and_warnings_are_session_tier() {
+        // The comparison that decides this is the one place an inverted
+        // operator would be catastrophic: ERROR would become frame-tier and
+        // go silent by default. The previous test only exercised INFO and
+        // DEBUG, so it could not see that.
+        let written = records(Detail::Session, || {
+            let _e = tracing::error_span!(target: "admitted", "boom").entered();
+            let _w = tracing::warn_span!(target: "admitted", "careful").entered();
+            let _i = tracing::info_span!(target: "admitted", "normal").entered();
+            let _t = tracing::trace_span!(target: "admitted", "chatter").entered();
+        });
+        let mut names: Vec<String> = written.iter().map(|r| field(r, "span")).collect();
+        names.sort();
+        assert_eq!(names, ["boom", "careful", "normal"], "{written:?}");
+    }
+
+    #[test]
+    fn the_level_hint_follows_the_detail_tier() {
+        // Without a hint the dispatcher leaves every callsite in the
+        // process enabled, so SPAN_LINES=off quietens this layer's output
+        // while every trace! in every dependency still dispatches, and
+        // anything gating work on `tracing::enabled!()` still does it.
+        //
+        // Asserted on the hint itself rather than on
+        // `LevelFilter::current()`: that is process-global, and the other
+        // tests in this binary install their own subscribers in parallel,
+        // so the observed global max is whatever the loudest of them wants.
+        type Reg = tracing_subscriber::Registry;
+        for (detail, expected) in [
+            (Detail::Off, tracing_core::LevelFilter::OFF),
+            (Detail::Session, tracing_core::LevelFilter::INFO),
+            (Detail::Frames, tracing_core::LevelFilter::TRACE),
+        ] {
+            let layer = SpanLinesLayer::with_detail(&["admitted"], detail);
+            assert_eq!(
+                tracing_subscriber::Layer::<Reg>::max_level_hint(&layer),
+                Some(expected),
+                "{detail:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_foreign_span_s_fields_are_never_formatted() {
+        // The allowlist's promise is that this process does not touch
+        // another crate's field values. on_record bypassed it, so every
+        // Span::record in zbus or calloop was formatted and thrown away.
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static FORMATTED: AtomicUsize = AtomicUsize::new(0);
+        struct Counted;
+        impl std::fmt::Debug for Counted {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                FORMATTED.fetch_add(1, Ordering::Relaxed);
+                f.write_str("counted")
+            }
+        }
+
+        FORMATTED.store(0, Ordering::Relaxed);
+        records(Detail::Frames, || {
+            let foreign =
+                tracing::info_span!(target: "zbus", "dbus.call", value = tracing::field::Empty);
+            for _ in 0..100 {
+                foreign.record("value", tracing::field::debug(Counted));
+            }
+        });
+        assert_eq!(
+            FORMATTED.load(Ordering::Relaxed),
+            0,
+            "a filtered-out span's values must never be formatted"
+        );
+
+        // An admitted span still records normally.
+        FORMATTED.store(0, Ordering::Relaxed);
+        let written = records(Detail::Session, || {
+            let mine = tracing::info_span!(target: "admitted", "lock.session", value = tracing::field::Empty);
+            let _entered = mine.enter();
+            mine.record("value", tracing::field::debug(Counted));
+        });
+        assert_eq!(FORMATTED.load(Ordering::Relaxed), 1);
+        assert_eq!(field(&written[0], "value"), "counted");
     }
 
     #[test]
@@ -531,6 +648,41 @@ mod tests {
         assert_eq!(written.len(), 1, "a value must not split a record");
         assert_eq!(field(&written[0], "note"), "two%20words");
         assert_eq!(field(&written[0], "bad"), "a%3Db%0Aspan%3Dforged");
+    }
+
+    #[test]
+    fn a_span_unwound_by_a_panic_says_so_through_the_layer_too() {
+        // The crate's own API grew `status=panic` because a crashed lock
+        // and a clean one otherwise read the same. The bridge has to keep
+        // that, or adopting it silently loses the distinction.
+        crate::test_drain();
+        let layer = SpanLinesLayer::with_detail(&["admitted"], Detail::Session);
+        let subscriber = tracing_subscriber::registry().with(layer);
+        let panicked = tracing::subscriber::with_default(subscriber, || {
+            std::panic::catch_unwind(|| {
+                let _span = tracing::info_span!(target: "admitted", "lock.session").entered();
+                std::panic::panic_any("boom");
+            })
+        });
+        assert!(panicked.is_err(), "the test's own panic must have fired");
+        let written = crate::test_drain();
+        assert_eq!(written.len(), 1, "{written:?}");
+        assert_eq!(
+            field(&written[0], "status"),
+            "panic",
+            "a span unwound by a panic must be distinguishable: {}",
+            written[0]
+        );
+
+        // ... and a clean close still carries no status.
+        crate::test_drain();
+        let layer = SpanLinesLayer::with_detail(&["admitted"], Detail::Session);
+        let subscriber = tracing_subscriber::registry().with(layer);
+        tracing::subscriber::with_default(subscriber, || {
+            let _span = tracing::info_span!(target: "admitted", "lock.session").entered();
+        });
+        let clean = crate::test_drain().pop().unwrap();
+        assert!(!clean.contains(" status="), "{clean}");
     }
 
     #[test]

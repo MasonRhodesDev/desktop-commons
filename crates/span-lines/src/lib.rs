@@ -656,7 +656,7 @@ impl Span {
 ///
 /// A span dropped during unwinding used to be byte-identical to one that
 /// completed, so a crashed lock and a clean lock read the same.
-fn drop_status(panicking: bool) -> Option<&'static str> {
+pub(crate) fn drop_status(panicking: bool) -> Option<&'static str> {
     if panicking {
         Some("panic")
     } else {
