@@ -499,7 +499,14 @@ impl Span {
 
     fn push_attr(&mut self, key: &'static str, value: impl std::fmt::Display) {
         let rendered = value.to_string();
-        let _ = write!(self.attrs, " {key}={}", encode(&rendered));
+        // The key is encoded too. `&'static str` stops *attacker* text
+        // reaching this position, which is the security property, but it
+        // does not stop a careless literal: `attr("bad key", "v")` compiled
+        // happily and emitted `bad key=v`, which a reader parses as a field
+        // named `bad` that is silently dropped plus a field `key=v`. Same
+        // corruption class, self-inflicted. Encoding is free here because a
+        // well-chosen key is already inert.
+        let _ = write!(self.attrs, " {}={}", encode(key), encode(&rendered));
     }
 
     /// Record something instantaneous inside this span.
@@ -525,7 +532,7 @@ impl Span {
             micros_since_origin(Instant::now()),
         );
         for (k, v) in attrs {
-            let _ = write!(line, " {k}={}", encode(v));
+            let _ = write!(line, " {}={}", encode(k), encode(v));
         }
         Some(line)
     }
@@ -1411,6 +1418,70 @@ mod tests {
         assert_eq!(encode("a\u{2028}b"), "a%E2%80%A8b");
         // The escape character must escape itself or decoding is ambiguous.
         assert_eq!(encode("100%"), "100%25");
+    }
+
+    #[test]
+    fn a_careless_literal_key_cannot_corrupt_a_record() {
+        // `&'static str` keeps attacker text out of key position, which is
+        // the security property. It does not make a literal well-formed:
+        // `attr("bad key", "v")` compiles. Before keys were encoded it
+        // emitted `bad key=v`, which a reader parses as a field `bad` that
+        // is silently dropped plus a field `key=v`.
+        let t = Trace::adopt("4bf92f3577b34da6a3ce929d0e0e4736", Detail::Session).unwrap();
+        let line = record(
+            t.span("lock.session")
+                .attr("bad key", "v")
+                .attr("also=bad", "w"),
+        );
+        let fields = naive_read(&line);
+        let keys: Vec<&str> = fields.iter().map(|(k, _)| k.as_str()).collect();
+        assert_eq!(
+            keys,
+            [
+                "span",
+                "trace",
+                "id",
+                "parent",
+                "seq",
+                "t_us",
+                "dur_us",
+                "bad%20key",
+                "also%3Dbad"
+            ],
+            "a malformed literal key must not add or drop fields: {line}"
+        );
+        assert_eq!(
+            fields.iter().find(|(k, _)| k == "bad%20key").unwrap().1,
+            "v"
+        );
+        assert_eq!(
+            fields.iter().find(|(k, _)| k == "also%3Dbad").unwrap().1,
+            "w"
+        );
+
+        // Events take their attributes by a different path, so they need
+        // their own coverage: the first version of this test asserted only
+        // on `attr`, and a mutant leaving event keys raw survived it.
+        let root = t.span("lock.session");
+        let event = event_of(
+            &root,
+            "flow.transition",
+            &[("bad key", "v"), ("also=bad", "w")],
+        );
+        let keys: Vec<String> = naive_read(&event).into_iter().map(|(k, _)| k).collect();
+        assert_eq!(
+            keys,
+            [
+                "event",
+                "trace",
+                "parent",
+                "seq",
+                "t_us",
+                "bad%20key",
+                "also%3Dbad"
+            ],
+            "an event's keys must be encoded too: {event}"
+        );
     }
 
     #[test]
