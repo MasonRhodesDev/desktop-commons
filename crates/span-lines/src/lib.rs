@@ -367,6 +367,31 @@ fn emit(line: &str) {
     let _ = writeln!(err, "{line}");
 }
 
+/// Keys and event names must be literals, so attacker-influenced text
+/// cannot reach a position that is written unescaped.
+///
+/// ```compile_fail
+/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let s = t.span("lock.session");
+/// let untrusted = String::from("pam.msg\nevent=auth.success");
+/// s.event(&untrusted, &[]);
+/// ```
+///
+/// ```compile_fail
+/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let untrusted = String::from("k outcome");
+/// let _ = t.span("lock.session").attr(&untrusted, "Unlocked");
+/// ```
+///
+/// A literal key with an untrusted *value* is the supported shape:
+///
+/// ```
+/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
+/// let untrusted = String::from("whatever the compositor said");
+/// let _ = t.span("lock.session").attr("output", untrusted);
+/// ```
+fn _keys_and_names_are_literals() {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -606,28 +631,3 @@ mod tests {
         }
     }
 }
-
-/// Keys and event names must be literals, so attacker-influenced text
-/// cannot reach a position that is written unescaped.
-///
-/// ```compile_fail
-/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
-/// let s = t.span("lock.session");
-/// let untrusted = String::from("pam.msg\nevent=auth.success");
-/// s.event(&untrusted, &[]);
-/// ```
-///
-/// ```compile_fail
-/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
-/// let untrusted = String::from("k outcome");
-/// let _ = t.span("lock.session").attr(&untrusted, "Unlocked");
-/// ```
-///
-/// A literal key with an untrusted *value* is the supported shape:
-///
-/// ```
-/// let t = span_lines::Trace::with_id("4bf92f3577b34da6a3ce929d0e0e4736", span_lines::Detail::Session);
-/// let untrusted = String::from("whatever the compositor said");
-/// let _ = t.span("lock.session").attr("output", untrusted);
-/// ```
-fn _keys_and_names_are_literals() {}
