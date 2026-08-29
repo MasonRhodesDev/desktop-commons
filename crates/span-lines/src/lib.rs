@@ -9,13 +9,21 @@
 //! on them for free, and converting the result to OTLP is a
 //! text-processing job for whoever wants one.
 //!
-//! Do not expect `_SYSTEMD_UNIT` to identify the producer. journald
-//! attributes an entry by the *writer's* cgroup, not by the unit that owns
-//! the stream, so a process started in a transient scope from a service -
-//! which is how a locker is launched - lands with no user unit at all.
-//! Measured on systemd 261: a `systemd-run --user --scope` child writing to
-//! a service's inherited stderr produced entries with
-//! `_SYSTEMD_USER_UNIT` unset. Filter by `_COMM` instead of `-u`.
+//! Do not expect a unit field to identify the producer. journald attributes
+//! an entry by the *writer's* cgroup, not by the unit that owns the stream.
+//! A locker is launched in a transient scope from a service, so its records
+//! are attributed to that scope, whose name is freshly generated each  run.
+//! Measured on systemd 261, real records from a scope-launched locker:
+//!
+//! ```text
+//! _COMM               = vigil-lock
+//! _SYSTEMD_USER_UNIT  = run-p4046714-i20844690.scope
+//! _SYSTEMD_UNIT       = user@1000.service
+//! ```
+//!
+//! So `journalctl --user -u hypridle.service` finds none of them, and the
+//! scope name is useless as a filter because it differs every time. Filter
+//! by `_COMM`.
 //!
 //! That matters because the first consumer is a screen locker, whose
 //! `deny.toml` opens with "supply-chain gate for the binary that IS the
