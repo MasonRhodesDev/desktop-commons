@@ -5,9 +5,17 @@
 //! property of the data rather than something reconstructed from the order
 //! lines happen to appear in. The SDK, an OTLP exporter and a collector are
 //! all downstream of that model and none of them are here: records go to
-//! stderr, journald stamps `__MONOTONIC_TIMESTAMP`, `_PID`, `_BOOT_ID` and
-//! `_SYSTEMD_UNIT` on them for free, and converting the result to OTLP is a
+//! stderr, journald stamps `__MONOTONIC_TIMESTAMP`, `_PID` and `_BOOT_ID`
+//! on them for free, and converting the result to OTLP is a
 //! text-processing job for whoever wants one.
+//!
+//! Do not expect `_SYSTEMD_UNIT` to identify the producer. journald
+//! attributes an entry by the *writer's* cgroup, not by the unit that owns
+//! the stream, so a process started in a transient scope from a service -
+//! which is how a locker is launched - lands with no user unit at all.
+//! Measured on systemd 261: a `systemd-run --user --scope` child writing to
+//! a service's inherited stderr produced entries with
+//! `_SYSTEMD_USER_UNIT` unset. Filter by `_COMM` instead of `-u`.
 //!
 //! That matters because the first consumer is a screen locker, whose
 //! `deny.toml` opens with "supply-chain gate for the binary that IS the
@@ -66,40 +74,19 @@
 //!
 //! [`Detail::Session`] is the default and is quiet: a handful of records
 //! per lock. [`Detail::Frames`] is a diagnostic mode, not something to
-//! leave on. At 60 Hz with several outputs it exceeds journald's default
-//! rate limit (`RateLimitBurst=10000` per `RateLimitIntervalSec=30s`, so
-//! about 333 messages/s), and journald drops indiscriminately once over -
-//! which would silence the session records interleaved with the frame
-//! noise, the opposite of what turning it up was for.
+//! leave on - one span per frame per output, plus one per wake.
 //!
-//! # Two ways to write instrumentation
+//! An earlier version of this section warned that `frames` would exceed
+//! journald's rate limit and have records dropped. That appears to be
+//! wrong for this transport: `RateLimitBurst` governs the syslog and native
+//! protocols, and a burst of 15,000 lines through a unit's stderr was
+//! measured arriving complete, with no suppression, on systemd 261 at
+//! stock configuration. Do not rely on the rate limiter to bound this.
 //!
-//! This module's API ([`Trace`], [`Span`]) has no dependencies and is what
-//! a consumer with a strict supply chain should use. With the `tracing`
-//! feature, the `tracing_layer` module accepts the standard `tracing`
-//! macros and emits the identical record format, so a reader cannot tell
-//! which wrote a record. They share one trace id, one sequence and one
-//! clock origin per process, so a consumer can use both and a reader can
-//! still join what they wrote.
-//!
-//! # Pluggable pieces
-//!
-//! [`Sink`] is where records go - stderr by default. [`AtExit`] is a
-//! registry of things to finish before the process ends, and [`exit`] runs
-//! them and then terminates.
-//!
-//! Use [`exit`] anywhere a traced program would call
-//! `std::process::exit`: destructors do not run there, so a span left to
-//! `Drop` is lost on precisely the outcomes worth recording, and the
-//! journal then cannot distinguish "never started" from "still running"
-//! from "died".
-//!
-//! Note what [`exit`] does and does not rescue. It runs the registered
-//! hooks, and the `tracing` layer registers one, so *its* open spans are
-//! closed and marked `status=exit`. A [`Span`] from this module's own API
-//! is an owned value the crate has no handle on, so [`exit`] cannot reach
-//! it: call [`Span::end`] first. That asymmetry is the reason the bridge
-//! can offer a blanket rescue and the direct API cannot.
+//! The cost that is real is the one under **Blocking** below: nothing
+//! throttles a producer except the reader, so `frames` raises the rate at
+//! which a stalled journald can park the traced thread. Measure stalls, not
+//! drops.
 //!
 //! # Propagation
 //!
