@@ -81,6 +81,18 @@ mkdir -p "$(dirname "$OUT")"
                 ;;
         esac
     done < "$CHECKLIST"
+
+    # Not in the checklist because it is not a unit, package or portal: it
+    # is the user manager's environment itself. A `set-environment` override
+    # outranks environment.d and never expires, and under Linger=yes the
+    # manager outlives every login - so a stale value can win for days
+    # while every config file looks correct. That is exactly what the
+    # config-file checks above cannot see.
+    echo "## environment overrides (live vs environment.d)"
+    if "$ROOT/scripts/env-overrides.sh" 2>&1; then
+        echo "none"
+    fi
+    echo
 } > "$OUT"
 
 echo "$OUT"
