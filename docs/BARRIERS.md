@@ -51,7 +51,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-013 | 5 |
 | BAR-014 | 0 |
 | BAR-015 | 0 |
-| BAR-016 | 8 |
+| BAR-016 | 12 |
 | BAR-017 | 4 |
 | BAR-018 | 9 |
 | BAR-019 | 2 |
@@ -60,7 +60,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-022 | 8 |
 | BAR-023 | 7 |
 | BAR-024 | 1 |
-| BAR-025 | 14 |
+| BAR-025 | 18 |
 
 Assertions with zero counts remain review-only barriers until an executable check is added.
 
@@ -100,6 +100,10 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | idle-listener-requests-never-suspends | file_not_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | idle-suspend-request-cleared-on-resume | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | installer-refuses-bad-signatures | file_contains | hypr-de | BAR-022 | package-integrity | — |
+| ladder-battery-request-withdraws-on-recovery | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
+| ladder-claims-govern-only-the-unlocked-machine | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
+| ladder-locked-screen-always-blanks | file_not_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
+| ladder-suspend-listener-ignores-claims | file_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
 | lmtt-qt6ct-writes-owned-palette | file_contains | linux-multi-theme-toggle | BAR-005, BAR-012 | theme-application | — |
 | lock-failsafe-not-session-tunable | file_not_contains | hypr-de | BAR-017 | screen-lock, privilege-minimization | — |

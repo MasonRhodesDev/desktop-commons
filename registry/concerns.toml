@@ -326,7 +326,7 @@ owner = "hyprstate"
 internal = ["hyprstate", "hypr-de"]
 external = ["systemd-logind", "systemd suspend targets"]
 risk = "high"
-notes = "hyprstate owns lid/idle grace, lock-before-suspend, and cancellation; hypr-DE's hypridle listener may only request via the suspend-request file; logind performs suspension."
+notes = "The decided ladder (hyprstate POWER_SPEC.md, 2026-09-04): keep-awake claims govern only the unlocked machine; once locked, blank and suspend march unconditionally. hyprstate owns lid/idle grace, lock-before-suspend, cancellation, and the battery-low override; hypr-DE's hypridle listener may only request via the suspend-request file; logind performs suspension."
 barriers = ["BAR-001", "BAR-011", "BAR-012"]
 
 [[concern]]
