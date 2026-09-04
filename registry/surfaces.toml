@@ -367,10 +367,10 @@ barriers = ["BAR-001", "BAR-007", "BAR-010", "BAR-014"]
 [[surface]]
 id = "hyprstate-control-v0"
 owner = "hyprstate"
-producers = ["dials"]
+producers = ["dials", "hypr-de"]
 consumers = ["hyprstate"]
 transport = "TOML/directive files, one-word state files, and subprocess CLI calls"
-location = "~/.config/hypr/power.conf, power-override, monitor profiles, and /var/lib/hyprstate/profile"
+location = "~/.config/hypr/power.conf, power-override, monitor profiles, /var/lib/hyprstate/profile, $XDG_RUNTIME_DIR/hyprstate-suspend-request, and the hyprstate suspend CLI"
 version = "unversioned"
 maturity = "provisional"
 compatibility = "Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status."
@@ -484,14 +484,14 @@ barriers = ["BAR-005", "BAR-007", "BAR-016", "BAR-020", "BAR-025"]
 [[surface]]
 id = "secure-suspend-v0"
 owner = "hyprstate"
-producers = ["vigil", "hyprstate"]
+producers = ["vigil", "hyprstate", "hypr-de"]
 consumers = ["external:systemd-logind"]
-transport = "lock request, LockedHint readiness, then logind suspend"
-location = "hyprstate lid FSM and org.freedesktop.login1"
+transport = "lock request or idle-suspend request file, LockedHint readiness, then logind suspend"
+location = "hyprstate FSM (lid close or $XDG_RUNTIME_DIR/hyprstate-suspend-request) and org.freedesktop.login1"
 version = "unversioned"
 maturity = "provisional"
 compatibility = "Locker readiness and suspend policy need one written positive-acknowledgement contract."
-failure = "Lock readiness timeout aborts the suspend transition and re-arms lid grace; suspend proceeds only after positive lock confirmation."
+failure = "Lock readiness timeout aborts the suspend transition and re-arms lid grace; suspend proceeds only after positive lock confirmation; an idle request failing lock verification aborts identically and re-arms grace; the request is cleared on resume by the daemon and withdrawn by hypridle's on-resume."
 barriers = ["BAR-001", "BAR-007", "BAR-016", "BAR-025"]
 
 [[surface]]
@@ -565,7 +565,7 @@ owner = "hypr-de"
 producers = ["external:hypridle", "hyprstate"]
 consumers = ["external:hyprland"]
 transport = "Hyprland DPMS dispatch from independent idle domains"
-location = "hypr-DE hypridle.conf: one blanking listener (condition_cmd=session-locked.sh, on-timeout=dpms-off-if-locked.sh) plus hyprstate reconciler stuck-DPMS repair"
+location = "hypr-DE hypridle.conf: one blanking listener (condition_cmd=session-locked.sh, on-timeout=dpms-off-if-locked.sh) and one idle-suspend request listener (idle-suspend.sh; no DPMS writes) plus hyprstate reconciler stuck-DPMS repair"
 version = "unversioned"
 maturity = "provisional"
 compatibility = "Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. hyprstate is an ON-only producer (hyprstate >= 2.5.0): it relights an enabled output found DPMS-off only when the blank is provably unowned - the session is unlocked, or it is locked and the cursor moved between reconcile passes - and it has no constructible DPMS-off argv at all. Session scripts spawned from hypridle user services must resolve the logind session by $XDG_SESSION_ID (or auto), never loginctl self, which cannot resolve from app.slice and silently reports an empty hint."

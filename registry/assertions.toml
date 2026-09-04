@@ -568,3 +568,47 @@ barriers = ["BAR-011"]
 concerns = ["alternate-game-session"]
 severity = "error"
 message = "Model-proposed launch options are untrusted input and must pass a token allowlist before Steam can execute them."
+
+[[assertion]]
+id = "secure-suspend-single-call-site"
+kind = "file_not_contains"
+repository = "hyprstate"
+path = "src/daemon/dispatcher.rs"
+pattern = "(?s)fx\\.do_suspend\\(\\).*fx\\.do_suspend\\(\\)"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Exactly one do_suspend call site: every suspend must traverse suspending_tail's lock proof."
+
+[[assertion]]
+id = "secure-suspend-no-effector-internal-caller"
+kind = "file_not_contains"
+repository = "hyprstate"
+path = "src/daemon/effectors.rs"
+pattern = "self\\.do_suspend"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Effectors must not invoke do_suspend on themselves; only the dispatcher's suspending_tail calls it."
+
+[[assertion]]
+id = "idle-suspend-request-cleared-on-resume"
+kind = "file_contains"
+repository = "hyprstate"
+path = "src/daemon/dispatcher.rs"
+pattern = "(?s)Event::Resumed\\s*=>[^}]*clear_suspend_request"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Resumed must consume the suspend request before the FSM re-derives, or resume re-enters Countdown."
+
+[[assertion]]
+id = "idle-listener-requests-never-suspends"
+kind = "file_not_contains"
+repository = "hypr-de"
+path = "dist/hypr/hypridle.conf"
+pattern = "(systemctl|loginctl) suspend"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "hypridle may only request suspend via hyprstate (idle-suspend.sh); a direct systemctl/loginctl suspend is a second writer."
