@@ -612,3 +612,47 @@ barriers = ["BAR-016", "BAR-025"]
 concerns = ["secure-lock-before-suspend"]
 severity = "error"
 message = "hypridle may only request suspend via hyprstate (idle-suspend.sh); a direct systemctl/loginctl suspend is a second writer."
+
+[[assertion]]
+id = "ladder-suspend-listener-ignores-claims"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/hypr/hypridle.conf"
+pattern = "(?s)ignore_inhibit=true\\s*\\n\\s*condition_cmd=@LIBEXECDIR@/session-locked\\.sh\\s*\\n\\s*condition_retry=\\d+\\s*\\n\\s*on-timeout=@LIBEXECDIR@/idle-suspend\\.sh"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Decision 3: the 900s suspend listener ignores keep-awake claims and gates on the compositor lock — lock ends every claim's authority."
+
+[[assertion]]
+id = "ladder-locked-screen-always-blanks"
+kind = "file_not_contains"
+repository = "hypr-de"
+path = "dist/libexec/session-locked.sh"
+pattern = "logind-idle-control"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Decision 1: a locked screen always blanks — session-locked.sh is a pure compositor-lock check with no toggle re-admission."
+
+[[assertion]]
+id = "ladder-claims-govern-only-the-unlocked-machine"
+kind = "file_contains"
+repository = "hyprstate"
+path = "crates/hyprstate-fsm/src/fsm.rs"
+pattern = "w\\.inhibitor && !w\\.locked && !w\\.battery_low"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Decisions 3+6: the FSM claim gate is inhibitor AND unlocked AND not battery-low — a claim on a locked machine defers nothing, battery-low overrides outright."
+
+[[assertion]]
+id = "ladder-battery-request-withdraws-on-recovery"
+kind = "file_contains"
+repository = "hyprstate"
+path = "src/daemon/dispatcher.rs"
+pattern = "(?s)BatteryLowAction::Withdraw\\s*=>\\s*\\{[^}]*clear_battery_low_request"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "Decision 6 review F1: a battery-low self-request must withdraw when AC returns or the battery recovers — a one-way request suspends the machine on the charger."
