@@ -656,3 +656,14 @@ barriers = ["BAR-016", "BAR-025"]
 concerns = ["secure-lock-before-suspend"]
 severity = "error"
 message = "Decision 6 review F1: a battery-low self-request must withdraw when AC returns or the battery recovers — a one-way request suspends the machine on the charger."
+
+[[assertion]]
+id = "ladder-warn-gated-on-claims"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/hypr/hypridle.conf"
+pattern = "(?s)timeout=180[^\\n]*\\n\\s*condition_cmd=@LIBEXECDIR@/no-keep-awake\\.sh\\s*\\n\\s*condition_retry=\\d+\\s*\\n\\s*on-timeout=@LIBEXECDIR@/lock-cmd\\.sh --idle"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "The warn/blur is ladder entry: the 180s lock listener must carry the stateless claim gate (no-keep-awake.sh) with retry — hypridle's restart-wiped ledger alone let the blur fire over a live game."
