@@ -71,7 +71,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | hypr-de-theme-v1 | hypr-de | hypr-de | linux-multi-theme-toggle | theme.toml, palette assets, and LMTT module fragments | 1 | stable |
 | hypr-ipc-v0 | hypr-ipc | hypr-ipc | hyprstate, wayland-voice-dictation | Rust library API | 0.1 | provisional |
 | hyprland-ipc-v1 | external:hyprland | external:hyprland | hyprstate, dials, waybar-workspace-buttons, wayland-voice-dictation, agent-pet, hypr-de | Hyprland event socket and hyprctl JSON/dispatch | Hyprland release API | external |
-| hyprstate-control-v0 | hyprstate | dials | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
+| hyprstate-control-v0 | hyprstate | dials, hypr-de | hyprstate | TOML/directive files, one-word state files, and subprocess CLI calls | unversioned | provisional |
 | hyprstate-help-telemetry-v0 | hyprstate | hyprstate | dials | newline-delimited JSON over Unix stream socket | 2 | provisional |
 | hyprstate-power1 | hyprstate | hyprstate | hyprstate, dials | system D-Bus | 1 | stable |
 | idle-control-dbus-v1 | logind-idle-control | logind-idle-control | logind-idle-control, hypr-de | session D-Bus plus runtime state file | 1 | legacy |
@@ -92,7 +92,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | release-package-v1 | packaging-workflows | hyprstate, dials, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, wayland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
 | schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, wayland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
 | screencast-consent-scope-v1 | hypr-de | external:xdg-desktop-portal, external:xdg-desktop-portal-hyprland | hypr-de | xdph custom_picker_binary stdout protocol, plus portal frontend session object paths on the session bus | xdph [SELECTION] protocol; portal session path layout unversioned | provisional |
-| secure-suspend-v0 | hyprstate | vigil, hyprstate | external:systemd-logind | lock request, LockedHint readiness, then logind suspend | unversioned | provisional |
+| secure-suspend-v0 | hyprstate | vigil, hyprstate, hypr-de | external:systemd-logind | lock request or idle-suspend request file, LockedHint readiness, then logind suspend | unversioned | provisional |
 | settings-entry-v1 | dials | dials, linux-multi-theme-toggle | dials | XDG desktop entries | 1 | provisional |
 | singleton-guard-v1 | desktop-commons | desktop-commons | vigil, hypr-de | flock(2) on $XDG_RUNTIME_DIR/<name>.lock via crates/singleton-guard | 0.1.0 | provisional |
 | slint-idle-runtime-v0 | slint-idle-runtime | slint-idle-runtime | vigil, wayland-voice-dictation | Rust library API | 0.1 | provisional |
@@ -144,7 +144,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 
 ## desktop-dpms-arbitration-v0
 
-- Location: `hypr-DE hypridle.conf: one blanking listener (condition_cmd=session-locked.sh, on-timeout=dpms-off-if-locked.sh) plus hyprstate reconciler stuck-DPMS repair`
+- Location: `hypr-DE hypridle.conf: one blanking listener (condition_cmd=session-locked.sh, on-timeout=dpms-off-if-locked.sh) and one idle-suspend request listener (idle-suspend.sh; no DPMS writes) plus hyprstate reconciler stuck-DPMS repair`
 - Compatibility: Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. hyprstate is an ON-only producer (hyprstate >= 2.5.0): it relights an enabled output found DPMS-off only when the blank is provably unowned - the session is unlocked, or it is locked and the cursor moved between reconcile passes - and it has no constructible DPMS-off argv at all. Session scripts spawned from hypridle user services must resolve the logind session by $XDG_SESSION_ID (or auto), never loginctl self, which cannot resolve from app.slice and silently reports an empty hint.
 - Failure behavior: Competing writes can wake, blank, or reblank displays contrary to the latest user/session state. Blanking after a failed lock is the dangerous case: dark outputs are indistinguishable from a locked screen over a live session.
 - Barriers: BAR-001, BAR-007, BAR-012, BAR-014, BAR-025
@@ -228,7 +228,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 
 ## hyprstate-control-v0
 
-- Location: `~/.config/hypr/power.conf, power-override, monitor profiles, and /var/lib/hyprstate/profile`
+- Location: `~/.config/hypr/power.conf, power-override, monitor profiles, /var/lib/hyprstate/profile, $XDG_RUNTIME_DIR/hyprstate-suspend-request, and the hyprstate suspend CLI`
 - Compatibility: Files remain persistence formats, not a coherent control protocol. A versioned user-bus interface should own requests and status.
 - Failure behavior: Path, CLI, and package skew presents as unavailable state or command failure while side-channel files may remain stale.
 - Barriers: BAR-001, BAR-002, BAR-007, BAR-010, BAR-025
@@ -375,9 +375,9 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 
 ## secure-suspend-v0
 
-- Location: `hyprstate lid FSM and org.freedesktop.login1`
+- Location: `hyprstate FSM (lid close or $XDG_RUNTIME_DIR/hyprstate-suspend-request) and org.freedesktop.login1`
 - Compatibility: Locker readiness and suspend policy need one written positive-acknowledgement contract.
-- Failure behavior: Lock readiness timeout aborts the suspend transition and re-arms lid grace; suspend proceeds only after positive lock confirmation.
+- Failure behavior: Lock readiness timeout aborts the suspend transition and re-arms lid grace; suspend proceeds only after positive lock confirmation; an idle request failing lock verification aborts identically and re-arms grace; the request is cleared on resume by the daemon and withdrawn by hypridle's on-resume.
 - Barriers: BAR-001, BAR-007, BAR-016, BAR-025
 
 ## settings-entry-v1

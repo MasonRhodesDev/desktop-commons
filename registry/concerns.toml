@@ -323,10 +323,10 @@ id = "suspend-policy"
 area = "power"
 status = "hybrid"
 owner = "hyprstate"
-internal = ["hyprstate"]
+internal = ["hyprstate", "hypr-de"]
 external = ["systemd-logind", "systemd suspend targets"]
 risk = "high"
-notes = "hyprstate owns lid grace, lock-before-suspend, and cancellation; logind performs suspension."
+notes = "hyprstate owns lid/idle grace, lock-before-suspend, and cancellation; hypr-DE's hypridle listener may only request via the suspend-request file; logind performs suspension."
 barriers = ["BAR-001", "BAR-011", "BAR-012"]
 
 [[concern]]

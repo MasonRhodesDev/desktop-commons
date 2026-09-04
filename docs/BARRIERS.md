@@ -51,7 +51,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-013 | 5 |
 | BAR-014 | 0 |
 | BAR-015 | 0 |
-| BAR-016 | 4 |
+| BAR-016 | 8 |
 | BAR-017 | 4 |
 | BAR-018 | 9 |
 | BAR-019 | 2 |
@@ -60,7 +60,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-022 | 8 |
 | BAR-023 | 7 |
 | BAR-024 | 1 |
-| BAR-025 | 10 |
+| BAR-025 | 14 |
 
 Assertions with zero counts remain review-only barriers until an executable check is added.
 
@@ -97,6 +97,8 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | hyprstate-rpm-rewrites-git-sources | file_contains | hyprstate | BAR-022, BAR-023 | fedora-package-closure | — |
 | idle-control-cli-requires-daemon-ack | file_not_contains | logind-idle-control | BAR-025 | manual-idle-inhibition | — |
 | idle-driver-is-not-path-resolved | file_not_contains | hypr-de | BAR-017 | package-user-overlay-shadowing, idle-timeouts | — |
+| idle-listener-requests-never-suspends | file_not_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
+| idle-suspend-request-cleared-on-resume | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | installer-refuses-bad-signatures | file_contains | hypr-de | BAR-022 | package-integrity | — |
 | legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
 | lmtt-qt6ct-writes-owned-palette | file_contains | linux-multi-theme-toggle | BAR-005, BAR-012 | theme-application | — |
@@ -113,7 +115,9 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | release-requires-arch-repo-dispatch | file_contains | packaging-workflows | BAR-009, BAR-023 | release-gating | — |
 | release-requires-copr-publish | file_contains | packaging-workflows | BAR-009, BAR-023 | release-gating, fedora-package-closure | — |
 | screenshare-consent-is-client-scoped | file_contains | hypr-de | BAR-017 | screen-sharing, desktop-portals | — |
+| secure-suspend-no-effector-internal-caller | file_not_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | secure-suspend-requires-lock | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
+| secure-suspend-single-call-site | file_not_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | slint-idle-runtime-pins-slint | file_contains | desktop-commons | BAR-005, BAR-007, BAR-025 | slint-idle-runtime | — |
 | steam-launch-options-are-allowlisted | file_contains | hypr-de | BAR-011 | alternate-game-session | — |
 | telemetry-has-version-envelope | file_contains | hyprstate | BAR-007, BAR-025 | runtime-path-resolution | — |
