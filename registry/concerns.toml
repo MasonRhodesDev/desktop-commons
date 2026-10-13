@@ -476,11 +476,11 @@ barriers = ["BAR-001", "BAR-005", "BAR-012"]
 id = "wallpaper"
 area = "appearance"
 status = "hybrid"
-owner = "hypr-de"
-internal = ["hypr-de", "linux-multi-theme-toggle", "appearance-profiles"]
+owner = "dials"
+internal = ["dials", "linux-multi-theme-toggle", "appearance-profiles", "hypr-de"]
 external = ["matugen", "swaybg"]
 risk = "medium"
-notes = "hypr-DE owns user-facing selection while LMTT derives palettes and an external backend renders the image."
+notes = "dials owns user-facing selection (Displays inspector: the origin display sets the global wallpaper, any other display can override it) through lmtt-wallpaper-cli-v1. LMTT owns the registry, the published snapshot and palette derivation. hypr-DE's hypr-de-wallpaper lmtt module re-syncs swaybg and the hyprlock conf after every switch; swaybg renders the image. hypr-de-set-wallpaper remains a CLI wrapper."
 barriers = ["BAR-001", "BAR-003", "BAR-012"]
 
 [[concern]]
@@ -779,7 +779,7 @@ owner = "dials"
 internal = ["dials", "hyprstate", "linux-multi-theme-toggle", "schema-tui", "wayland-voice-dictation", "logind-idle-control"]
 external = ["XDG desktop entries", "pavucontrol", "Overskride", "nm-connection-editor"]
 risk = "medium"
-notes = "dials is the one settings window (ADR 0005). Pages are native Slint (Displays, Power, Help), schema-generated from a daemon's schema-tui schema (planned: Appearance, Voice, Idle), or external launch: any XDG desktop entry with Categories=Settings; or X-Dials-Section= is listed and launched in its own window. No plugin ABI and no foreign hub. Audio, network, and Bluetooth stay hybrid: their owners' tools are launched, not re-implemented."
+notes = "dials is the one settings window (ADR 0005). Core-family pages are feature-gated in-process modules (src/pages: displays, power, help, wallpaper) that own their state and IO and meet only through hooks; the wallpaper module plugs into Displays. Appearance (schema-generated from LMTT's schema-tui schema), Voice and Idle remain planned. Anything else is an external launch: any XDG desktop entry with Categories=Settings; or X-Dials-Section= is listed and launched in its own window. No plugin ABI and no foreign hub. Audio, network, and Bluetooth stay hybrid: their owners' tools are launched, not re-implemented."
 barriers = ["BAR-002", "BAR-005", "BAR-012"]
 
 [[concern]]

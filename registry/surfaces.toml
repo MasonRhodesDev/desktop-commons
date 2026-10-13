@@ -69,12 +69,12 @@ barriers = ["BAR-005", "BAR-007", "BAR-008", "BAR-025"]
 id = "appearance-profile-v1"
 owner = "appearance-profiles"
 producers = ["appearance-profiles", "linux-multi-theme-toggle"]
-consumers = ["linux-multi-theme-toggle", "vigil"]
+consumers = ["linux-multi-theme-toggle", "vigil", "dials", "hypr-de"]
 transport = "TOML plus copied assets"
 location = "/usr/share, /etc, XDG config, and /var/lib/appearance-profiles"
 version = "1"
 maturity = "provisional"
-compatibility = "Fields resolve independently through packaged, system, user, and runtime layers."
+compatibility = "Fields resolve independently through packaged, system, user, and runtime layers. Convention: the output at logical (0,0) is the origin and its wallpaper is the global [background]; a settings UI keeps that output free of per-output overrides, so the palette LMTT derives from [background] is the origin's image."
 failure = "Unreadable layers are skipped with diagnostics; application fallback remains available."
 barriers = ["BAR-003", "BAR-004", "BAR-007"]
 
@@ -116,6 +116,19 @@ maturity = "provisional"
 compatibility = "Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract."
 failure = "Missing user tokens fall through to /etc/lmtt, /usr/share/lmtt, then the embedded palette."
 barriers = ["BAR-005", "BAR-007", "BAR-010", "BAR-025"]
+
+[[surface]]
+id = "lmtt-wallpaper-cli-v1"
+owner = "linux-multi-theme-toggle"
+producers = ["linux-multi-theme-toggle"]
+consumers = ["dials", "hypr-de"]
+transport = "CLI argv"
+location = "`lmtt wallpaper set|unset|resolve|publish`, `lmtt status`, `lmtt switch <mode> --no-notify`"
+version = "1"
+maturity = "provisional"
+compatibility = "`wallpaper set <path> [--output <selector>]` and `wallpaper unset --output <selector>` (lmtt 0.3.2) edit the user appearance profile atomically and republish the greeter-readable snapshot; `resolve --json` reads it back. Callers pass the current mode (from `lmtt status`) to `switch`, because a bare `switch` toggles light/dark. LMTT is the only writer of the registry."
+failure = "No lmtt on PATH leaves a settings page read-only. An lmtt without `unset` exits 2 with `unrecognized subcommand`, which callers surface as too old. Nothing falls back to editing the registry directly."
+barriers = ["BAR-005", "BAR-007", "BAR-010"]
 
 [[surface]]
 id = "lmtt-portal-appearance-v1"

@@ -9,7 +9,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | Surface | Maturity | Reason to revisit |
 |---|---|---|
 | agent-pet-skin-v1 | provisional | Version changes row layout; required animation tracks and fallbacks need a published schema. |
-| appearance-profile-v1 | provisional | Fields resolve independently through packaged, system, user, and runtime layers. |
+| appearance-profile-v1 | provisional | Fields resolve independently through packaged, system, user, and runtime layers. Convention: the output at logical (0,0) is the origin and its wallpaper is the global [background]; a settings UI keeps that output free of per-output overrides, so the palette LMTT derives from [background] is the origin's image. |
 | copr-repository-trust-v1 | provisional | Every COPR the installer enables is pinned to a fingerprint, the verified key is installed locally, and the generated .repo is pointed at that copy so a later upstream key swap cannot be auto-imported. A rotated key fails loudly until the pin is updated out of band. This is the Fedora counterpart of the Arch key pinning in mason-pacman-repository-v1. |
 | declared-units-v1 | provisional | A dependency that must contribute a user unit lists it under that section's units key. The gate requires every declared unit to be in 90-hypr-de.preset and validated by hypr-de-setup, so adding a service-bearing dependency forces declaring and enabling its unit. |
 | desktop-dpms-arbitration-v0 | provisional | Trigger domains need explicit precedence and race rules so ordinary idle and protected lock policy do not fight. Blanking is now gated on the lock itself rather than arbitrated after the fact: one listener, whose condition and on-timeout both require the compositor lock (hyprctl locked), so a DPMS-off cannot land on an unlocked desktop. lock-cmd.sh still leaves $XDG_RUNTIME_DIR/hypr-de-lock-failed as a diagnostic breadcrumb, but nothing reads it - the property is structural, not marker-driven. hyprstate is an ON-only producer (hyprstate >= 2.5.0): it relights an enabled output found DPMS-off only when the blank is provably unowned - the session is unlocked, or it is locked and the cursor moved between reconcile passes - and it has no constructible DPMS-off argv at all. Session scripts spawned from hypridle user services must resolve the logind session by $XDG_SESSION_ID (or auto), never loginctl self, which cannot resolve from app.slice and silently reports an empty hint. |
@@ -29,6 +29,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | lmtt-qt6ct-v0 | provisional | LMTT owns the colors file. Appearance keys color_scheme_path, custom_palette, style, and icon_theme are merged. Fonts and other sections stay user-owned. A non-qt6ct QT_QPA_PLATFORMTHEME skips the conf merge. |
 | lmtt-slint-token-v0 | legacy | Superseded by lmtt-tokens-v1. Do not add consumers. |
 | lmtt-tokens-v1 | provisional | Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract. |
+| lmtt-wallpaper-cli-v1 | provisional | `wallpaper set <path> [--output <selector>]` and `wallpaper unset --output <selector>` (lmtt 0.3.2) edit the user appearance profile atomically and republish the greeter-readable snapshot; `resolve --json` reads it back. Callers pass the current mode (from `lmtt status`) to `switch`, because a bare `switch` toggles light/dark. LMTT is the only writer of the registry. |
 | lock-failsafe-policy-v1 | provisional | Honoured only when root owns the file and nobody else can write it; otherwise ignored with a warning. Keys: failsafe (terminate|warn|none), fallbacks, verify_tries. The environment is deliberately not consulted - an env knob or user-writable config would let the protected principal disable the failsafe durably through ~/.config/environment.d. |
 | lock-pam-policy-v1 | provisional | The documented operator-edited file must be preserved as package backup/config-noreplace on every distribution. |
 | logind-inhibitor-identity-v1 | provisional | The inhibitor who field is the canonical executable/service identity. |
@@ -56,7 +57,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 |---|---|---|---|---|---|---|
 | agent-pet-event-v1 | agent-pet | agent-pet, external:agent-harnesses | agent-pet | D-Bus Emit carrying JSON event envelopes | 1 | stable |
 | agent-pet-skin-v1 | agent-pet | external:community-skins | agent-pet | pet.json plus PNG or WebP spritesheet | spriteVersionNumber 1 or 2 | provisional |
-| appearance-profile-v1 | appearance-profiles | appearance-profiles, linux-multi-theme-toggle | linux-multi-theme-toggle, vigil | TOML plus copied assets | 1 | provisional |
+| appearance-profile-v1 | appearance-profiles | appearance-profiles, linux-multi-theme-toggle | linux-multi-theme-toggle, vigil, dials, hypr-de | TOML plus copied assets | 1 | provisional |
 | copr-repository-trust-v1 | hypr-de | external:copr | hypr-de | COPR project signing keys verified by fingerprint before dnf copr enable | 1 | provisional |
 | declared-units-v1 | hypr-de | hypr-de | hypr-de | deps.toml `units` key per dependency section | 1 | provisional |
 | desktop-dpms-arbitration-v0 | hypr-de | external:hypridle, hyprstate | external:hyprland | Hyprland DPMS dispatch from independent idle domains | unversioned | provisional |
@@ -80,6 +81,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | lmtt-qt6ct-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle | external:qt6ct | qt6ct color scheme file plus merged INI Appearance | unversioned | provisional |
 | lmtt-slint-token-v0 | linux-multi-theme-toggle | linux-multi-theme-toggle |  | JSON file plus filesystem watch | unversioned | legacy |
 | lmtt-tokens-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | slint-kit, dials, vigil, waybar-workspace-buttons | lmtt-core library API and `lmtt tokens` CLI | 1 | provisional |
+| lmtt-wallpaper-cli-v1 | linux-multi-theme-toggle | linux-multi-theme-toggle | dials, hypr-de | CLI argv | 1 | provisional |
 | lock-failsafe-policy-v1 | hypr-de | external:operator | hypr-de | root-owned key=value policy file, parsed not sourced | 1 | provisional |
 | lock-pam-policy-v1 | vigil | external:operator, vigil | vigil | PAM service policy | PAM stack | provisional |
 | logind-inhibitor-identity-v1 | hyprstate | hyprstate, logind-idle-control, wayland-voice-dictation | hyprstate | systemd-logind inhibitor rows | 1 | provisional |
@@ -124,7 +126,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 ## appearance-profile-v1
 
 - Location: `/usr/share, /etc, XDG config, and /var/lib/appearance-profiles`
-- Compatibility: Fields resolve independently through packaged, system, user, and runtime layers.
+- Compatibility: Fields resolve independently through packaged, system, user, and runtime layers. Convention: the output at logical (0,0) is the origin and its wallpaper is the global [background]; a settings UI keeps that output free of per-output overrides, so the palette LMTT derives from [background] is the origin's image.
 - Failure behavior: Unreadable layers are skipped with diagnostics; application fallback remains available.
 - Barriers: BAR-003, BAR-004, BAR-007
 
@@ -288,6 +290,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: Suite apps load tokens through lmtt-core or `lmtt tokens`. They must not open theme files. GTK/Waybar CSS under matugen remains LMTT fan-out into foreign apps, not a suite contract.
 - Failure behavior: Missing user tokens fall through to /etc/lmtt, /usr/share/lmtt, then the embedded palette.
 - Barriers: BAR-005, BAR-007, BAR-010, BAR-025
+
+## lmtt-wallpaper-cli-v1
+
+- Location: ``lmtt wallpaper set|unset|resolve|publish`, `lmtt status`, `lmtt switch <mode> --no-notify``
+- Compatibility: `wallpaper set <path> [--output <selector>]` and `wallpaper unset --output <selector>` (lmtt 0.3.2) edit the user appearance profile atomically and republish the greeter-readable snapshot; `resolve --json` reads it back. Callers pass the current mode (from `lmtt status`) to `switch`, because a bare `switch` toggles light/dark. LMTT is the only writer of the registry.
+- Failure behavior: No lmtt on PATH leaves a settings page read-only. An lmtt without `unset` exits 2 with `unrecognized subcommand`, which callers surface as too old. Nothing falls back to editing the registry directly.
+- Barriers: BAR-005, BAR-007, BAR-010
 
 ## lock-failsafe-policy-v1
 
