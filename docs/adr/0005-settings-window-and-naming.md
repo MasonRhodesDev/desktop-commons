@@ -66,3 +66,16 @@ a Wayland-targeted component.
   hypr-ipc 0.1.1, then applications. The 0.1.0 crates under the old names
   stay on crates.io unmaintained.
 - New generic components must not take a `hypr` prefix.
+
+## Amendment 2026-10-13
+
+- Native pages are feature-gated in-process modules (`src/pages`, dials#8):
+  each owns its state slot, Slint callbacks and IO, and meets the others
+  only through hooks (section entered, telemetry frame, canvas updated,
+  selection changed). A build without a feature drops the page and its
+  crates. Third-party tools stay external launches, never pages.
+- The wallpaper is such a module and plugs into Displays rather than an
+  Appearance panel: the origin display (0,0) owns the global wallpaper,
+  any other display can override it, writes go through
+  `lmtt-wallpaper-cli-v1`. Appearance remains the planned schema-generated
+  LMTT page.

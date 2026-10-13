@@ -43,8 +43,8 @@ github = "MasonRhodesDev/dials"
 visibility = "public"
 lifecycle = "active"
 role = "settings-surface"
-responsibilities = ["desktop settings window", "display profile editing", "power policy editing", "live policy explanation", "launching external settings tools from XDG desktop entries"]
-depends_on = ["hyprstate", "monitor-profiles", "slint-kit", "xdg-paths"]
+responsibilities = ["desktop settings window", "display profile editing", "per-display wallpaper selection", "power policy editing", "live policy explanation", "launching external settings tools from XDG desktop entries"]
+depends_on = ["hyprstate", "monitor-profiles", "slint-kit", "xdg-paths", "appearance-profiles", "linux-multi-theme-toggle"]
 
 [[repository]]
 id = "monitor-profiles"

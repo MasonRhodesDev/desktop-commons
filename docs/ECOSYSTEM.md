@@ -69,7 +69,9 @@ flowchart LR
         repo_xdg_paths["xdg-paths"]
     end
     repo_packaging_workflows --> repo_arch_repo
+    repo_appearance_profiles --> repo_dials
     repo_hyprstate --> repo_dials
+    repo_linux_multi_theme_toggle --> repo_dials
     repo_monitor_profiles --> repo_dials
     repo_slint_kit --> repo_dials
     repo_xdg_paths --> repo_dials
@@ -118,7 +120,7 @@ flowchart LR
 | [couchcord](https://github.com/MasonRhodesDev/couchcord) | alternate-session-service | active | controller-driven Discord voice control; gamescope activity overlay; couch-session diagnostics |
 | [deck-tenant](https://github.com/MasonRhodesDev/deck-tenant) | steam-deck-service | active | rootless package tenant; SteamOS package persistence; per-user service wiring |
 | [desktop-commons](https://github.com/MasonRhodesDev/desktop-commons) | architecture | active | ecosystem registry; architecture barriers; cross-repository decisions |
-| [dials](https://github.com/MasonRhodesDev/dials) | settings-surface | active | desktop settings window; display profile editing; power policy editing; live policy explanation; launching external settings tools from XDG desktop entries |
+| [dials](https://github.com/MasonRhodesDev/dials) | settings-surface | active | desktop settings window; display profile editing; per-display wallpaper selection; power policy editing; live policy explanation; launching external settings tools from XDG desktop entries |
 | [dotfiles](https://github.com/MasonRhodesDev/dotfiles) | personal-overlay | active | machine-specific configuration; personal package selection; chezmoi deployment |
 | [greetd-config](https://github.com/MasonRhodesDev/greetd-config) | login-configuration | archived | ReGreet under Hyprland; PAM composition; legacy game-mode configuration |
 | [greetd-game-mode](https://github.com/MasonRhodesDev/greetd_game_mode) | alternate-session | active | gamepad-triggered game session; passkey approval gate; greetd dispatch |
