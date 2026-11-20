@@ -44,10 +44,6 @@ concerns = ["alternate-game-session"]
 severity = "error"
 message = "A failed greetd restart must disarm the one-shot game-mode flag."
 
-[assertion.waiver]
-reason = "Known P1: restart status is logged but not checked."
-expires = "2026-10-01"
-
 [[assertion]]
 id = "desktop-lock-command-is-packaged"
 kind = "conditional_contains"
@@ -140,10 +136,6 @@ concerns = ["tray-registry", "service-activation-completeness"]
 severity = "error"
 message = "The desktop must install the watcher required by its persistent tray architecture."
 
-[assertion.waiver]
-reason = "Known P1: sni-watcher exists but is not a hypr-DE dependency or preset."
-expires = "2026-10-01"
-
 [[assertion]]
 id = "legacy-greetd-owner-is-retired"
 kind = "repository_archived"
@@ -212,7 +204,7 @@ id = "hyprstate-rpm-rewrites-git-sources"
 kind = "file_contains"
 repository = "hyprstate"
 path = "packaging/hyprstate.spec"
-pattern = '(?s)git\+https://github\.com/MasonRhodesDev/monitor-profiles\?rev=aef5f0e.*?replace-with = "vendored-sources"'
+pattern = '(?s)git\+https://github\.com/MasonRhodesDev/monitor-profiles\?rev=[0-9a-f]{7,40}[^\[]*?replace-with = "vendored-sources"'
 barriers = ["BAR-022", "BAR-023"]
 concerns = ["fedora-package-closure"]
 severity = "error"
@@ -348,10 +340,6 @@ barriers = ["BAR-001", "BAR-009", "BAR-013"]
 concerns = ["package-user-overlay-shadowing"]
 severity = "error"
 message = "Personal units must not shadow package-owned Steam cleanup."
-
-[assertion.waiver]
-reason = "Known P1 migration residue in dotfiles."
-expires = "2026-10-01"
 
 [[assertion]]
 id = "dotfiles-secret-import-helper-exists"
@@ -662,8 +650,19 @@ id = "ladder-warn-gated-on-claims"
 kind = "file_contains"
 repository = "hypr-de"
 path = "dist/hypr/hypridle.conf"
-pattern = "(?s)timeout=180[^\\n]*\\n\\s*condition_cmd=@LIBEXECDIR@/no-keep-awake\\.sh\\s*\\n\\s*condition_retry=\\d+\\s*\\n\\s*on-timeout=@LIBEXECDIR@/lock-cmd\\.sh --idle"
+pattern = "(?s)timeout=\\$lock_timeout[ \\t]*\\n\\s*condition_cmd=@LIBEXECDIR@/no-keep-awake\\.sh\\s*\\n\\s*condition_retry=\\d+\\s*\\n\\s*on-timeout=@LIBEXECDIR@/lock-cmd\\.sh --idle"
 barriers = ["BAR-016", "BAR-025"]
 concerns = ["secure-lock-before-suspend"]
 severity = "error"
-message = "The warn/blur is ladder entry: the 180s lock listener must carry the stateless claim gate (no-keep-awake.sh) with retry — hypridle's restart-wiped ledger alone let the blur fire over a live game."
+message = "The warn/blur is ladder entry: the $lock_timeout lock listener must carry the stateless claim gate (no-keep-awake.sh) with retry. hypridle's restart-wiped ledger alone let the blur fire over a live game."
+
+[[assertion]]
+id = "ladder-warn-default-is-180s"
+kind = "file_contains"
+repository = "hypr-de"
+path = "dist/hypr/hypridle.conf"
+pattern = "(?m)^\\$lock_timeout[ \\t]*=[ \\t]*180[ \\t]*$"
+barriers = ["BAR-016", "BAR-025"]
+concerns = ["secure-lock-before-suspend"]
+severity = "error"
+message = "The packaged ladder enters at 180s: $lock_timeout defaults to 180 in the policy, and only a host override in the user's hypr-de/hypridle.conf may move it."

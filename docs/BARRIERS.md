@@ -51,7 +51,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-013 | 5 |
 | BAR-014 | 0 |
 | BAR-015 | 0 |
-| BAR-016 | 13 |
+| BAR-016 | 14 |
 | BAR-017 | 4 |
 | BAR-018 | 9 |
 | BAR-019 | 2 |
@@ -60,7 +60,7 @@ Barriers are review and CI constraints. They prevent ownership drift while allow
 | BAR-022 | 8 |
 | BAR-023 | 7 |
 | BAR-024 | 1 |
-| BAR-025 | 19 |
+| BAR-025 | 20 |
 
 Assertions with zero counts remain review-only barriers until an executable check is added.
 
@@ -73,7 +73,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | copr-keys-are-pinned | file_contains | hypr-de | BAR-022 | package-integrity, dependency-pinning | — |
 | desktop-bluetooth-daemon-is-enabled | file_contains | hypr-de | BAR-012, BAR-018 | bluetooth | — |
 | desktop-bluetooth-ui-is-packaged | conditional_contains | hypr-de | BAR-012, BAR-018 | bluetooth | — |
-| desktop-composes-persistent-tray-watcher | file_contains | hypr-de | BAR-010, BAR-018 | tray-registry, service-activation-completeness | 2026-10-01 |
+| desktop-composes-persistent-tray-watcher | file_contains | hypr-de | BAR-010, BAR-018 | tray-registry, service-activation-completeness | — |
 | desktop-fedora-drops-abandoned-hyprland-copr | file_not_contains | hypr-de | BAR-009, BAR-018 | fedora-package-closure | — |
 | desktop-fedora-enables-current-hyprland-copr | file_contains | hypr-de | BAR-009, BAR-018 | fedora-package-closure | — |
 | desktop-fedora-enables-extras-copr | file_contains | hypr-de | BAR-009, BAR-018 | fedora-package-closure | — |
@@ -84,12 +84,12 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | desktop-setup-validates-units | file_contains | hypr-de | BAR-018, BAR-025 | service-activation-completeness | — |
 | dotfiles-do-not-activate-legacy-greetd-owner | file_not_contains | dotfiles | BAR-001, BAR-013 | greetd-config-ownership | — |
 | dotfiles-do-not-shadow-packaged-game-focus | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
-| dotfiles-do-not-shadow-packaged-steam-cleanup | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
+| dotfiles-do-not-shadow-packaged-steam-cleanup | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | — |
 | dotfiles-secret-import-helper-exists | path_exists | dotfiles | BAR-018, BAR-025 | secrets-keyring | — |
 | extras-has-no-laptop-copr-setup | path_absent | hypr-de-extras | BAR-009 | fedora-package-closure | — |
 | extras-release-is-ci-owned | path_exists | hypr-de-extras | BAR-009, BAR-023 | fedora-package-closure | — |
 | game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | — |
-| game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | 2026-10-01 |
+| game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | — |
 | game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
 | greetd-pam-rewrite-is-recoverable | file_contains | hypr-de | BAR-019 | operator-policy-preservation, authentication | — |
 | gui-does-not-own-telemetry-socket | file_not_contains | dials | BAR-002, BAR-010 | display-settings | — |
@@ -104,6 +104,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | ladder-claims-govern-only-the-unlocked-machine | file_contains | hyprstate | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | ladder-locked-screen-always-blanks | file_not_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | ladder-suspend-listener-ignores-claims | file_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
+| ladder-warn-default-is-180s | file_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | ladder-warn-gated-on-claims | file_contains | hypr-de | BAR-016, BAR-025 | secure-lock-before-suspend | — |
 | legacy-greetd-owner-is-retired | repository_archived | greetd-config | BAR-001, BAR-013 | greetd-config-ownership | — |
 | lmtt-qt6ct-writes-owned-palette | file_contains | linux-multi-theme-toggle | BAR-005, BAR-012 | theme-application | — |
