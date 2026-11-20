@@ -625,6 +625,32 @@ failure = "No exporter and no socket: a producer that cannot write its records l
 barriers = ["BAR-017"]
 
 [[surface]]
+id = "vigil-log-v0"
+owner = "desktop-commons"
+producers = ["desktop-commons"]
+consumers = []
+transport = "Rust crate by git at a full commit SHA: say!, emit and out! via crates/vigil-log"
+location = "crates/vigil-log"
+version = "0.1.0"
+maturity = "provisional"
+compatibility = "Moved byte for byte from vigil's crates/vigil-log (MIT). say! writes one line of at most 2048 bytes to stderr, with control characters and backslashes escaped and a cut line ending in ` trunc=1`; it never panics, never allocates and does not block, and it leaves errno as it found it. out! writes to stdout and ignores every error. Consumers pin `rev` to a full 40-character SHA and check the `?rev=` query in their Cargo.lock, since cargo-deny does not check rev length."
+failure = "A line that cannot be written is dropped, never retried: a full disk, a closed fd, a pipe with no reader or one nobody drains costs that line and nothing else. Logs are therefore not an audit trail."
+barriers = []
+
+[[surface]]
+id = "panic-exit-v0"
+owner = "desktop-commons"
+producers = ["desktop-commons"]
+consumers = []
+transport = "Rust crate by git at a full commit SHA: exit_on_panic() via crates/panic-exit"
+location = "crates/panic-exit"
+version = "0.1.0"
+maturity = "provisional"
+compatibility = "exit_on_panic() is the first call in every main. A panic on any thread writes `panic at <file>:<line>; exiting` through vigil-log's say! and ends the process with _exit(101); the panic message is never printed, since it can quote input. Consumers ban std::panic::set_hook and take_hook so no second hook replaces it."
+failure = "No destructors, atexit handlers or stdout flushes run after a panic, so a consumer keeps its writes atomic per file. A panic hook installed after this one replaces it, which the consumer's clippy bans exist to prevent."
+barriers = []
+
+[[surface]]
 id = "lock-failsafe-policy-v1"
 owner = "hypr-de"
 producers = ["external:operator"]

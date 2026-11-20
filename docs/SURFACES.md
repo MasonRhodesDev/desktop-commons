@@ -36,6 +36,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | logind-locked-hint-v1 | provisional | LockedHint is the authoritative cross-component lock state; process-name detection is not compatible. |
 | logind-session-v0 | provisional | GetSessionByPID returns an object path only. XDG_SESSION_ID is a fallback id, not a path. The manager object is never a session path. |
 | monitor-profile-v0 | provisional | Unknown fields are rejected; malformed profiles are skipped; user profiles override same-named system profiles. Add an explicit version and golden cross-consumer fixtures before extending the schema. |
+| panic-exit-v0 | provisional | exit_on_panic() is the first call in every main. A panic on any thread writes `panic at <file>:<line>; exiting` through vigil-log's say! and ends the process with _exit(101); the panic message is never printed, since it can quote input. Consumers ban std::panic::set_hook and take_hook so no second hook replaces it. |
 | schema-tui-schema-v1 | provisional | Schema version is parsed but not enforced; consumers use an unpinned Git dependency. |
 | screencast-consent-scope-v1 | provisional | xdph passes the picker no caller identity, so the requesting client is read from the portal frontend's exported session object paths. A selection is replayed only while no client outside the set present at consent time has appeared. If upstream changes that path layout the identity becomes unreadable, which must fail closed. |
 | secure-suspend-v0 | provisional | Locker readiness and suspend policy need one written positive-acknowledgement contract. |
@@ -47,6 +48,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | steam-launch-options-v1 | provisional | hypr-de mutates a foreign config it does not own, and the value is executed on every game launch. Candidate strings come from a model prompted with ProtonDB and Steam store text, so they are untrusted input: every token must match an allowlist (%command% exactly once, known wrappers, flags, graphics environment assignments that cannot load code or run a command) before it can be offered or written. |
 | vigil-banner-v1 | provisional | Banner and cancellation state must remain presentation-only; game-mode owns approval and dispatch. |
 | vigil-lock-protocol-v1 | provisional | Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths. hypr-DE's lock_cmd wrapper depends on vigil-lock exit codes: 0 means the session lock was granted, 3 means an idle lock was cancelled by user activity, and any other status is a launch or lock failure the wrapper escalates. Changing those codes changes whether sessions get terminated, so they are part of this contract. |
+| vigil-log-v0 | provisional | Moved byte for byte from vigil's crates/vigil-log (MIT). say! writes one line of at most 2048 bytes to stderr, with control characters and backslashes escaped and a cut line ending in ` trunc=1`; it never panics, never allocates and does not block, and it leaves errno as it found it. out! writes to stdout and ignores every error. Consumers pin `rev` to a full 40-character SHA and check the `?rev=` query in their Cargo.lock, since cargo-deny does not check rev length. |
 | voice-dictation-dbus-v1 | legacy | The CLI wraps an unversioned com.voicedictation.Control interface. D-Bus Status should become authoritative before removing legacy side channels. |
 | waybar-cffi-v2 | provisional | Waybar ABI and Hyprland commit compatibility must be encoded in package metadata and load-tested. |
 | xdg-paths-v0 | provisional | Config and data use absolute XDG_* or HOME fallback. Runtime must be set and absolute. No /run/user/<uid>, /tmp, or ~ expansion. |
@@ -90,6 +92,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | mason-pacman-repository-v1 | arch-repo | arch-repo | hypr-de, dotfiles, greetd-game-mode, deck-tenant | pacman repository database over GitHub Pages | packages.toml schema 1 plus pacman repository metadata | stable |
 | monitor-profile-v0 | monitor-profiles | monitor-profiles, hyprstate, dials | hyprstate, dials, vigil | TOML files | unversioned | provisional |
 | notification-replace-tag-v1 | hyprstate | hyprstate | external:notification-daemon, hyprnotice | freedesktop notification hint | 1 | stable |
+| panic-exit-v0 | desktop-commons | desktop-commons |  | Rust crate by git at a full commit SHA: exit_on_panic() via crates/panic-exit | 0.1.0 | provisional |
 | precompositor-gpu-selection-v1 | hyprstate | hyprstate | hypr-de | pre-session CLI output and runtime intent file | 1 | stable |
 | release-package-v1 | packaging-workflows | hyprstate, dials, hypr-de, hypr-de-extras, linux-multi-theme-toggle, logind-idle-control, sni-watcher, waybar-workspace-buttons, wayland-voice-dictation, vigil, greetd-game-mode, couchcord, deck-tenant | arch-repo | Git tag, GitHub Release, Arch package, and source RPM | repository package version | stable |
 | schema-tui-schema-v1 | schema-tui | linux-multi-theme-toggle, wayland-voice-dictation | schema-tui | JSON Schema and TOML | consumer schema says 1.0; library does not enforce it | provisional |
@@ -105,6 +108,7 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 | steam-launch-options-v1 | hypr-de | hypr-de | external:steam | LaunchOptions value in Steam's localconfig.vdf, executed by Steam as ENV=v wrapper %command% | VDF LaunchOptions | provisional |
 | vigil-banner-v1 | vigil | greetd-game-mode | vigil | greeter banner/countdown state | 1 | provisional |
 | vigil-lock-protocol-v1 | vigil | vigil | external:hyprland, hyprstate, hypr-de | ext-session-lock-v1, PAM, and logind LockedHint | Wayland ext-session-lock-v1 | provisional |
+| vigil-log-v0 | desktop-commons | desktop-commons |  | Rust crate by git at a full commit SHA: say!, emit and out! via crates/vigil-log | 0.1.0 | provisional |
 | voice-dictation-dbus-v1 | wayland-voice-dictation | wayland-voice-dictation | hypr-de | session D-Bus, CLI, and live Unix stream | 1 | legacy |
 | waybar-cffi-v2 | waybar-workspace-buttons | waybar-workspace-buttons | external:waybar, external:hyprland | Waybar CFFI module and Hyprland plugin ABI | wbcffi 2 plus exact Hyprland build hash | provisional |
 | xdg-paths-v0 | xdg-paths | xdg-paths | hyprstate, dials, logind-idle-control, vigil, linux-multi-theme-toggle, wayland-voice-dictation | Rust library API | 0.1 | provisional |
@@ -354,6 +358,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Failure behavior: Unsupported daemons display independent notifications.
 - Barriers: BAR-005, BAR-007, BAR-012
 
+## panic-exit-v0
+
+- Location: `crates/panic-exit`
+- Compatibility: exit_on_panic() is the first call in every main. A panic on any thread writes `panic at <file>:<line>; exiting` through vigil-log's say! and ends the process with _exit(101); the panic message is never printed, since it can quote input. Consumers ban std::panic::set_hook and take_hook so no second hook replaces it.
+- Failure behavior: No destructors, atexit handlers or stdout flushes run after a panic, so a consumer keeps its writes atomic per file. A panic hook installed after this one replaces it, which the consumer's clippy bans exist to prevent.
+- Barriers: 
+
 ## precompositor-gpu-selection-v1
 
 - Location: `hyprstate gpu select and $XDG_RUNTIME_DIR/hypr-gpu-primary.json`
@@ -458,6 +469,13 @@ A surface is the narrow contract at a repository boundary. Shared implementation
 - Compatibility: Vigil actively owns login and lock, but hypr-DE packaging still installs and references conflicting locker paths. hypr-DE's lock_cmd wrapper depends on vigil-lock exit codes: 0 means the session lock was granted, 3 means an idle lock was cancelled by user activity, and any other status is a launch or lock failure the wrapper escalates. Changing those codes changes whether sessions get terminated, so they are part of this contract.
 - Failure behavior: A lock-client crash intentionally leaves the compositor locked; no packaged restart owner currently guarantees recovery. A locker that never starts is now handled: hypr-DE retries unscoped, tries other installed lockers, and terminates the session rather than returning an unlocked desktop.
 - Barriers: BAR-001, BAR-007, BAR-016, BAR-018, BAR-019, BAR-020
+
+## vigil-log-v0
+
+- Location: `crates/vigil-log`
+- Compatibility: Moved byte for byte from vigil's crates/vigil-log (MIT). say! writes one line of at most 2048 bytes to stderr, with control characters and backslashes escaped and a cut line ending in ` trunc=1`; it never panics, never allocates and does not block, and it leaves errno as it found it. out! writes to stdout and ignores every error. Consumers pin `rev` to a full 40-character SHA and check the `?rev=` query in their Cargo.lock, since cargo-deny does not check rev length.
+- Failure behavior: A line that cannot be written is dropped, never retried: a full disk, a closed fd, a pipe with no reader or one nobody drains costs that line and nothing else. Logs are therefore not an audit trail.
+- Barriers: 
 
 ## voice-dictation-dbus-v1
 
