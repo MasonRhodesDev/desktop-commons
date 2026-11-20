@@ -349,10 +349,6 @@ concerns = ["package-user-overlay-shadowing"]
 severity = "error"
 message = "Personal units must not shadow package-owned Steam cleanup."
 
-[assertion.waiver]
-reason = "Known P1 migration residue in dotfiles."
-expires = "2026-10-01"
-
 [[assertion]]
 id = "dotfiles-secret-import-helper-exists"
 kind = "path_exists"
