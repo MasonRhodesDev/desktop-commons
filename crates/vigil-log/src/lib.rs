@@ -391,7 +391,7 @@ mod tests {
     // Mode 000 stands in for a tty another account owns: su leaves one on
     // fd 2, and the account it switched to cannot reopen it through /proc.
     fn lock_out(slave: &File) {
-        slave.set_permissions(Permissions::from_mode(0)).unwrap();
+        slave.set_permissions(Permissions::from_mode(0o000)).unwrap();
         let reopen = OpenOptions::new()
             .write(true)
             .open(format!("/proc/self/fd/{}", slave.as_raw_fd()));
