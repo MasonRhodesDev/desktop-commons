@@ -44,10 +44,6 @@ concerns = ["alternate-game-session"]
 severity = "error"
 message = "A failed greetd restart must disarm the one-shot game-mode flag."
 
-[assertion.waiver]
-reason = "Known P1: restart status is logged but not checked."
-expires = "2026-10-01"
-
 [[assertion]]
 id = "desktop-lock-command-is-packaged"
 kind = "conditional_contains"

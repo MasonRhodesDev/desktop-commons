@@ -89,7 +89,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | extras-has-no-laptop-copr-setup | path_absent | hypr-de-extras | BAR-009 | fedora-package-closure | — |
 | extras-release-is-ci-owned | path_exists | hypr-de-extras | BAR-009, BAR-023 | fedora-package-closure | — |
 | game-mode-device-access-is-narrow | file_not_contains | greetd-game-mode | BAR-021 | privilege-minimization | — |
-| game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | 2026-10-01 |
+| game-mode-restart-failure-disarms | file_contains | greetd-game-mode | BAR-016, BAR-025 | alternate-game-session | — |
 | game-sandbox-has-no-user-bypass | file_not_contains | greetd-game-mode | BAR-017, BAR-021 | game-session-sandbox | — |
 | greetd-pam-rewrite-is-recoverable | file_contains | hypr-de | BAR-019 | operator-policy-preservation, authentication | — |
 | gui-does-not-own-telemetry-socket | file_not_contains | dials | BAR-002, BAR-010 | display-settings | — |
