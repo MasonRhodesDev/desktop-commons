@@ -12,10 +12,12 @@ const MAX_LINE: usize = 2048;
 const TRUNCATED: &[u8] = b" trunc=1";
 const ROOM: usize = MAX_LINE - 1 - TRUNCATED.len();
 
-/// Writes one line to stderr. It never panics, leaves errno as it was and
-/// allocates nothing, though a `Display` impl that allocates still does. It
-/// does not block, except in one race on a pipe that /proc cannot reopen,
-/// described at `write_if_room`. Control characters are escaped as `\n`,
+/// Writes one line to stderr and leaves errno as it was. Nothing in it
+/// panics or allocates, though a `Display` impl it formats can. It does not
+/// wait for a pipe, socket or tty reader, except in one race on a pipe that
+/// /proc cannot reopen, described at `write_if_room`; a regular file can
+/// still wait on its disk. A tty that /proc cannot reopen and that is not
+/// the controlling terminal loses the line. Control characters are escaped as `\n`,
 /// `\xNN` or, past ASCII, `\u{NN}`, so a message cannot start a second line.
 /// A backslash is escaped as `\\`, so a literal `\n` in a message reads
 /// differently from an escaped newline.
@@ -133,23 +135,28 @@ impl fmt::Write for Line {
 // O_NONBLOCK lives on the open file description, which a dup shares with
 // fd 2, the parent shell's terminal and every C writer in the process, so
 // it is never set on fd 2. Sockets get MSG_DONTWAIT per call; pipes and
-// ttys get a private description opened through /proc; regular files
-// cannot stall and must keep fd 2's offset, so they are written directly.
-// Nothing is cached, because a forked child may close or reuse any fd but
-// 0 to 2. No allocation either, for the same forked child.
+// ttys get a private description opened through /proc, or for a tty the
+// /proc reopen refuses, through /dev/tty; regular files must keep fd 2's
+// offset, so they are written directly. Nothing is cached, because a
+// forked child may close or reuse any fd but 0 to 2. No allocation either,
+// for the same forked child.
 fn write_record(fd: RawFd, record: &[u8]) {
-    let Some(kind) = sys::file_type(fd) else {
+    let Some((kind, device)) = sys::file_type(fd) else {
         return;
     };
     match kind {
         libc::S_IFSOCK => drain(record, |rest| {
             sys::send(fd, rest, libc::MSG_DONTWAIT | libc::MSG_NOSIGNAL)
         }),
-        libc::S_IFIFO | libc::S_IFCHR => match reopen_nonblocking(fd) {
+        libc::S_IFIFO => match reopen_nonblocking(fd) {
             Some(own) => drain(record, |rest| sys::write(own.as_raw_fd(), rest)),
-            None if kind == libc::S_IFIFO => write_if_room(fd, record),
-            None => {}
+            None => write_if_room(fd, record),
         },
+        libc::S_IFCHR => {
+            if let Some(own) = reopen_nonblocking(fd).or_else(|| controlling_tty(fd, device)) {
+                drain(record, |rest| sys::write(own.as_raw_fd(), rest));
+            }
+        }
         _ => drain(record, |rest| sys::write(fd, rest)),
     }
 }
@@ -168,7 +175,8 @@ fn drain(mut rest: &[u8], mut write: impl FnMut(&[u8]) -> isize) {
 // A record within PIPE_BUF goes out whole or not at all, and poll said it
 // fits, but another writer can fill the pipe between the poll and the
 // write, and then this write blocks until a reader drains it. A tty has no
-// such guarantee, so its line is dropped instead.
+// such guarantee: poll reports room for one byte, and a blocking write
+// sleeps until every byte has room. See `controlling_tty` instead.
 fn write_if_room(fd: RawFd, record: &[u8]) {
     if record.len() > libc::PIPE_BUF {
         return;
@@ -191,6 +199,31 @@ fn reopen_nonblocking(fd: RawFd) -> Option<OwnedFd> {
     )
 }
 
+// /proc refuses to reopen a tty the process may not open by its owner and
+// mode, such as the one su leaves on fd 2 when the account it switched to
+// does not own it. When that tty is the controlling terminal, /dev/tty
+// still opens it, as a private description. TIOCGSID succeeds on a tty
+// only for its own session, but on a pty master it answers for the slave,
+// so the tty must also be fd's own device. The device is checked again
+// after the open, in case the session changed in between. Any other tty
+// /proc cannot reopen loses the line, for the reason at `write_if_room`.
+fn controlling_tty(fd: RawFd, device: libc::dev_t) -> Option<OwnedFd> {
+    let mut session = 0;
+    if !sys::ioctl(fd, libc::TIOCGSID, &mut session) || tty_device(fd) != Some(device) {
+        return None;
+    }
+    let own = sys::open(
+        c"/dev/tty",
+        libc::O_WRONLY | libc::O_NONBLOCK | libc::O_CLOEXEC | libc::O_NOCTTY,
+    )?;
+    (tty_device(own.as_raw_fd()) == Some(device)).then_some(own)
+}
+
+fn tty_device(fd: RawFd) -> Option<libc::dev_t> {
+    let mut device = 0;
+    sys::ioctl(fd, libc::TIOCGDEV, &mut device).then_some(libc::dev_t::from(device))
+}
+
 fn writable_now(fd: RawFd) -> bool {
     sys::poll_out(fd)
         .is_some_and(|revents| revents & (libc::POLLERR | libc::POLLHUP | libc::POLLNVAL) == 0)
@@ -205,12 +238,18 @@ mod sys {
     use std::ffi::CStr;
     use std::os::fd::{FromRawFd, OwnedFd, RawFd};
 
-    pub fn file_type(fd: RawFd) -> Option<libc::mode_t> {
+    pub fn file_type(fd: RawFd) -> Option<(libc::mode_t, libc::dev_t)> {
         // SAFETY: stat is plain C data, for which all zero bytes is a valid value.
         let mut st: libc::stat = unsafe { std::mem::zeroed() };
         // SAFETY: st is a live, writable stat that fstat only fills.
         let ok = unsafe { libc::fstat(fd, &raw mut st) } == 0;
-        ok.then_some(st.st_mode & libc::S_IFMT)
+        ok.then_some((st.st_mode & libc::S_IFMT, st.st_rdev))
+    }
+
+    pub fn ioctl(fd: RawFd, request: libc::Ioctl, value: &mut libc::c_uint) -> bool {
+        // SAFETY: every request passed here reads or writes one int through
+        // the pointer, which is live, aligned and writable.
+        unsafe { libc::ioctl(fd, request, std::ptr::from_mut(value)) == 0 }
     }
 
     pub fn send(fd: RawFd, bytes: &[u8], flags: i32) -> isize {
@@ -248,6 +287,15 @@ mod sys {
         unsafe { *slot = value };
     }
 
+    // A child the tests spawn makes its fd 2 its controlling terminal.
+    #[cfg(test)]
+    pub fn take_controlling_tty(fd: RawFd) -> bool {
+        // SAFETY: setsid has no preconditions.
+        let leader = unsafe { libc::setsid() } >= 0;
+        // SAFETY: TIOCSCTTY takes an int by value, here 0: do not steal.
+        leader && unsafe { libc::ioctl(fd, libc::TIOCSCTTY, 0) } == 0
+    }
+
     #[cfg(test)]
     pub fn status_flags(fd: RawFd) -> i32 {
         // SAFETY: F_GETFL takes no argument and only reads the fd's flags.
@@ -258,11 +306,13 @@ mod sys {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::OpenOptions;
+    use std::fs::{File, OpenOptions, Permissions};
     use std::io::Read;
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
     use std::os::unix::net::UnixStream;
+    use std::process::{Command, ExitStatus, Stdio};
     use std::sync::mpsc;
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
 
     fn returns_promptly(fd: RawFd, record: &'static [u8]) -> bool {
         let (done, finished) = mpsc::channel();
@@ -310,6 +360,118 @@ mod tests {
         while sys::send(writer.as_raw_fd(), &chunk, libc::MSG_DONTWAIT) > 0 {}
         assert_eq!(flags(writer.as_raw_fd()) & libc::O_NONBLOCK, 0);
         assert!(returns_promptly(writer.as_raw_fd(), b"lost\n"));
+    }
+
+    const TTY_CHILD: &str = "VIGIL_LOG_TTY_CHILD";
+
+    fn pty() -> (File, File) {
+        let master = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .custom_flags(libc::O_NOCTTY)
+            .open("/dev/ptmx")
+            .unwrap();
+        let (mut unlock, mut index) = (0, 0);
+        assert!(sys::ioctl(
+            master.as_raw_fd(),
+            libc::TIOCSPTLCK,
+            &mut unlock
+        ));
+        assert!(sys::ioctl(master.as_raw_fd(), libc::TIOCGPTN, &mut index));
+        let slave = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .custom_flags(libc::O_NOCTTY)
+            .open(format!("/dev/pts/{index}"))
+            .unwrap();
+        (master, slave)
+    }
+
+    // Mode 000 stands in for a tty another account owns: su leaves one on
+    // fd 2, and the account it switched to cannot reopen it through /proc.
+    fn lock_out(slave: &File) {
+        slave.set_permissions(Permissions::from_mode(0)).unwrap();
+        let reopen = OpenOptions::new()
+            .write(true)
+            .open(format!("/proc/self/fd/{}", slave.as_raw_fd()));
+        assert!(
+            reopen.is_err(),
+            "this process reopened a mode 000 tty, as root can, so it cannot stand in for su; run the tests as an ordinary user"
+        );
+    }
+
+    fn log_from_a_session_on(slave: &File) -> ExitStatus {
+        let mut child = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tests::child_logs_on_its_controlling_tty",
+                "--test-threads=1",
+                "--nocapture",
+            ])
+            .env(TTY_CHILD, "1")
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(slave.try_clone().unwrap())
+            .spawn()
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                return status;
+            }
+            if Instant::now() > deadline {
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("the child did not exit within 10 seconds");
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    }
+
+    #[test]
+    fn child_logs_on_its_controlling_tty() {
+        if std::env::var_os(TTY_CHILD).is_none() {
+            return;
+        }
+        assert!(sys::take_controlling_tty(libc::STDERR_FILENO));
+        line(format_args!("vigil-log: {}", "on the controlling tty"));
+    }
+
+    #[test]
+    fn a_controlling_tty_it_cannot_reopen_still_gets_the_line() {
+        let (mut master, slave) = pty();
+        lock_out(&slave);
+        assert!(log_from_a_session_on(&slave).success());
+        assert_eq!(flags(slave.as_raw_fd()) & libc::O_NONBLOCK, 0);
+        drop(slave);
+        let (done, finished) = mpsc::channel();
+        std::thread::spawn(move || {
+            let mut got = Vec::new();
+            // the master reads EIO once the slave is closed and drained
+            let _ = master.read_to_end(&mut got);
+            let _ = done.send(got);
+        });
+        let got = finished.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!(
+            String::from_utf8_lossy(&got),
+            "vigil-log: on the controlling tty\r\n"
+        );
+    }
+
+    #[test]
+    fn a_stalled_controlling_tty_it_cannot_reopen_drops_the_line_instead_of_blocking() {
+        let (_master, slave) = pty();
+        testing::fill(&slave);
+        lock_out(&slave);
+        assert!(log_from_a_session_on(&slave).success());
+        assert_eq!(flags(slave.as_raw_fd()) & libc::O_NONBLOCK, 0);
+    }
+
+    #[test]
+    fn another_tty_it_cannot_reopen_drops_the_line() {
+        let (_master, slave) = pty();
+        lock_out(&slave);
+        assert!(returns_promptly(slave.as_raw_fd(), b"lost\n"));
     }
 
     #[test]
