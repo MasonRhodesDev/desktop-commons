@@ -212,7 +212,7 @@ id = "hyprstate-rpm-rewrites-git-sources"
 kind = "file_contains"
 repository = "hyprstate"
 path = "packaging/hyprstate.spec"
-pattern = '(?s)git\+https://github\.com/MasonRhodesDev/monitor-profiles\?rev=aef5f0e.*?replace-with = "vendored-sources"'
+pattern = '(?s)git\+https://github\.com/MasonRhodesDev/monitor-profiles\?rev=e263f57.*?replace-with = "vendored-sources"'
 barriers = ["BAR-022", "BAR-023"]
 concerns = ["fedora-package-closure"]
 severity = "error"
