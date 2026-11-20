@@ -1,0 +1,18 @@
+[package]
+name = "vigil-log"
+description = "Stderr lines that never panic and are dropped rather than wait on a stalled reader, a foreground stderr writer for a CLI's own messages that waits, and stdout writes that never panic"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.87"
+license = "MIT"
+repository = "https://github.com/MasonRhodesDev/desktop-commons"
+publish = false
+
+[dependencies]
+libc = "0.2"
+
+[features]
+testing = []
+
+[lints]
+workspace = true
