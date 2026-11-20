@@ -633,8 +633,8 @@ transport = "Rust crate by git at a full commit SHA: say!, emit and out! via cra
 location = "crates/vigil-log"
 version = "0.1.0"
 maturity = "provisional"
-compatibility = "Moved byte for byte from vigil's crates/vigil-log (MIT). say! writes one line of at most 2048 bytes to stderr, with control characters and backslashes escaped and a cut line ending in ` trunc=1`; it never panics, never allocates and does not block, and it leaves errno as it found it. out! writes to stdout and ignores every error. Consumers pin `rev` to a full 40-character SHA and check the `?rev=` query in their Cargo.lock, since cargo-deny does not check rev length."
-failure = "A line that cannot be written is dropped, never retried: a full disk, a closed fd, a pipe with no reader or one nobody drains costs that line and nothing else. Logs are therefore not an audit trail."
+compatibility = "Moved from vigil's crates/vigil-log (MIT) at 6bac0a2f; since then it also reaches a controlling terminal /proc cannot reopen through /dev/tty, which vigil's copy does not. say! writes one line of at most 2048 bytes to stderr, with control characters and backslashes escaped and a cut line ending in ` trunc=1`; it does not panic or allocate, though a Display impl it formats can, and it leaves errno as it found it. It drops the line rather than wait on a stalled pipe, socket or tty, except in one race on a pipe /proc cannot reopen; a regular file can still wait on its disk. out! writes to stdout and ignores every error. Consumers pin `rev` to a full 40-character SHA and check the `?rev=` query in their Cargo.lock, since cargo-deny does not check rev length."
+failure = "A line that cannot be written is dropped, never retried: a full disk, a closed fd, a pipe with no reader or one nobody drains, a stalled tty, and a tty /proc cannot reopen that is not the controlling terminal (fd 2 under su -c) cost that line and nothing else. Logs are therefore not an audit trail."
 barriers = []
 
 [[surface]]

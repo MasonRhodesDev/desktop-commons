@@ -1,6 +1,6 @@
 [package]
 name = "vigil-log"
-description = "Stderr lines that never panic and never block, and stdout writes that never panic"
+description = "Stderr lines that never panic and are dropped rather than wait on a stalled reader, and stdout writes that never panic"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.87"

@@ -3,8 +3,10 @@
 /// The first call in every main. A panic on any thread then ends the process
 /// at once with status 101, so it never runs half alive with a dead worker or
 /// a poisoned lock. The report names only the place, since a panic message can
-/// quote input. It goes out through `vigil_log::say!`, which allocates nothing
-/// and never blocks or panics, so a broken stderr cannot hold up the exit.
+/// quote input. It goes out through `vigil_log::say!`, which allocates nothing,
+/// does not panic, and drops the line rather than wait on a stalled pipe,
+/// socket or tty, so a broken stderr cannot hold up the exit, short of the
+/// pipe race that `say!` describes.
 pub fn exit_on_panic() {
     #[expect(clippy::disallowed_methods, reason = "this is the one panic hook")]
     std::panic::set_hook(Box::new(|info| {

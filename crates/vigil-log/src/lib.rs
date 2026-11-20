@@ -17,7 +17,8 @@ const ROOM: usize = MAX_LINE - 1 - TRUNCATED.len();
 /// wait for a pipe, socket or tty reader, except in one race on a pipe that
 /// /proc cannot reopen, described at `write_if_room`; a regular file can
 /// still wait on its disk. A tty that /proc cannot reopen and that is not
-/// the controlling terminal loses the line. Control characters are escaped as `\n`,
+/// the controlling terminal loses the line, as under `su -c`, which starts a
+/// new session. Control characters are escaped as `\n`,
 /// `\xNN` or, past ASCII, `\u{NN}`, so a message cannot start a second line.
 /// A backslash is escaped as `\\`, so a literal `\n` in a message reads
 /// differently from an escaped newline.
@@ -467,8 +468,10 @@ mod tests {
         assert_eq!(flags(slave.as_raw_fd()) & libc::O_NONBLOCK, 0);
     }
 
+    // The su -c shape: su calls setsid, so the tty on fd 2 is no longer
+    // the controlling terminal and /dev/tty cannot reach it either.
     #[test]
-    fn another_tty_it_cannot_reopen_drops_the_line() {
+    fn a_tty_it_cannot_reopen_that_is_not_the_controlling_terminal_drops_the_line() {
         let (_master, slave) = pty();
         lock_out(&slave);
         assert!(returns_promptly(slave.as_raw_fd(), b"lost\n"));

@@ -61,8 +61,14 @@ also fails on waived violations.
 as vigil's crates. Any other crate joins by setting `[lints] workspace = true`
 in its `Cargo.toml`.
 
-- `vigil-log`: `say!` writes one line to stderr and never panics, blocks or
-  allocates; `out!` writes to stdout and never panics.
+- `vigil-log`: `say!` writes one line to stderr. It does not panic or
+  allocate, though a `Display` impl it formats can. It drops the line rather
+  than wait on a stalled pipe, socket or tty, except in one race on a pipe
+  `/proc` cannot reopen; a regular file can still wait on its disk. A tty
+  `/proc` cannot reopen, such as the one `su` leaves on fd 2 when the account
+  does not own it, is reached through `/dev/tty` when it is the controlling
+  terminal, and otherwise loses the line, as under `su -c`. `out!` writes to
+  stdout through std, ignores every error and never panics, but can block.
 - `panic-exit`: `exit_on_panic()` is the first call in every `main`. A panic
   on any thread then writes `panic at <file>:<line>; exiting` through
   `vigil_log::say!` and ends the process with status 101 through `_exit`, so a
