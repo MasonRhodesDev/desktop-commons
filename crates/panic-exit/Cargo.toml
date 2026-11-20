@@ -1,0 +1,26 @@
+[package]
+name = "panic-exit"
+description = "A panic hook that names the panic's place on stderr and exits 101 at once"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.87"
+license = "MIT"
+repository = "https://github.com/MasonRhodesDev/desktop-commons"
+publish = false
+
+[dependencies]
+vigil-log = { path = "../vigil-log" }
+libc = "0.2"
+
+[dev-dependencies]
+vigil-log = { path = "../vigil-log", features = ["testing"] }
+
+[features]
+lint-canary = []
+
+[[example]]
+name = "lint_canary"
+required-features = ["lint-canary"]
+
+[lints]
+workspace = true

@@ -1,0 +1,6 @@
+fence	crates/panic-exit/examples/lint_canary.rs	unsafe	3
+fence	crates/panic-exit/src/lib.rs	lint-allow	2
+fence	crates/panic-exit/src/lib.rs	unsafe	1
+fence	crates/panic-exit/tests/exit_on_panic.rs	lint-allow	1
+fence	crates/vigil-log/src/lib.rs	lint-allow	2
+fence	crates/vigil-log/src/lib.rs	unsafe	10
