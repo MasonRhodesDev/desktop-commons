@@ -69,6 +69,15 @@ in its `Cargo.toml`.
   does not own it, is reached through `/dev/tty` when it is the controlling
   terminal, and otherwise loses the line, as under `su -c`. `out!` writes to
   stdout through std, ignores every error and never panics, but can block.
+- `vigil-log`'s `say_foreground!` is for a command-line tool's own
+  foreground messages, such as a usage error or a refusal printed before it
+  execs something else. It builds the line as `say!` does, then writes it to
+  fd 2 itself and waits, as `eprintln!` and a shell's `>&2` do, so the line
+  also reaches the tty `su -c` leaves on fd 2. It never sets `O_NONBLOCK` and
+  allocates nothing, but it can block on a stalled terminal or a full pipe.
+  Daemons, anything holding a lock and code in a forked child use `say!`.
+  A consumer bans the macro in its `clippy.toml` and allows it in the one
+  module that prints those messages.
 - `panic-exit`: `exit_on_panic()` is the first call in every `main`. A panic
   on any thread then writes `panic at <file>:<line>; exiting` through
   `vigil_log::say!` and ends the process with status 101 through `_exit`, so a

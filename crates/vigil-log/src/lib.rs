@@ -30,6 +30,30 @@ macro_rules! say {
     };
 }
 
+/// Writes one line to fd 2 for a command-line tool's own foreground
+/// messages, such as a usage error or a refusal, as `eprintln!` and a
+/// shell's `>&2` do. The line is built as `say!` builds it: escaped, at most
+/// 2048 bytes, and errno is left as it was. Nothing in it panics or
+/// allocates, though a `Display` impl it formats can. Unlike `say!`, it
+/// writes to fd 2 itself and waits for it, retrying a write a signal
+/// interrupted and continuing one cut short. So a tty the process cannot
+/// reopen still gets the line, as fd 2 under `su -c` does. It never sets
+/// `O_NONBLOCK`.
+///
+/// It can block for as long as fd 2's reader does not read: a stalled
+/// terminal (Ctrl-S, a paused pager) or a full pipe holds the process.
+/// Daemons, anything holding a lock and code in a forked child must use
+/// `say!`. If fd 2's description is already nonblocking, the part of a
+/// line that does not fit is dropped. A pipe with no reader raises SIGPIPE,
+/// which ends the process unless SIGPIPE is ignored, as Rust's runtime
+/// ignores it before a binary's `main`.
+#[macro_export]
+macro_rules! say_foreground {
+    ($($arg:tt)*) => {
+        $crate::foreground(::core::format_args!($($arg)*))
+    };
+}
+
 #[macro_export]
 macro_rules! out {
     ($($arg:tt)*) => {
@@ -40,6 +64,11 @@ macro_rules! out {
 #[doc(hidden)]
 pub fn line(args: fmt::Arguments<'_>) {
     line_to(libc::STDERR_FILENO, args);
+}
+
+#[doc(hidden)]
+pub fn foreground(args: fmt::Arguments<'_>) {
+    foreground_to(libc::STDERR_FILENO, args);
 }
 
 #[doc(hidden)]
@@ -62,13 +91,13 @@ pub fn emit(record: &[u8]) {
 
 fn line_to(fd: RawFd, args: fmt::Arguments<'_>) {
     let errno = errno();
-    let mut line = Line {
-        buf: [0; MAX_LINE],
-        len: 0,
-        cut: false,
-    };
-    let _ = fmt::Write::write_fmt(&mut line, args);
-    write_record(fd, line.finish());
+    write_record(fd, Line::from(args).finish());
+    sys::set_errno(errno);
+}
+
+fn foreground_to(fd: RawFd, args: fmt::Arguments<'_>) {
+    let errno = errno();
+    drain(Line::from(args).finish(), |rest| sys::write(fd, rest));
     sys::set_errno(errno);
 }
 
@@ -79,6 +108,16 @@ struct Line {
 }
 
 impl Line {
+    fn from(args: fmt::Arguments<'_>) -> Self {
+        let mut line = Self {
+            buf: [0; MAX_LINE],
+            len: 0,
+            cut: false,
+        };
+        let _ = fmt::Write::write_fmt(&mut line, args);
+        line
+    }
+
     fn push_text(&mut self, text: &str) {
         let room = if self.cut { 0 } else { ROOM - self.len };
         let mut n = text.len().min(room);
@@ -288,13 +327,19 @@ mod sys {
         unsafe { *slot = value };
     }
 
-    // A child the tests spawn makes its fd 2 its controlling terminal.
+    // A child the tests spawn starts a session with no controlling
+    // terminal, as su -c does, and may then take fd 2 as its terminal.
+    #[cfg(test)]
+    pub fn new_session() -> bool {
+        // SAFETY: setsid has no preconditions.
+        let session = unsafe { libc::setsid() };
+        session >= 0
+    }
+
     #[cfg(test)]
     pub fn take_controlling_tty(fd: RawFd) -> bool {
-        // SAFETY: setsid has no preconditions.
-        let leader = unsafe { libc::setsid() } >= 0;
         // SAFETY: TIOCSCTTY takes an int by value, here 0: do not steal.
-        leader && unsafe { libc::ioctl(fd, libc::TIOCSCTTY, 0) } == 0
+        new_session() && unsafe { libc::ioctl(fd, libc::TIOCSCTTY, 0) } == 0
     }
 
     #[cfg(test)]
@@ -307,9 +352,8 @@ mod sys {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::{File, OpenOptions, Permissions};
+    use std::fs::{File, OpenOptions};
     use std::io::Read;
-    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
     use std::os::unix::net::UnixStream;
     use std::process::{Command, ExitStatus, Stdio};
     use std::sync::mpsc;
@@ -365,52 +409,9 @@ mod tests {
 
     const TTY_CHILD: &str = "VIGIL_LOG_TTY_CHILD";
 
-    fn pty() -> (File, File) {
-        let master = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .custom_flags(libc::O_NOCTTY)
-            .open("/dev/ptmx")
-            .unwrap();
-        let (mut unlock, mut index) = (0, 0);
-        assert!(sys::ioctl(
-            master.as_raw_fd(),
-            libc::TIOCSPTLCK,
-            &mut unlock
-        ));
-        assert!(sys::ioctl(master.as_raw_fd(), libc::TIOCGPTN, &mut index));
-        let slave = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .custom_flags(libc::O_NOCTTY)
-            .open(format!("/dev/pts/{index}"))
-            .unwrap();
-        (master, slave)
-    }
-
-    // Mode 000 stands in for a tty another account owns: su leaves one on
-    // fd 2, and the account it switched to cannot reopen it through /proc.
-    fn lock_out(slave: &File) {
-        slave
-            .set_permissions(Permissions::from_mode(0o000))
-            .unwrap();
-        let reopen = OpenOptions::new()
-            .write(true)
-            .open(format!("/proc/self/fd/{}", slave.as_raw_fd()));
-        assert!(
-            reopen.is_err(),
-            "this process reopened a mode 000 tty, as root can, so it cannot stand in for su; run the tests as an ordinary user"
-        );
-    }
-
-    fn log_from_a_session_on(slave: &File) -> ExitStatus {
+    fn run_child_on(test: &str, slave: &File) -> ExitStatus {
         let mut child = Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "tests::child_logs_on_its_controlling_tty",
-                "--test-threads=1",
-                "--nocapture",
-            ])
+            .args(["--exact", test, "--test-threads=1", "--nocapture"])
             .env(TTY_CHILD, "1")
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -431,6 +432,10 @@ mod tests {
         }
     }
 
+    fn log_from_a_session_on(slave: &File) -> ExitStatus {
+        run_child_on("tests::child_logs_on_its_controlling_tty", slave)
+    }
+
     #[test]
     fn child_logs_on_its_controlling_tty() {
         if std::env::var_os(TTY_CHILD).is_none() {
@@ -442,30 +447,22 @@ mod tests {
 
     #[test]
     fn a_controlling_tty_it_cannot_reopen_still_gets_the_line() {
-        let (mut master, slave) = pty();
-        lock_out(&slave);
+        let (master, slave) = testing::pty();
+        testing::lock_out(&slave);
         assert!(log_from_a_session_on(&slave).success());
         assert_eq!(flags(slave.as_raw_fd()) & libc::O_NONBLOCK, 0);
         drop(slave);
-        let (done, finished) = mpsc::channel();
-        std::thread::spawn(move || {
-            let mut got = Vec::new();
-            // the master reads EIO once the slave is closed and drained
-            let _ = master.read_to_end(&mut got);
-            let _ = done.send(got);
-        });
-        let got = finished.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(
-            String::from_utf8_lossy(&got),
+            testing::read_until_closed(master),
             "vigil-log: on the controlling tty\r\n"
         );
     }
 
     #[test]
     fn a_stalled_controlling_tty_it_cannot_reopen_drops_the_line_instead_of_blocking() {
-        let (_master, slave) = pty();
+        let (_master, slave) = testing::pty();
         testing::fill(&slave);
-        lock_out(&slave);
+        testing::lock_out(&slave);
         assert!(log_from_a_session_on(&slave).success());
         assert_eq!(flags(slave.as_raw_fd()) & libc::O_NONBLOCK, 0);
     }
@@ -474,9 +471,71 @@ mod tests {
     // the controlling terminal and /dev/tty cannot reach it either.
     #[test]
     fn a_tty_it_cannot_reopen_that_is_not_the_controlling_terminal_drops_the_line() {
-        let (_master, slave) = pty();
-        lock_out(&slave);
+        let (_master, slave) = testing::pty();
+        testing::lock_out(&slave);
         assert!(returns_promptly(slave.as_raw_fd(), b"lost\n"));
+    }
+
+    #[test]
+    fn child_says_both_ways_in_a_new_session() {
+        if std::env::var_os(TTY_CHILD).is_none() {
+            return;
+        }
+        assert!(sys::new_session());
+        line(format_args!("vigil-log: {}", "said"));
+        foreground(format_args!("vigil-log: {}", "in the foreground"));
+    }
+
+    // The same su -c shape, run from fd 2 of a child in a session of its
+    // own: say! drops the line and say_foreground! delivers it.
+    #[test]
+    fn a_tty_under_su_c_gets_the_foreground_line_that_say_drops() {
+        let (master, slave) = testing::pty();
+        testing::lock_out(&slave);
+        assert!(run_child_on("tests::child_says_both_ways_in_a_new_session", &slave).success());
+        assert_eq!(flags(slave.as_raw_fd()) & libc::O_NONBLOCK, 0);
+        drop(slave);
+        assert_eq!(
+            testing::read_until_closed(master),
+            "vigil-log: in the foreground\r\n"
+        );
+    }
+
+    #[test]
+    fn a_foreground_line_is_built_as_say_builds_it() {
+        let long = "\u{e9}".repeat(MAX_LINE);
+        let message = format!("pam: a\nb\\n\x1b[2J {long}");
+        let (mut reader, writer) = std::io::pipe().unwrap();
+        let before = flags(writer.as_raw_fd());
+        foreground_to(writer.as_raw_fd(), format_args!("{message}"));
+        assert_eq!(flags(writer.as_raw_fd()), before);
+        drop(writer);
+        let mut got = String::new();
+        reader.read_to_string(&mut got).unwrap();
+        assert_eq!(got, line_through_a_pipe(format_args!("{message}")));
+    }
+
+    // The hazard the name warns of: a full pipe holds say_foreground!
+    // until someone reads, where say! drops the line.
+    #[test]
+    fn a_full_pipe_holds_the_foreground_line_until_it_is_read() {
+        let (mut reader, writer) = std::io::pipe().unwrap();
+        testing::fill(&writer);
+        let fd = writer.as_raw_fd();
+        let (done, finished) = mpsc::channel();
+        std::thread::spawn(move || {
+            foreground_to(fd, format_args!("vigil-log: {}", "waited"));
+            let _ = done.send(());
+        });
+        assert!(finished.recv_timeout(Duration::from_millis(300)).is_err());
+        let drained = std::thread::spawn(move || {
+            let mut got = Vec::new();
+            reader.read_to_end(&mut got).unwrap();
+            got
+        });
+        finished.recv_timeout(Duration::from_secs(5)).unwrap();
+        drop(writer);
+        assert!(drained.join().unwrap().ends_with(b"xvigil-log: waited\n"));
     }
 
     #[test]
