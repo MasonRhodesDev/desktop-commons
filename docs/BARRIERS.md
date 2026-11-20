@@ -84,7 +84,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | desktop-setup-validates-units | file_contains | hypr-de | BAR-018, BAR-025 | service-activation-completeness | — |
 | dotfiles-do-not-activate-legacy-greetd-owner | file_not_contains | dotfiles | BAR-001, BAR-013 | greetd-config-ownership | — |
 | dotfiles-do-not-shadow-packaged-game-focus | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
-| dotfiles-do-not-shadow-packaged-steam-cleanup | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | 2026-10-01 |
+| dotfiles-do-not-shadow-packaged-steam-cleanup | path_absent | dotfiles | BAR-001, BAR-009, BAR-013 | package-user-overlay-shadowing | — |
 | dotfiles-secret-import-helper-exists | path_exists | dotfiles | BAR-018, BAR-025 | secrets-keyring | — |
 | extras-has-no-laptop-copr-setup | path_absent | hypr-de-extras | BAR-009 | fedora-package-closure | — |
 | extras-release-is-ci-owned | path_exists | hypr-de-extras | BAR-009, BAR-023 | fedora-package-closure | — |
