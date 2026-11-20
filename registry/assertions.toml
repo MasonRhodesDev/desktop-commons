@@ -136,10 +136,6 @@ concerns = ["tray-registry", "service-activation-completeness"]
 severity = "error"
 message = "The desktop must install the watcher required by its persistent tray architecture."
 
-[assertion.waiver]
-reason = "Known P1: sni-watcher exists but is not a hypr-DE dependency or preset."
-expires = "2026-10-01"
-
 [[assertion]]
 id = "legacy-greetd-owner-is-retired"
 kind = "repository_archived"

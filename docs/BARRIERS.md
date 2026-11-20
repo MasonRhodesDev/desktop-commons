@@ -73,7 +73,7 @@ Assertions with zero counts remain review-only barriers until an executable chec
 | copr-keys-are-pinned | file_contains | hypr-de | BAR-022 | package-integrity, dependency-pinning | — |
 | desktop-bluetooth-daemon-is-enabled | file_contains | hypr-de | BAR-012, BAR-018 | bluetooth | — |
 | desktop-bluetooth-ui-is-packaged | conditional_contains | hypr-de | BAR-012, BAR-018 | bluetooth | — |
-| desktop-composes-persistent-tray-watcher | file_contains | hypr-de | BAR-010, BAR-018 | tray-registry, service-activation-completeness | 2026-10-01 |
+| desktop-composes-persistent-tray-watcher | file_contains | hypr-de | BAR-010, BAR-018 | tray-registry, service-activation-completeness | — |
 | desktop-fedora-drops-abandoned-hyprland-copr | file_not_contains | hypr-de | BAR-009, BAR-018 | fedora-package-closure | — |
 | desktop-fedora-enables-current-hyprland-copr | file_contains | hypr-de | BAR-009, BAR-018 | fedora-package-closure | — |
 | desktop-fedora-enables-extras-copr | file_contains | hypr-de | BAR-009, BAR-018 | fedora-package-closure | — |
